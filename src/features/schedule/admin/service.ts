@@ -93,6 +93,8 @@ export async function updateAdminEvent(actor: ScheduleActor, id: string, input: 
     if (!status.data.sessions_valid) return { success: false, message: "다른 일정의 세션이 포함되었거나 세션이 변경되었습니다. 새로고침 후 다시 확인해주세요." };
   } catch (error) {
     // 알려진 과제 세션 RESTRICT만 처리하고 그 밖의 오류는 웹의 기존 정제 로그로 전달합니다.
+    // PostgreSQL 18의 RESTRICT 위반은 23001이며, 이전 서버의 23503도 같은 정책으로 처리합니다.
+    // SQLSTATE와 제약명이 함께 일치할 때만 안내로 바꿔 다른 FK 오류를 잘못 분류하지 않습니다.
     if (["23001", "23503"].some(code => isConstraintViolation(error, code, "assignments_schedule_session_id_schedule_sessions_id_fk"))) {
       return { success: false, message: "과제에 연결된 세션은 삭제할 수 없습니다. 해당 세션을 유지한 뒤 다시 저장해주세요." };
     }
@@ -114,6 +116,8 @@ export async function deleteAdminEvent(actor: ScheduleActor, id: string): Promis
       "assignments_schedule_event_id_schedule_events_id_fk",
       "assignments_schedule_session_id_schedule_sessions_id_fk",
     ];
+    // RESTRICT 위반은 PostgreSQL 18에서 23001, 이전 서버에서 23503이므로 두 코드를 모두 받되
+    // SQLSTATE와 과제 FK 제약명이 함께 일치해야 고정 안내로 바꿉니다.
     if (["23503", "23001"].some(code => assignmentConstraints.some(constraint =>
       isConstraintViolation(error, code, constraint)
     ))) {

@@ -86,7 +86,14 @@ export async function insertEvent(input: Omit<ScheduleEventInput, "sessions">): 
   });
 }
 
-/** 수업과 신규 세션은 기존 단일 CTE 문장으로 함께 생성합니다. */
+/**
+ * 수업과 신규 세션은 기존 단일 CTE 문장으로 함께 생성합니다.
+ *
+ * 원자화 원칙 (#62): event insert와 sessions insert를 단일 SQL CTE로 묶어
+ * PostgreSQL 문장 단위 원자성으로 일부만 반영되는 상태를 원천 차단합니다.
+ * neon-http 드라이버는 db.transaction()을 지원하지 않으므로(src/lib/db/reorder.ts 참고)
+ * CTE가 유일한 원자화 수단입니다.
+ */
 export async function insertEventWithSessions(input: ScheduleEventInput): Promise<void> {
   const { sessions, endTime, ...eventData } = input;
   const eventDateSql = eventData.eventDate.toISOString();
@@ -128,7 +135,15 @@ export async function insertEventWithSessions(input: ScheduleEventInput): Promis
     `);
 }
 
-/** 기존 세션 UUID를 보존하는 수정 CTE를 분리하거나 재정렬하지 않습니다. */
+/**
+ * 기존 세션 UUID를 보존하는 수정 CTE를 분리하거나 재정렬하지 않습니다.
+ *
+ * Neon HTTP는 대화형 트랜잭션을 지원하지 않으므로(#62) 소유권 검사·행 잠금·일정 수정·
+ * 세션 UPDATE/INSERT/DELETE를 단일 SQL CTE로 묶습니다. 대상 행을 잠근 뒤 변경하므로
+ * 동시 수정이 중간 상태를 보지 않습니다. 과제가 참조하는 세션을 유지하면 일반 제목/내용
+ * 수정이 가능하고, 실제로 제거하면 RESTRICT FK 위반이 문장 전체를 롤백해 일정과
+ * 세션 어느 쪽도 일부만 바뀌지 않습니다.
+ */
 export async function updateEvent(id: string, input: ScheduleEventInput, sessionPayload: readonly ScheduleSessionPayload[]) {
   const { endTime, ...eventData } = input;
   const eventDateSql = eventData.eventDate.toISOString();
