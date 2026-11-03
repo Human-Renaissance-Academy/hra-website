@@ -35,7 +35,9 @@ jobs:
       - name: 의존성 설치
         run: npm ci
       - name: 정책 실패 경로·산출물 차단 계약
-        run: node --test scripts/tests/secret-scan.test.mjs scripts/tests/dependency-policy.test.mjs scripts/tests/public-artifact-policy.test.mjs scripts/tests/public-source-policy.test.mjs scripts/tests/repository-security-workflow.test.mjs
+        run: node --test scripts/tests/secret-scan.test.mjs scripts/tests/dependency-policy.test.mjs scripts/tests/public-artifact-policy.test.mjs scripts/tests/public-source-policy.test.mjs scripts/tests/repository-security-workflow.test.mjs scripts/tests/required-checks-policy.test.mjs
+      - name: PR 필수 보안 체크·관측 분리 경계 검사
+        run: node scripts/check-required-checks-config.mjs
       - name: 공개 문서·fixture의 개인정보 표식 검사
         run: npm run verify:public-sources
       - name: 고정 scanner 검증·실제 source/history canary·전체 검사

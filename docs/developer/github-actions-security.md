@@ -1,6 +1,6 @@
 # GitHub Actions 권한과 외부 Action 고정
 
-관련: [#269](https://github.com/yeongseon/hra-website/issues/269). 이 문서는 CI 권한·도구 무결성 경계를 설명합니다. [저장소 secret·dependency 게이트](repository-security-gates.md), [공개 artifact 검사](public-artifact-safety.md), [CSP·HSTS](browser-security-policy.md), [LICENSE·noreply 운영 확인표](../operations/public-repository-security.md)의 구체 범위와 함께 확인합니다.
+관련: [#269](https://github.com/yeongseon/hra-website/issues/269), [#408](https://github.com/yeongseon/hra-website/issues/408). 이 문서는 CI 권한·도구 무결성·PR 필수 체크 경계를 설명합니다. [저장소 secret·dependency 게이트](repository-security-gates.md), [공개 artifact 검사](public-artifact-safety.md), [CSP·HSTS](browser-security-policy.md), [LICENSE·noreply 운영 확인표](../operations/public-repository-security.md)의 구체 범위와 함께 확인합니다.
 
 ## 권한 경계
 
@@ -40,6 +40,38 @@ release-please의 활성화 조건과 별도 `RELEASE_PLEASE_TOKEN` 전달을 �
 1. 같은 공식 저장소에서 승인할 태그의 변경 내역·실행 환경·권한 요구를 확인합니다. 메이저 업그레이드는 별도로 검토합니다.
 2. 예를 들어 `gh api repos/actions/checkout/git/ref/tags/v4`로 태그 객체를 조회합니다. `object.type=commit`이면 `object.sha`를 사용합니다. `tag`이면 `gh api repos/actions/checkout/git/tags/<태그 객체 SHA>`로 대상을 따라가 최종 commit을 확인합니다.
 3. `gh api repos/actions/checkout/commits/<전체 commit SHA>`로 공식 저장소의 commit을 확인하고, 같은 Action의 모든 사용 위치와 이 문서의 매핑·확인 날짜를 함께 갱신합니다. 태그 이름만으로 실행하지 않습니다.
-4. `node --test scripts/tests/release-policy.test.mjs`와 `node scripts/check-release-config.mjs`를 실행합니다. 기존 정책 테스트는 외부 패키지 없이 Action의 전체 SHA, checkout 인증 미보존, 읽기 기본 권한·필요한 쓰기 예외, 릴리스 토큰 흐름을 확인합니다. YAML 문법 검사와 앱 CI도 통과해야 합니다.
+4. `node --test scripts/tests/release-policy.test.mjs scripts/tests/required-checks-policy.test.mjs`, `node scripts/check-release-config.mjs`, `node scripts/check-required-checks-config.mjs`를 실행합니다. 기존 정책 테스트는 외부 패키지 없이 Action의 전체 SHA, checkout 인증 미보존, 읽기 기본 권한·필요한 쓰기 예외, 릴리스 토큰 흐름, PR 필수 체크 생성·우회 차단을 확인합니다. YAML 문법 검사와 앱 CI도 통과해야 합니다.
 
-정책 테스트는 현재 단순한 workflow 구조를 대상으로 하며 일반 YAML 파서가 아닙니다. 새 workflow·Action·권한 예외는 허용 목록과 실제 YAML 구조를 함께 리뷰합니다. 운영 GitHub runner의 실제 실행 결과는 PR CI에서 확인합니다.
+권한 정책 테스트는 단순한 workflow 구조를 대상으로 하며, 필수 체크 경계 파서는 `scripts/tests/repository-security-workflow.test.mjs`에서 `js-yaml` `JSON_SCHEMA` 파싱 결과와 교차 대조합니다. 새 workflow·Action·권한 예외는 허용 목록과 실제 YAML 구조를 함께 리뷰합니다. 운영 GitHub runner의 실제 실행 결과는 PR CI에서 확인합니다.
+
+## PR 필수 체크와 main 병합 보호 경계
+
+워크플로가 PR에서 **실행되는 것**과 GitHub `main` 브랜치 보호(`required_status_checks`)에서 **병합을 실제로 차단하는 것**은 별개입니다. `main` 보호의 필수 상태 검사 정본은 `scripts/_lib/required-checks-policy.mjs`의 `REQUIRED_MAIN_STATUS_CHECKS`(총 6개)로 관리하며, 정기·운영 관측이나 경로 조건부(`paths:`) 워크플로는 분리합니다.
+
+### 전체 상태 검사·워크플로 분류 (2026-11-03 확인 기준)
+
+| 워크플로 / 통합 | 실제 Check Run / Status 이름 | App ID | 실행 트리거 | 모든 `main` PR 생성 여부 | 정본 `main` 필수 여부 | 2026-11-03 GitHub 설정 조회 결과 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `ci.yml` | `Lint · Typecheck · Test · Build` | `15368` | `pull_request(main)`, `push(main)` | 예 (무조건 실행) | **필수** | 등록됨 (`strict: true`, `enforce_admins: true`) |
+| `process-format.yml` | `PR 형식` | `15368` | `pull_request(main)` (7개 활동 유형) | 예 (`event_name == 'pull_request'`) | **필수** | 등록됨 |
+| `process-format.yml` | `형식·릴리스 계약 테스트` | `15368` | `pull_request(main)`, `push(main)`, `workflow_dispatch` | 예 (`event_name != 'issues'`) | **필수** | 등록됨 |
+| `repository-security.yml` | `추적 소스 · 도달 가능한 이력 · dependency 검토` | `15368` | `pull_request(main)`, `push(main)`, `schedule`, `workflow_dispatch` | 예 (무조건 실행, 비밀값 없음) | **필수** | 미등록 → 운영자 반영·검증 대상 ([#408](https://github.com/yeongseon/hra-website/issues/408)) |
+| `repository-security.yml` | `실제 production CSP · 에디터 · 인쇄 · Blob SDK` | `15368` | `pull_request(main)`, `push(main)`, `schedule`, `workflow_dispatch` | 예 (무조건 실행, 격리 PG·Chromium) | **필수** | 미등록 → 운영자 반영·검증 대상 ([#408](https://github.com/yeongseon/hra-website/issues/408)) |
+| Vercel GitHub App | `Vercel` | `8329` | PR / `main` 커밋 배포 상태 | 예 | **필수** | 등록됨 |
+| `process-format.yml` | `이슈 형식`, `열린 이슈·PR 일괄 검사` | `15368` | `issues` / `workflow_dispatch` | PR에서는 `skipped` | 비필수 | 미등록 |
+| `authentication-measurement.yml` | `조건부 비용 비교 · 200개 계정 · 즉시 권한 회수` | `15368` | `pull_request(main, paths)`, `workflow_dispatch` | 아니오 (`paths` 일치 시에만 생성) | 비필수 (조건부 회귀) | 미등록 |
+| `expanded-e2e.yml` | `공개 12건 · 학사 G1 10개 필수 사례` | `15368` | `schedule`(일일), `pull_request(main, paths)`, `workflow_dispatch` | 아니오 (`paths` 일치 시에만 생성) | 비필수 (예약 관측) | 미등록 |
+| `production-smoke.yml` | `격리 점검·알림 보고서 계약`, `Production 읽기 점검` | `15368` | `deployment_status`, `schedule`(매시), `pull_request(main, paths)`, `workflow_dispatch` | 아니오 (`smoke`는 PR 제외) | 비필수 (운영 관측) | 미등록 |
+| `release-please.yml` | `release-please` | `15368` | `push(main)`, `workflow_dispatch` | 아니오 | 비필수 (병합 후 릴리스) | 미등록 |
+
+### 분리 기준과 우회·무기한 대기 방지
+
+1. **최소 PR 차단 보안 범위**: 추적 소스와 도달 가능한 이력의 secret(`verify:repository-secrets`)·공개 문서 개인정보 표식(`verify:public-sources`)·미검토/만료/P1 의존성 위험(`verify:dependencies`)·실제 production CSP 및 에디터/인쇄/Blob SDK 회귀(`verify:csp`)는 운영 자격증명 없이 모든 PR(fork 포함)에서 2~3분 내 병렬 실행되므로 `main` 필수 체크 정본에 포함합니다.
+2. **예약·운영 관측 분리**: `repository-security.yml`의 주간 `schedule`은 `refs/heads/main` 커밋에 기록되며 PR의 `head_sha` 체크를 덮어쓰지 않으므로 동일 정의를 복제하지 않고 유지합니다. 반면 `expanded-e2e.yml`·`authentication-measurement.yml`은 `pull_request.paths` 필터가 있어 필수 체크로 등록하면 비대상 PR에서 체크 자체가 생성되지 않아 `Expected` 상태로 무기한 대기합니다. `production-smoke.yml`은 실제 Production 가용성 관측이므로 PR 병합 조건과 결합하지 않습니다.
+3. **자동 회귀 차단**: `node scripts/check-required-checks-config.mjs`는 필수 워크플로의 `paths`/`paths-ignore`/`branches-ignore` 추가, 필수 job 이름 변경·중복 선언, `strategy` matrix·재사용 `uses`로 인한 체크 이름 변형, job/step 수준 `if` 추가(GitHub는 `skipped` 결론을 통과로 처리해 게이트가 우회됨), `continue-on-error` 추가를 차단합니다.
+4. **실제 GitHub 설정 대조**: YAML 변경만으로 GitHub 보호 규칙이 적용되지는 않습니다. 저장소 관리자는 아래 읽기 전용 명령으로 실제 `main` 보호 설정이 정본 6개(`context` + `app_id`, `strict: true`, `enforce_admins: true`)와 일치하는지 확인합니다.
+
+```bash
+gh api repos/yeongseon/hra-website/branches/main/protection > /tmp/hra-main-protection.json
+node scripts/check-required-checks-config.mjs --protection-file /tmp/hra-main-protection.json
+```
