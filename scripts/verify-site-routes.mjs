@@ -96,7 +96,7 @@ function launch(args, environment, browserOutput = false) {
     for (const line of lines) {
       if (/^(?:COLLECT|PASS|FAIL) E2E_PUBLIC:[A-Za-z0-9_.:-]+$/.test(line) ||
           /^FAIL E2E_PUBLIC_ERROR:[A-Z0-9_]+:[A-Z_]+:\d+$/.test(line) ||
-          /^(?:COLLECT|PASS|FAIL) E2E_PUBLIC_REQUIRED(?::14)?$/.test(line)) console.log(line);
+          /^(?:COLLECT|PASS|FAIL) E2E_PUBLIC_REQUIRED(?::24)?$/.test(line)) console.log(line);
     }
     if (pending.length > 4096) pending = "";
   });
@@ -329,7 +329,7 @@ try {
       publicBrowser = options.get("--browser") === "public";
       cspBrowser = options.get("--browser") === "csp";
       limitations.splice(limitations.indexOf("브라우저 상호작용 미검증"), 1, publicBrowser
-        ? "공개 4개 spec 외 브라우저는 별도 G1 검증 결과를 확인"
+        ? "공개 6개 spec 외 브라우저는 별도 G1 검증 결과를 확인"
         : "CSP의 합성 업로드는 실제 공급자 검증이 아니며 학사 쓰기는 별도 G1로 확인");
       if (cspBrowser) limitations[0] = "실제 공급자 Blob 업로드·파일 스트림 미검증";
     }
@@ -442,7 +442,7 @@ try {
         await stopChild(browser);
         check(!cleanupFailed, "SITE_ROUTE_BROWSER_CLEANUP_FAILED");
       }
-      check(browserSummary?.status === "passed" && browserSummary.completed === 14, "SITE_ROUTE_BROWSER_INCOMPLETE");
+      check(browserSummary?.status === "passed" && browserSummary.completed === 24, "SITE_ROUTE_BROWSER_INCOMPLETE");
     } else {
       phase = "HTTP";
       await audit(origin, sessions, routes);

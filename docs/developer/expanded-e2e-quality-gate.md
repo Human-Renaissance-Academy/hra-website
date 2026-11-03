@@ -13,7 +13,7 @@ node --test scripts/tests/expanded-*.test.mjs
 HRA_TEST_PG_BIN="$(pg_config --bindir)" npm run test:e2e:expanded
 ```
 
-이 명령은 전체 스키마·합성 공개 fixture를 새 PostgreSQL에 설치하고 실제 production 빌드를 만듭니다. 공개 테스트를 `--list`로 먼저 수집한 뒤 별도 프로세스에서 14건 실행합니다. 그 다음 기존 `test:academic-g1`이 별도의 축소 스키마 DB·합성 계정·로컬 private-store에서 10개 필수 사례를 실행합니다. 두 fixture의 계정 비밀번호와 스키마를 혼용하지 않습니다. 어느 단계든 실패하면 성공으로 끝내지 않습니다.
+이 명령은 전체 스키마·합성 공개 fixture를 새 PostgreSQL에 설치하고 실제 production 빌드를 만듭니다. 공개 테스트를 `--list`로 먼저 수집한 뒤 별도 프로세스에서 24건 실행합니다. 그 다음 기존 `test:academic-g1`이 별도의 축소 스키마 DB·합성 계정·로컬 private-store에서 10개 필수 사례를 실행합니다. 두 fixture의 계정 비밀번호와 스키마를 혼용하지 않습니다. 어느 단계든 실패하면 성공으로 끝내지 않습니다.
 
 `.github/workflows/expanded-e2e.yml`은 매일 한국 시간 03:23과 수동 실행을 지원하며, 실행기·공개 spec·해당 workflow를 수정한 PR에서도 자체 검증을 실행합니다. 일반 PR의 기존 `.github/workflows/ci.yml`은 유지합니다. 예약은 GitHub 대기열에 따라 지연될 수 있습니다. 한 ref의 실행은 직렬 처리하고 25분 제한을 둡니다. 일일 한 번부터 시작하며 실제 소요와 불안정성은 Actions 로그의 단계 시간과 실패 사례로 판단합니다. 실행하지 않은 플랫폼의 시간·비용을 추정값으로 완료 보고하지 않습니다.
 
@@ -25,6 +25,8 @@ HRA_TEST_PG_BIN="$(pg_config --bindir)" npm run test:e2e:expanded
 | `home-calendar-responsive.spec.ts` | 390·768·800·1024·1280px 달력 넘침·날짜/월/오늘 탐색 | 미실행 | 합성 공개 DB, 5건 |
 | `keyboard-navigation.spec.ts` | 헤더·커리큘럼·FAQ·달력 키보드 탐색 | 미실행 | 합성 공개 DB, 3건 |
 | `notice-search-history.spec.ts` | 검색·입력 유지·뒤로/앞으로 이동 | 미실행 | 합성 공개 DB, 3건 |
+| `home-hero-reduced-motion.spec.ts` | 홈 Hero 모션 감소(SSR·JS 비활성 포함)와 타이핑 완료 시 제목 크기 전환의 레이아웃 안정성(390·768·1024·1280px) | 미실행 | 합성 공개 DB, 6건 |
+| `faq-accordion.spec.ts` | FAQ 접힌 답변 inert·Tab 순서 제외, 열림/닫힘, 연락처 툴팁 | 미실행 | 합성 공개 DB, 4건 |
 | `ci-smoke.spec.ts` | 로그인·이미지·보안 헤더·익명 보호 경로 | 실행 | 기존 필수 CI에서 유지 |
 | `auth-protection.spec.ts` | 비로그인 보호 경로 | 직접 미실행 | 선택 제외. 공통 경로의 익명 거부는 필수 smoke로 확인 |
 | `academic-roster.spec.ts` | 승인자 학생 등록·중복 거절 | 직접 미실행 | 선택 제외. 별도 storage state·기수 fixture 필요, 확장 G1의 명부 사례로 핵심 경계 확인 |
@@ -33,7 +35,7 @@ HRA_TEST_PG_BIN="$(pg_config --bindir)" npm run test:e2e:expanded
 | `academic-student-ui.spec.ts` | 학생 목록·완료·모바일 오류·실제 공급자 업로드 | 직접 미실행 | 선택 제외. 명시적 UI QA 환경 필요. 실제 공급자 사례는 별도 승인된 Blob QA 필요 |
 | `academic-g1.spec.mts` | 명부·관리자 과제·역할/기수 거부·학생 업로드/제출/다운로드·장애 복구·경합·CSV·보존 | 전용 runner 실행 | 같은 기존 runner로 필수 10개 사례 재실행, skip·중복·retry 불허 |
 
-선택한 공개 14건도 고정 사례 목록과 개수를 검증하며 skip·중복·retry·`test.only`를 허용하지 않습니다. 목록 출력은 실제 실행과 구분됩니다. G1의 관리자 검증 범위는 학사 명부·과제이며 홈페이지 CMS의 모든 CRUD 화면을 브라우저로 전수 검사했다는 뜻은 아닙니다.
+선택한 공개 24건도 고정 사례 목록과 개수를 검증하며 skip·중복·retry·`test.only`를 허용하지 않습니다. 목록 출력은 실제 실행과 구분됩니다. G1의 관리자 검증 범위는 학사 명부·과제이며 홈페이지 CMS의 모든 CRUD 화면을 브라우저로 전수 검사했다는 뜻은 아닙니다.
 
 ## 격리·실패 진단·정리
 

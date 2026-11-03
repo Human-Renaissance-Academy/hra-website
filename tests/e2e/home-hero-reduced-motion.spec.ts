@@ -41,7 +41,7 @@ test.describe("[HERO-MOTION] 일반 모션의 레이아웃 안정성", () => {
   test.use({ reducedMotion: "no-preference" });
 
   for (const viewport of viewports) {
-    test(`[HERO-MOTION:CLS-${viewport.name}] 타이핑 완료 후에도 CTA 위치가 유지되고 CLS 가 거의 0 이다`, async ({ page }, testInfo) => {
+    test(`[PUBLIC:HERO_CLS_${viewport.name}] 타이핑 완료 후에도 CTA 위치가 유지되고 CLS 가 거의 0 이다`, async ({ page }, testInfo) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await installLayoutShiftObserver(page);
       await page.goto("/");
@@ -78,7 +78,7 @@ test.describe("[HERO-MOTION] 일반 모션의 레이아웃 안정성", () => {
       expect(Math.abs(finalHeight - baselineHeight)).toBeLessThan(1);
       // 크기 전환은 글자가 상자 안에서 줄어드는 의도된 연출이라 상자·CTA 는 움직이지 않지만 글자 이동이 일부 집계된다.
       // layout-shift 항목은 보고 시점이 늦어 타이핑/전환 구간 배분이 흔들리므로 합계만 Core Web Vitals "좋음"(0.1)보다
-      // 엄격한 0.06 으로 제한한다. (측정값: 최대 약 0.04, 변경 전 구현은 상자 높이까지 줄어 더 큼)
+      // 엄격한 0.06 으로 제한한다. (측정값 최대 약 0.04 → 부하가 큰 CI 의 변동 여유 0.02)
       expect(clsTyping + clsTransition).toBeLessThan(0.06);
     });
   }
@@ -87,7 +87,7 @@ test.describe("[HERO-MOTION] 일반 모션의 레이아웃 안정성", () => {
 test.describe("[HERO-MOTION] 모션 감소 설정", () => {
   test.use({ reducedMotion: "reduce" });
 
-  test("[HERO-MOTION:REDUCED] 로드 즉시 전체 제목이 최종 크기로 보이고 CTA 가 움직이지 않는다", async ({ page }) => {
+  test("[PUBLIC:HERO_REDUCED] 로드 즉시 전체 제목이 최종 크기로 보이고 CTA 가 움직이지 않는다", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await installLayoutShiftObserver(page);
     await page.goto("/");
@@ -111,7 +111,7 @@ test.describe("[HERO-MOTION] 모션 감소 설정", () => {
 test.describe("[HERO-MOTION] 모션 감소 + JavaScript 비활성", () => {
   test.use({ reducedMotion: "reduce", javaScriptEnabled: false });
 
-  test("[HERO-MOTION:SSR] 서버 HTML 만으로 전체 제목이 보이고 sr-only 제목이 있다", async ({ page }) => {
+  test("[PUBLIC:HERO_SSR] 서버 HTML 만으로 전체 제목이 보이고 sr-only 제목이 있다", async ({ page }) => {
     await page.goto("/");
     const heading = page.getByTestId("hero-heading");
     await expect(heading.locator(".sr-only")).toHaveText(srTitle);

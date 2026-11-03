@@ -49,6 +49,8 @@ describe("HeroSection 모션 감소", () => {
   let container: HTMLDivElement;
   let root: Root;
   let mounted: boolean;
+  // 테스트가 덮어쓴 window.matchMedia 를 복원하기 위한 원본
+  const originalMatchMedia = window.matchMedia;
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -63,6 +65,7 @@ describe("HeroSection 모션 감소", () => {
     container.remove();
     // setInterval 스파이 등 테스트가 만든 목업을 복원한다.
     vi.restoreAllMocks();
+    window.matchMedia = originalMatchMedia;
     vi.useRealTimers();
   });
 

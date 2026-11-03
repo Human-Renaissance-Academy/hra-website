@@ -65,7 +65,7 @@ HRA_TEST_PG_BIN="$(pg_config --bindir)" npm run verify:csp
 HRA_TEST_PG_BIN="$(pg_config --bindir)" npm run test:e2e:expanded
 ```
 
-`verify:csp`는 새 전체 스키마·합성 계정·private fixture 저장소·실제 production 빌드에서 실행합니다. 격리 브라우저의 8개 고정 사례는 권한별 HTML, nonce 분리/위조 방지, 실제 Next 탐색의 에디터, 인쇄 3종, 음성/양성 canary와 실제 SDK를 포함합니다. 별도 G1 10개 사례와 공개 14개 사례도 유지합니다. 종료 때 소유 브라우저·서버·DB·저장소를 제거하고 외부 통신·의도된 자원 위반·hydration 오류가 있으면 실패합니다.
+`verify:csp`는 새 전체 스키마·합성 계정·private fixture 저장소·실제 production 빌드에서 실행합니다. 격리 브라우저의 8개 고정 사례는 권한별 HTML, nonce 분리/위조 방지, 실제 Next 탐색의 에디터, 인쇄 3종, 음성/양성 canary와 실제 SDK를 포함합니다. 별도 G1 10개 사례와 공개 24개 사례도 유지합니다. 종료 때 소유 브라우저·서버·DB·저장소를 제거하고 외부 통신·의도된 자원 위반·hydration 오류가 있으면 실패합니다.
 
 CSP UI 진단에만 `--reuse-build true`를 사용할 수 있으며 보고서에 재사용을 표시합니다. 최종 검증과 CI는 이 옵션 없이 새 빌드를 사용합니다. 실제 Preview가 Vercel SSO로 보호되면 인증 우회를 새 승인 조건으로 만들지 않고 접근 한계를 기록합니다. 최신 head의 격리 production 브라우저·CI·Vercel Preview 빌드 성공 후 머지하고, 정확한 merge SHA의 Production 배포 성공과 실제 공개 CSP/HSTS 관측을 확인합니다. 플랫폼에서 회귀가 발견되면 다음 이슈의 push/merge를 중단하고 수정 또는 검증한 이전 버전 복구를 우선합니다.
 

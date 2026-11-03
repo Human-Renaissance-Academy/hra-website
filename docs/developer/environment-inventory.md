@@ -100,7 +100,7 @@ Production·Preview·Development는 DB·공개/비공개 Blob·OAuth·세션 비
 | `HRA_ACADEMIC_UI_UPLOAD_ID` | 합성 공급자 업로드 과제 ID | Development 합성 검증 / CI 격리 실행; 합성 계정·격리 DB; 공급자 QA는 승인한 전용 namespace·원장만 | 아니요 | 공급자 학생 UI QA | 없으면 공급자 업로드 검사 불가 | 앱 예시에 넣지 않음 |
 | `HRA_G1_APP_ORIGIN` | G1 격리 앱 origin | Development 합성 검증 / CI 격리 실행; 합성 계정·격리 DB; 공급자 QA는 승인한 전용 namespace·원장만 | 아니요 | G1 실행기가 생성 | 없거나 준비되지 않으면 G1 네트워크 검증 불가 | 앱 예시에 넣지 않음 |
 | `HRA_G1_STORE_ORIGIN` | G1 로컬 private 저장소 origin | Development 합성 검증 / CI 격리 실행; 합성 계정·격리 DB; 공급자 QA는 승인한 전용 namespace·원장만 | 아니요 | G1 실행기가 생성 | 없거나 준비되지 않으면 로컬 저장소 검증 불가; 운영 저장소 사용 금지 | 앱 예시에 넣지 않음 |
-| `HRA_PUBLIC_E2E_LIST` | 확장 공개 reporter의 수집 전용 구분 | Development 합성 검증 / CI 격리 실행; 합성 계정·격리 DB; 공급자 QA는 승인한 전용 namespace·원장만 | 아니요 | 격리 실행기의 --list 단계에서만 true | true가 아니면 필수 14개 사례의 실제 완료까지 검증 | 앱 예시에 넣지 않음 |
+| `HRA_PUBLIC_E2E_LIST` | 확장 공개 reporter의 수집 전용 구분 | Development 합성 검증 / CI 격리 실행; 합성 계정·격리 DB; 공급자 QA는 승인한 전용 namespace·원장만 | 아니요 | 격리 실행기의 --list 단계에서만 true | true가 아니면 필수 24개 사례의 실제 완료까지 검증 | 앱 예시에 넣지 않음 |
 | `HRA_PUBLIC_E2E_ORIGIN` | 확장 공개 브라우저의 허용 원점 | Development 합성 검증 / CI 격리 실행; 합성 계정·격리 DB; 공급자 QA는 승인한 전용 namespace·원장만 | 아니요 | 격리 공개 실행기가 생성한 숫자 루프백 HTTP 원점 | 미설정이면 일반 Playwright 동작; 확장 실행기는 반드시 자체 앱 주소를 전달 | 앱 예시에 넣지 않음 |
 | `HRA_QA_CHROME` | Markdown 경계 브라우저 검증에 사용할 Chrome 실행 파일 경로 | Development 합성 검증 / CI 격리 실행; 합성 계정·격리 DB; 공급자 QA는 승인한 전용 namespace·원장만 | 아니요 | 전용 Markdown 브라우저 검증에서 설치한 Chrome 위치가 기본값과 다를 때 | 미설정이면 /usr/bin/google-chrome 사용; 지정 경로를 신뢰할 수 없거나 실행할 수 없으면 검증 실패 | 앱 예시에 넣지 않음 |
 | `HRA_QA_PRIVATE_BLOB_SHA256` | 합성 QA PDF의 선택 기준 해시 | Development 합성 검증 / CI 격리 실행; 합성 계정·격리 DB; 공급자 QA는 승인한 전용 namespace·원장만 | 아니요 | 알려진 QA PDF 해시를 명시할 때 | 없으면 내장 합성 PDF 기준 사용; 다르면 중단 | 앱 예시에 넣지 않음 |

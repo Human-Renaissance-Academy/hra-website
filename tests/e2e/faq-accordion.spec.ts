@@ -6,7 +6,7 @@
  * 이 파일은 질문 목록 내용에 의존하지 않고 첫 번째 질문(index 0)만 사용하며,
  * 최소 1개 이상의 FAQ 항목이 등록된 격리 DB(fixture)를 전제로 합니다.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../support/expanded-public-test";
 
 const trigger = "#faq-trigger-0";
 const panel = "#faq-panel-0";
@@ -32,7 +32,7 @@ test("[PUBLIC:FAQ_COLLAPSED] 접힌 답변은 inert 이며 접근성 트리에�
   expect(exposed).toHaveLength(0);
 });
 
-test("[PUBLIC:FAQ_COLLAPSED] 접힌 답변 속 링크는 Tab 순서에 들어가지 않는다", async ({ page }) => {
+test("[PUBLIC:FAQ_COLLAPSED_TAB] 접힌 답변 속 링크는 Tab 순서에 들어가지 않는다", async ({ page }) => {
   // 하이드레이션이 끝나야 심은 링크가 재렌더로 사라지지 않으므로, 한 번 열고 닫아 상호작용 가능 상태를 확인한다.
   const button = page.locator(trigger);
   await button.click();
