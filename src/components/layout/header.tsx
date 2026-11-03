@@ -6,6 +6,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Menu, X, LogIn, LogOut, ChevronDown, User } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
+import { APPLY_CHANNELS_HREF } from "@/features/recruitment/intake-channels";
 
 // 헤더가 실제 표시와 메뉴 분기에 사용하는 사용자 필드만 받습니다.
 type SessionUser = {
@@ -301,7 +302,7 @@ export function Header({ session }: HeaderProps) {
               )}
              
              <Link
-  href="/recruitment#apply-channels"
+  href={APPLY_CHANNELS_HREF}
   className="ml-2 inline-flex items-center justify-center rounded-lg bg-[#2563EB] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
 >
   지원하기
@@ -312,7 +313,7 @@ export function Header({ session }: HeaderProps) {
          <div className="flex items-center gap-3 md:hidden">
            {/* 지원하기 — 모바일 메뉴가 열린 채 이동하면 스크롤 잠금이 다음 페이지까지 따라가므로 여기서 닫는다 */}
            <Link
-  href="/recruitment#apply-channels"
+  href={APPLY_CHANNELS_HREF}
   onClick={() => setMobileOpen(false)}
   className="inline-flex items-center justify-center rounded-lg bg-[#2563EB] px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
 >

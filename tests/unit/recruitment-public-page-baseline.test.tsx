@@ -136,6 +136,20 @@ it("내부 양식과 외부 구글폼이 함께 열리면 두 이동 경로를 �
   expect(html).toContain('href="https://forms.example.invalid/apply"');
 });
 
+it("활성 기수가 없어도 모집중이고 URL이 있으면 전역 설정의 외부 지원서 링크를 표시한다", async () => {
+  // 고아(삭제된) 활성 기수 ID: 기수 조회 결과가 비어 배너는 빈 상태가 됩니다.
+  mocks.setting = openSettings;
+  const orphan = renderToStaticMarkup(await RecruitmentPage());
+  expect(orphan).toContain("현재 안내 중인 모집 기수가 없습니다.");
+  expect(orphan).toContain('href="https://forms.example.invalid/apply"');
+  // 기수 미지정 설정에서도 같은 규칙을 따릅니다.
+  mocks.calls = 0;
+  mocks.setting = { ...openSettings, activeCohortId: null };
+  const unassigned = renderToStaticMarkup(await RecruitmentPage());
+  expect(unassigned).toContain("현재 안내 중인 모집 기수가 없습니다.");
+  expect(unassigned).toContain('href="https://forms.example.invalid/apply"');
+});
+
 it("기수가 연결되지 않아도 공개 양식이 있으면 내부 접수 채널을 안내한다", async () => {
   mocks.forms = [{ id: "f1", title: "합성 양식", description: null }];
   const html = renderToStaticMarkup(await RecruitmentPage());

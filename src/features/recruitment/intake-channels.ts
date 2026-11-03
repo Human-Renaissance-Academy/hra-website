@@ -9,6 +9,7 @@
  * - 홈페이지 지원서는 `application_forms.is_published`(공개 양식 수)로만 판단합니다. 모집 날짜로 막지 않습니다.
  * - 외부 지원서 버튼은 한국 날짜 기준 모집 상태가 `OPEN`이고 URL이 있을 때만 노출합니다.
  * - 두 채널은 동시에 열릴 수 있으며, 응답 데이터는 채널별로 따로 보관됩니다(병합하지 않음).
+ * - 외부 구글폼 URL·날짜는 기수와 무관한 전역 모집 설정이므로, 활성 기수가 없어도 외부 채널을 계산합니다.
  *
  * DB·Next.js에 의존하지 않으므로 Vitest에서 상태 조합별로 검증합니다.
  */
@@ -19,6 +20,9 @@ export const INTERNAL_APPLY_PATH = "/recruitment/apply";
 
 /** 공통 헤더 `지원하기`가 이동하는 모집안내의 접수 채널 영역 앵커입니다. */
 export const APPLY_CHANNELS_ANCHOR = "apply-channels";
+
+/** 공통 헤더 `지원하기`와 지원 목록 빈 상태가 사용하는 접수 채널 영역 전체 경로입니다. */
+export const APPLY_CHANNELS_HREF = `/recruitment#${APPLY_CHANNELS_ANCHOR}`;
 
 /** 채널 이름은 화면·문서에서 같은 표현을 사용합니다. */
 export const INTERNAL_CHANNEL_LABEL = "홈페이지 지원서";
@@ -115,7 +119,7 @@ function describeExternal(state: ExternalChannelState, startDateLabel: string | 
 
 /** 두 채널 조합에 맞는 요약 문구입니다. */
 const headlines: Record<IntakeSummary, string> = {
-  BOTH: `${INTERNAL_CHANNEL_LABEL}와 ${EXTERNAL_CHANNEL_LABEL} 두 채널로 함께 접수하고 있습니다. 두 채널의 응답은 따로 접수되므로 한 곳을 선택해 제출해 주세요.`,
+  BOTH: `${INTERNAL_CHANNEL_LABEL}와 ${EXTERNAL_CHANNEL_LABEL} 두 채널로 함께 접수하고 있습니다. 두 채널의 응답은 따로 접수되므로 한 곳에만 제출하시면 됩니다.`,
   INTERNAL_ONLY: `현재 ${INTERNAL_CHANNEL_LABEL}로 접수하고 있습니다.`,
   EXTERNAL_ONLY: `현재 ${EXTERNAL_CHANNEL_LABEL} 채널로 접수하고 있습니다.`,
   NONE: "현재 접수 중인 지원서가 없습니다. 새로운 모집 소식은 공지사항을 확인해 주세요.",
@@ -133,7 +137,7 @@ export function deriveIntakeChannels(input: IntakeChannelInput): IntakeChannels 
     label: INTERNAL_CHANNEL_LABEL,
     statusLabel: internalAvailable ? "접수 중" : "공개된 양식 없음",
     description: internalAvailable
-      ? "운영진이 양식을 공개한 동안 접수하며, 접수를 마치면 양식이 비공개로 전환됩니다."
+      ? "운영진이 양식을 공개한 동안 접수합니다."
       : "현재 공개된 홈페이지 지원서 양식이 없습니다.",
     action: internalAvailable
       ? { label: `${INTERNAL_CHANNEL_LABEL} 작성하기`, href: INTERNAL_APPLY_PATH, external: false }

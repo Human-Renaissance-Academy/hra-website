@@ -36,7 +36,7 @@ it("동적 공개 목록이 비었으면 공개 양식 없음과 외부 접수 �
   const html = renderToStaticMarkup(await RecruitmentApplyPage());
   expect(html).toContain("현재 공개된 홈페이지 지원서 양식이 없습니다.");
   expect(html).toContain('href="/recruitment#apply-channels"');
-  expect(html).toContain("홈페이지 공지사항을 확인해주세요.");
+  expect(html).toContain("홈페이지 공지사항에서 새로운 모집 소식을 확인해주세요.");
   expect(html).not.toContain("지원서 작성하기");
 });
 

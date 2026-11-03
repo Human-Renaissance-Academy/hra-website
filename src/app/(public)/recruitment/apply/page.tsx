@@ -10,10 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronRight, FileText } from "lucide-react";
 import { listPublishedApplicationForms } from "@/features/applications/public-list/service";
-import { APPLY_CHANNELS_ANCHOR } from "@/features/recruitment/intake-channels";
+import { APPLY_CHANNELS_HREF } from "@/features/recruitment/intake-channels";
 
 // 외부 지원서 접수 여부를 확인할 수 있는 모집안내 접수 채널 영역 경로
-const channelsHref = `/recruitment#${APPLY_CHANNELS_ANCHOR}`;
+const channelsHref = APPLY_CHANNELS_HREF;
 
 export const dynamic = "force-dynamic";
 
@@ -51,7 +51,7 @@ export default async function RecruitmentApplyPage() {
               <Link href={channelsHref} className="font-medium text-blue-700 underline underline-offset-2">
                 모집안내
               </Link>
-              를 확인해주세요. 새로운 모집 소식은 홈페이지 공지사항을 확인해주세요.
+              와 홈페이지 공지사항에서 새로운 모집 소식을 확인해주세요.
             </p>
           </CardContent>
         </Card>
