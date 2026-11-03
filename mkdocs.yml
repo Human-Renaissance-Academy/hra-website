@@ -64,6 +64,7 @@ nav:
       - 운영 공개 경로 점검: operations/production-smoke.md
       - 공개 저장소 보안 확인표: operations/public-repository-security.md
       - DB 변경 절차: developer/database-change-procedure.md
+      - DB 변경 검증 정본별 책임: developer/db-contract-responsibilities.md
       - 요청 제한: operations/rate-limits.md
       - 예약 ID 인덱스 변경: developer/rate-limit-reservation-index.md
       - 업로드 파일 원장과 정리: operations/markdown-image-ownership.md

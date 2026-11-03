@@ -10,6 +10,8 @@
 
 검사는 `npm ci` 뒤에 실행합니다. 이미 사용하는 TypeScript 파서로 G1의 실제 최상위 `export const` 문자열 배열만 읽으며, 주석·문자열 속 가짜 선언과 실행식·중복 선언·문법 오류는 인정하지 않습니다. 소스 모듈이나 SQL을 실행하지 않으며 새 의존성도 추가하지 않습니다.
 
+정본별 책임과 중복 필드, 수동 수정 지점의 비교는 [DB 변경 검증 정본별 책임과 중복 필드](db-contract-responsibilities.md)에 있습니다(#364, 현황 정리이며 구현된 단순화가 아닙니다).
+
 ### 신규 설치 소스 대응표
 
 `scripts/db/installation-contract.json`은 위 source inventory의 항목을 참조해 신규 설치에 필요한 객체·선행 조건·검증 내용과 제외 이유를 기록합니다. 경로·역할·원본 해시·선행 관계의 정본은 기존 inventory입니다. `node scripts/check-db-installation-contract.mjs`는 모든 inventory 항목의 양방향 대응을 검사하며 SQL·관리 스크립트·DB를 실행하지 않습니다.
