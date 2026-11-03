@@ -13,6 +13,12 @@ const fullHeadingText = "정답보다 중요한 것,\nHRA는 본질을 묻는 �
 
 const reducedMotionQuery = "(prefers-reduced-motion: reduce)";
 
+// 제목 크기 클래스. Tailwind 가 정적으로 찾을 수 있도록 전체 문자열로 적는다.
+// 모션 감소: 처음부터 최종 크기 / 일반 모션: 타이핑 중 큰 크기 → 완료 후 최종 크기
+const reducedSizeClasses = "motion-reduce:text-[30px] motion-reduce:sm:text-[42px] motion-reduce:md:text-[56px] motion-reduce:lg:text-[66px]";
+const safeTypingSizeClasses = "motion-safe:text-[30px] motion-safe:sm:text-[42px] motion-safe:md:text-[66px] motion-safe:lg:text-[80px]";
+const safeFinalSizeClasses = "motion-safe:text-[30px] motion-safe:sm:text-[42px] motion-safe:md:text-[56px] motion-safe:lg:text-[66px]";
+
 /** 모션 감소 설정 변경을 구독한다. 구독 해제 함수를 돌려주어 언마운트 시 리스너가 정리된다. */
 function subscribeReducedMotion(onChange: () => void) {
   const query = window.matchMedia(reducedMotionQuery);
@@ -33,14 +39,15 @@ export function HeroSection() {
     () => false,
   );
 
-  // 모션 감소면 타이머를 만들지 않고 전체 제목을 즉시 표시한다. (상태 대신 파생값 사용)
-  const displayedHeading = reduceMotion ? fullHeadingText : typedHeading;
-  const isComplete = reduceMotion || isTypingComplete;
+  // 모션 감소 시 "무엇을 보여줄지"는 CSS(motion-reduce: 변형)가 서버 HTML 단계부터 결정한다.
+  // 여기서는 JS 타이머만 막는다. (하이드레이션 이후 레이아웃 이동 방지)
 
   // 일반 모션일 때만 타이핑 연출을 실행한다.
   // 설정이 바뀌거나 언마운트되면 cleanup 에서 타이머를 정리하고 상태를 초기화한다.
   useEffect(() => {
-    if (reduceMotion) return;
+    // 하이드레이션 첫 렌더는 서버 스냅샷(false)을 쓰므로, 실제 설정을 직접 한 번 더 확인해
+    // 모션 감소 사용자에게 타이머가 잠깐이라도 생기지 않게 한다.
+    if (reduceMotion || window.matchMedia(reducedMotionQuery).matches) return;
 
     let currentIndex = 0;
     const intervalId = setInterval(() => {
@@ -60,8 +67,9 @@ export function HeroSection() {
     };
   }, [reduceMotion]);
 
-  const renderHeading = () => {
-    const parts = displayedHeading.split("\n");
+  // 주어진 문구를 줄바꿈과 "본질" 강조 색상까지 적용해 그린다.
+  const renderHeading = (text: string) => {
+    const parts = text.split("\n");
 
     return (
       <>
@@ -111,20 +119,36 @@ export function HeroSection() {
           30px 로 낮추면 한 줄에 11자가 들어가 2줄로 정리된다.
         */}
         {/*
-          CLS 완화 — 타이핑 중에는 큰 글자(2줄)로 시작해 완료 시 작아지므로 그대로 두면 아래 문단/버튼이 위로 밀린다.
-          일반 모션에서는 가장 큰 크기 기준 2줄 높이(글자 크기 × 줄 높이 × 2)를 min-h 로 예약하고 세로 중앙 정렬해
-          완료 후에도 h1 높이가 줄지 않게 한다. 모션 감소에서는 처음부터 최종 크기이므로 예약이 필요 없다.
+          CLS 완화 — 타이핑 중에는 큰 글자로 시작해 완료 시 작아지므로 그대로 두면 아래 문단/버튼이 위로 밀린다.
+          줄 수를 계산하는 대신, 같은 grid 칸([grid-area:1/1])에 "전체 제목을 큰 크기로 그린 보이지 않는 복사본"을 겹쳐
+          h1 상자가 실제 최대 높이(줄바꿈 포함)를 항상 차지하게 한다. 복사본은 글꼴 굵기·자간도 직접 지정한다
+          (tracking 은 em 값이 h1 에서 px 로 계산되어 상속되므로 큰 크기에 맞게 다시 지정해야 한다).
+
+          모션 감소 — 서버 HTML 부터 올바르게 보이도록 JS 가 아니라 CSS(motion-reduce:)로 처리한다.
+          전체 제목을 처음부터 최종 크기로 표시하고, 타이핑 문구와 크기 예약 복사본은 숨긴다.
+          (크기 클래스는 motion-safe / motion-reduce 가 서로 배타적이라 우선순위 충돌이 없다.)
         */}
         <h1
           data-testid="hero-heading"
-          className={`font-extrabold tracking-tight text-white whitespace-pre-line leading-[1.15] sm:leading-[1.1]
-            ${reduceMotion ? "" : "transition-all duration-1000 flex flex-col justify-center min-h-[69px] sm:min-h-[93px] md:min-h-[146px] lg:min-h-[176px]"}
-            ${isComplete ? "text-[30px] sm:text-[42px] md:text-[56px] lg:text-[66px]" : "text-[30px] sm:text-[42px] md:text-[66px] lg:text-[80px]"}
+          className={`grid font-extrabold tracking-tight text-white whitespace-pre-line leading-[1.15] sm:leading-[1.1]
+            motion-safe:transition-all motion-safe:duration-1000
+            ${reducedSizeClasses}
+            ${isTypingComplete ? safeFinalSizeClasses : safeTypingSizeClasses}
           `}
         >
-          {/* 서버 HTML과 스크린 리더에는 제목 전체를 제공하고, 타이핑 표현만 시각적으로 표시합니다. */}
+          {/* 서버 HTML과 스크린 리더에는 제목 전체를 제공하고, 아래 세 시각 표현은 모두 aria-hidden 입니다. */}
           <span className="sr-only">{fullHeadingText}</span>
-          <span aria-hidden="true">{renderHeading()}</span>
+          {/* 일반 모션: 타이핑 중인 문구 */}
+          <span aria-hidden="true" className="[grid-area:1/1] motion-reduce:hidden">{renderHeading(typedHeading)}
+            {/* 아직 치지 않은 나머지는 보이지 않게 두어, 가운데 정렬된 줄이 글자마다 좌우로 흔들리는(layout shift) 것을 막는다. */}
+            <span className="invisible">{renderHeading(fullHeadingText.slice(typedHeading.length))}</span>
+          </span>
+          {/* 모션 감소: 전체 문구를 즉시 표시 */}
+          <span aria-hidden="true" className="[grid-area:1/1] hidden motion-reduce:block">{renderHeading(fullHeadingText)}</span>
+          {/* 일반 모션: 가장 큰 크기의 전체 문구로 높이만 예약(보이지 않음) */}
+          <span aria-hidden="true" className={`[grid-area:1/1] invisible font-extrabold tracking-tight motion-reduce:hidden ${safeTypingSizeClasses}`}>
+            {renderHeading(fullHeadingText)}
+          </span>
         </h1>
 
         {/*
