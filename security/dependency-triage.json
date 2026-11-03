@@ -596,21 +596,21 @@
       "usedApi": "shadcn CLI와 @shadcn/registry의 설정·registry 항목 병합에 쓰이는 deepmerge 4.3.1이다. 제품에서는 shadcn/tailwind.css만 빌드 시 읽으며 해당 JavaScript API를 호출하지 않는다.",
       "callLocations": "src/app/globals.css:3의 CSS import; node_modules/shadcn/dist/index.js 및 @shadcn/registry/dist의 설정·registry 병합 코드. 제품 TypeScript·CI 명령에는 해당 JavaScript 실행 경로가 없다.",
       "assessment": "공식 권고 https://github.com/advisories/GHSA-gcqx-w48m-w2h4 는 공격자 제어 객체의 병합 결과가 의도하지 않은 prototype 값을 상속할 수 있는 조건을 다룬다. 운영 웹 요청의 해당 API 도달 경로는 발견되지 않아 P2로 추적하지만 도구 입력 위험은 남고 독립 보안 리뷰를 거친다. 이 판단은 P1 위험 수용이나 npm production 표시만을 근거로 한 자동 허용이 아니다.",
-      "residualAssumptions": "2026-10-28 공식 권고와 npm에서 patched release는 없으며 최신 shadcn·registry도 deepmerge ^4.3.1을 사용한다. 신뢰할 수 없는 remote registry·프로젝트 설정을 사용하는 CLI 실행을 금지한다. 이는 운영 조건이며 새 런타임 차단 구현을 뜻하지 않는다. 제품 JavaScript 연결·미신뢰 입력 허용 시 즉시 재분류하고 2026-11-05까지 공식 패치·전이 의존성 대안을 재검토한다."
+      "residualAssumptions": "2026-11-04(KST) registry 재확인 기준 공식 권고와 npm에서 patched release는 없으며 최신 shadcn·registry도 deepmerge ^4.3.1을 사용한다. 신뢰할 수 없는 remote registry·프로젝트 설정을 사용하는 CLI 실행을 금지한다. 이는 운영 조건이며 새 런타임 차단 구현을 뜻하지 않는다. 제품 JavaScript 연결·미신뢰 입력 허용 시 즉시 재분류하고 2026-11-19까지 공식 패치·전이 의존성 대안을 재검토한다."
     },
     {
       "id": "tooling-minimatch-glob",
       "usedApi": "minimatch 3.1.5·10.2.5의 glob 패턴 전처리·매칭 API다. ESLint·TypeScript-ESLint 설정/규칙 로더는 고정 저장소 경로 패턴을 매칭하고, 맞춤법 스크립트의 hanspell은 minimatch를 전이 의존성으로만 포함한다.",
       "callLocations": "eslint.config.mjs; package.json lint 및 spell-check/spell-fix(scripts/spell-check.mjs의 fs.readdirSync 기반 .tsx 순회·hanspell API 호출). Next.js 서버·클라이언트 번들과 API 경로에는 호출이 없다.",
       "assessment": "공식 권고 https://github.com/advisories/GHSA-g3hv-75wg-m249 는 <11.0.1(optimizationLevel >= 2의 firstPhasePreProcess **/.. 복제 루프와 secondPhasePreProcess 쌍별 비교)에서 공격자 제어 glob 패턴으로 CPU·메모리 소모를 유발하는 조건을 다룬다. 운영 웹 요청이 glob 패턴으로 전달되는 경로는 확인되지 않아 P2로 추적한다.",
-      "residualAssumptions": "2026-11-03 기준 3.x·10.x 보안 백포트는 없고 11.0.1 major 강제 override는 ESLint 3.x CommonJS 기본 함수 호출 호환을 깨뜨린다. 최신 eslint·typescript-eslint·hanspell도 3.x/10.x 범위를 유지하므로 미신뢰 외부 glob·설정 입력으로 도구를 실행하지 않고 2026-11-05까지 백포트·상위 갱신을 재검토한다."
+      "residualAssumptions": "2026-11-04(KST) 기준 3.x(최신 3.1.5)·10.x(최신 10.2.6) 보안 백포트는 없고 11.0.1 major 강제 override는 ESLint 3.x CommonJS 기본 함수 호출 호환을 깨뜨린다. 최신 eslint·typescript-eslint·hanspell도 3.x/10.x 범위를 유지하므로 미신뢰 외부 glob·설정 입력으로 도구를 실행하지 않고 2026-12-03까지 백포트·상위 갱신을 재검토한다."
     },
     {
       "id": "shadcn-ts-morph-glob",
       "usedApi": "shadcn 4.22.1 CLI가 코드 변환용 ts-morph 26.0.0·@ts-morph/common 0.27.0을 통해 간접 참조하는 minimatch 10.2.5 glob 매칭이다. 제품 앱은 shadcn/tailwind.css 스타일시트만 빌드 시 읽는다.",
       "callLocations": "src/app/globals.css:3의 CSS @import; node_modules/shadcn, node_modules/ts-morph, node_modules/@ts-morph/common. src/·packages/·scripts/ 및 운영 런타임에서 해당 JavaScript 모듈을 import하지 않는다.",
       "assessment": "package.json dependencies 선언 때문에 npm lock의 dev 표시가 false이지만 운영 Next.js 요청이 shadcn·ts-morph·minimatch 코드에 도달하는 경로는 발견되지 않았다. 공식 https://github.com/advisories/GHSA-g3hv-75wg-m249 조건과 CLI 실행 위험을 분리 검토해 P2로 추적하며 npm dev=false 표시를 자동 면제나 P1 수용으로 취급하지 않는다.",
-      "residualAssumptions": "2026-11-03 기준 minimatch ^10.0.1 범위 내 수정본은 없으며 최신 @ts-morph/common도 ^10.0.1을 사용한다. 신뢰할 수 없는 프로젝트 경로·글롭·원격 registry로 shadcn CLI를 실행하지 않고, 제품 코드에서 ts-morph·shadcn JS를 연결하면 즉시 재분류하며 2026-11-05까지 패치 여부를 재검토한다."
+      "residualAssumptions": "2026-11-04(KST) 기준 minimatch ^10.0.1 범위 내 수정본은 없으며 최신 @ts-morph/common도 ^10.0.1을 사용한다. 신뢰할 수 없는 프로젝트 경로·글롭·원격 registry로 shadcn CLI를 실행하지 않고, 제품 코드에서 ts-morph·shadcn JS를 연결하면 즉시 재분류하며 2026-11-26까지 패치 여부를 재검토한다."
     }
   ],
   "assessments": [
