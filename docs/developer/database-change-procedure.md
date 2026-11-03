@@ -59,6 +59,7 @@ Linux의 `/dev/shm`과 PostgreSQL 실행 파일을 준비하고 `HRA_TEST_PG_BIN
 | `db:migrate-add-rate-limit-tables` | 과거 로그인·업로드 로그 테이블과 인덱스의 설치 계획 | DB 접속 없는 계획만 제공. 기존 사전 검사·대상별 설치·사후 조회는 미제공이며 현재 예약 함수 설치 도구와 별개 |
 | `seed-cohorts` | 과거 기수 선언 19건을 보존한 초기 데이터 계획 | 접속 없는 계획만 제공. 선언 건수는 실제 DB 건수가 아니며 조회·건너뛰기·누락 행 입력은 미제공 |
 | `node scripts/seed-faculty.mjs`·`node scripts/seed-press.mjs`·`node scripts/seed-alumni.mjs` | 과거 교수진 21건·언론보도 26건·수료생 이야기 3건 선언을 보존한 초기 데이터 계획 | npm 별칭 없음. 접속 없는 계획만 제공하며 이름·내용·외부 URL은 출력하지 않음. 선언 건수는 실제 DB 건수가 아니며 조회·건너뛰기·누락 행 입력은 미제공 |
+| `node scripts/migrate-html-to-markdown.mjs` | 과거 HTML 본문 5개 열의 Markdown 변환 계획 | npm 별칭 없음. 접속 없는 계획만 제공. 이전 무인자 즉시 UPDATE와 실제 본문을 조회·출력하던 `--dry-run` 미리보기는 미제공이며 `--dry-run`도 접속 전에 거부 |
 | 그 밖의 `db:migrate-*` | 스크립트별 구조 변경 | 이름만으로 dry-run이라 가정하지 않음; 실행 즉시 변경하는 스크립트가 있음 |
 
 두 한정 컬럼 명령은 `.env`가 없어도 무인자 계획을 출력합니다. 적용하려면 승인된 대상의 명시적 DB URL과 `--confirm-apply`를 전달해야 합니다. 이 인자는 실행 의도를 표시할 뿐 실제 DB identity·백업·운영 승인을 증명하지 않습니다. 기존 컬럼의 타입·NOT NULL·기본값·소유권이 다르면 자동 보정하지 않고 실패하며, 이미 저장된 `session_version` 값은 변경하지 않습니다.
@@ -72,6 +73,8 @@ Linux의 `/dev/shm`과 PostgreSQL 실행 파일을 준비하고 `HRA_TEST_PG_BIN
 기수 seed도 `.env` 없이 접속 없는 계획만 출력하고 `--confirm-apply`를 차단합니다. 같은 MJS의 순수 선언 19건은 과거 초기값을 보존한 것이며 현재 운영 DB의 건수·내용·적용 가능성을 증명하지 않습니다. 이전의 항목별 name 조회 후 건너뛰기/INSERT는 미제공이며, 그 경로도 upsert·`ON CONFLICT`·전체 transaction은 아니어서 일부 행만 반영될 수 있었습니다. 기존 행 수정·회원/학적/권한 연결을 수행하던 도구로 해석하지 않습니다. 현재 화면·service는 계속 DB를 정본으로 사용하며 새 export를 파일 기반 fallback이나 CMS로 연결하지 않습니다. 선언·hash·합성 조회 회귀를 실제 seed나 운영 승인으로 사용하지 말고 [#280](https://github.com/yeongseon/hra-website/issues/280)의 검증된 데이터 적용 경계를 먼저 마련합니다. 기존 `seed-admin` 보호 조건은 유지합니다.
 
 교수진·언론보도·수료생 이야기 seed도 같은 방식입니다. 세 MJS는 `.env`·`DATABASE_URL`을 읽지 않고 접속 없는 계획만 출력하며 `--confirm-apply`를 접속 전에 차단합니다. 각 MJS의 순수 선언(교수진 21건·언론보도 26건·수료생 이야기 3건)은 과거 초기값의 보존일 뿐 현재 운영 DB의 건수·내용·외부 링크 유효성·적용 가능성을 증명하지 않습니다. 계획·거부 출력에는 선언 건수와 고정 코드만 있으며 이름·직책·인용·본문·기사 URL을 포함하지 않습니다. 이전의 이름+카테고리(교수진)·URL(언론보도)·이름(수료생 이야기) 조회 후 건너뛰기/INSERT는 미제공이며, 그 경로도 upsert·`ON CONFLICT`·전체 transaction은 아니어서 일부 행만 반영될 수 있었습니다. 교수진 선언은 출결·학사 운영 권한이나 승인 계정의 근거가 아니며, 관리자가 편집한 운영 행·이미지 metadata를 덮어쓰는 도구로 해석하지 않습니다. 새 export를 Page·service·fallback에 연결하지 않으며 누락 행 입력은 [#280](https://github.com/yeongseon/hra-website/issues/280)의 검증된 데이터 적용 경계 뒤 별도로 수행합니다.
+
+HTML→Markdown 변환 명령(`node scripts/migrate-html-to-markdown.mjs`, npm 별칭 없음)도 `.env`·`DATABASE_URL`을 읽지 않고 접속 없는 계획만 출력하며 `--confirm-apply`를 접속 전에 차단합니다. 이전에는 인자 없이 실행하면 `notices.content`·`class_logs.content`·`weekly_texts.body`·`report_templates.body`·`recruitment_settings.details_markdown`의 전체 행을 조회해 HTML로 보이는 행마다 즉시 UPDATE했습니다. 대상 확인·백업·승인·전체 transaction이 없어 일부 행만 반영될 수 있었습니다. 선택 인자 `--dry-run`은 같은 실제 조회 뒤 행 id와 변환 결과 앞 200자를 출력하는 미리보기(UPDATE 없음)였지만, 운영 본문을 읽고 출력하므로 더 이상 제공하지 않으며 `DRY_RUN_UNAVAILABLE`로 접속 전에 거부합니다. HTML 판정 휴리스틱과 기존 Turndown 설정은 같은 MJS의 순수 export(`looksLikeHtml`·`createHtmlToMarkdownConverter`)로 보존했지만 DB에 연결되지 않습니다. 이 변환 회귀를 실제 본문 변환 완료·HTML 잔존 여부·운영 승인의 증거로 사용하지 않으며, 남은 HTML 본문 변환이 필요하면 [#280](https://github.com/yeongseon/hra-website/issues/280)의 검증된 데이터 적용 경계를 먼저 마련합니다.
 
 기본 `drizzle.config.ts`는 `.env`·`DATABASE_URL`과 DB credentials를 읽지 않습니다. 따라서 기본 설정의 `npx drizzle-kit push`·`npx drizzle-kit migrate`도 접속 정보 부족으로 중단합니다. `npm run db:push -- --isolated`·`--apply`·URL·자체 승인 JSON으로 이를 활성화할 수 없습니다. 도구가 소유한 일회성 DB에 대한 별도 push 기능도 아직 제공하지 않습니다.
 

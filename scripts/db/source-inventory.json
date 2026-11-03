@@ -357,14 +357,11 @@
     },
     {
       "path": "scripts/migrate-html-to-markdown.mjs",
-      "sha256": "609a943b5eabe5a944952e4ada3d5ab14e791fcb8e7fe25bc15e77c90304d07c",
+      "sha256": "114d7638e051d847956f6e817c9020c647b78dbe4ed1d87f0eac3cd0cc9cc631",
       "effect": "db_data",
-      "defaultBehavior": "writes",
+      "defaultBehavior": "read_only",
       "writeOptions": [],
-      "commands": [],
-      "previewOptions": [
-        "--dry-run"
-      ]
+      "commands": []
     },
     {
       "path": "scripts/migrate-protected-resource-blobs.mjs",

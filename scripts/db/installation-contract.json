@@ -655,29 +655,29 @@
       "fresh": {
         "disposition": "exclude",
         "required": false,
-        "reason": "기존 콘텐츠·계정·학적을 변경하는 seed/backfill/변환은 fresh DDL 적용 이력에서 제외한다."
+        "reason": "과거 HTML 본문 변환의 대상 열 선언과 순수 변환 규칙만 보존하고 공개 CLI의 조회·UPDATE는 차단한다. 기존 콘텐츠 변환은 fresh DDL 적용 이력에 넣지 않는다."
       },
       "objects": ["content-markdown-conversion"],
       "requires": ["web-base"],
-      "checks": ["현재 실제 본문을 읽어 변환하는 runtime UPDATE이며 빈 신규 DB 설치에 넣지 않는다."],
+      "checks": ["CLI는 고정 계획·거부만 출력하고 DB·자격정보·통신·파일 읽기를 수행하지 않는다. 모듈 import는 출력·종료 상태 변화가 없고 변환 라이브러리도 불러오지 않는다.","이전 무인자 즉시 UPDATE와 실제 본문을 조회·출력하던 --dry-run 미리보기는 미제공이며 --dry-run은 접속 전에 별도 코드로 거부한다.","보존한 HTML 판정·Turndown 변환은 입력 문자열만 쓰는 순수 함수이며 실제 운영 본문의 변환 필요 여부·완료·승인을 증명하지 않는다."],
       "evidence": [
         {
           "file": "scripts/migrate-html-to-markdown.mjs",
-          "line": 67,
-          "note": "변환 TARGETS."
+          "line": 1,
+          "note": "이전 동작과 접속 없는 계획·신뢰되지 않은 적용 차단의 역할 설명."
         },
         {
           "file": "scripts/migrate-html-to-markdown.mjs",
-          "line": 103,
-          "note": "동적 표/열 조회."
+          "line": 28,
+          "note": "과거 변환 대상 열의 순수 선언."
         },
         {
           "file": "scripts/migrate-html-to-markdown.mjs",
-          "line": 123,
-          "note": "실제 원문별 변환·조건부 UPDATE."
+          "line": 65,
+          "note": "기존 Turndown 설정의 순수 변환 함수 생성기."
         }
       ],
-      "unresolved": ["행별 실제 HTML과 변환 결과가 UPDATE 값·대상을 정하므로 AST만으로 데이터 효과 전체를 고정할 수 없다."]
+      "unresolved": []
     },
     {
       "ref": "scripts/migrate-protected-resource-blobs.mjs",
@@ -2614,11 +2614,11 @@
         {
           "source": "scripts/migrate-html-to-markdown.mjs",
           "relationship": "primary",
-          "reason": "해당 inventory 원문이 이 사용자 정의 객체·효과의 선언 소유자다."
+          "reason": "이 MJS의 순수 대상 열 선언과 변환 규칙이 과거 HTML→Markdown 변환 효과의 선언 소유자다. 공개 CLI는 실제 본문을 조회·변환·UPDATE하지 않는다."
         }
       ],
       "requires": ["web-base"],
-      "checks": ["runtime TARGETS와 HTML 변환 결과에 따라 데이터별 UPDATE가 달라지며 현재 운영 콘텐츠를 새 설치 데이터로 재생하지 않는다."],
+      "checks": ["대상 열 선언과 순수 변환 결과는 실제 운영 본문의 HTML 잔존 여부·변환 완료·UPDATE 가능성·승인을 증명하지 않으며 현재 운영 콘텐츠를 새 설치 데이터로 재생하지 않는다."],
       "unresolved": [],
       "requiredForFresh": false
     },
