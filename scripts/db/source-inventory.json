@@ -416,9 +416,9 @@
     },
     {
       "path": "scripts/seed-alumni.mjs",
-      "sha256": "91cbf79078b3e095fab6060829c7a10430b50e2590357950c501953938829ce2",
+      "sha256": "a34de430ec467857677887c88b88f97ade3efd9590cf3faf78a5d09347525b40",
       "effect": "seed_db",
-      "defaultBehavior": "writes",
+      "defaultBehavior": "read_only",
       "writeOptions": [],
       "commands": []
     },
@@ -434,17 +434,17 @@
     },
     {
       "path": "scripts/seed-faculty.mjs",
-      "sha256": "4c07300a670c07cf14c07ccfbbde9de28351084484bebcbfbd2e3861467e74cb",
+      "sha256": "8748ef9f00577bd8990e2292e49b23c93bcc8f7a2d76e56ec1fcf6c9cc0915f8",
       "effect": "seed_db",
-      "defaultBehavior": "writes",
+      "defaultBehavior": "read_only",
       "writeOptions": [],
       "commands": []
     },
     {
       "path": "scripts/seed-press.mjs",
-      "sha256": "bebd3a5e38c01080e4c774af063e6b34cfb83144d39ce277b79f87ef95a35b64",
+      "sha256": "4232a364b8dc7e6329d654dcbd11dc25a86c8841aa637e12508ce85bf83c405f",
       "effect": "seed_db",
-      "defaultBehavior": "writes",
+      "defaultBehavior": "read_only",
       "writeOptions": [],
       "commands": []
     }
