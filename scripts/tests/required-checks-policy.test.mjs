@@ -5,7 +5,7 @@
  *   - .github/workflows/repository-security.yml
  * 주요 기능:
  *   - 현재 `.github/workflows/*.yml` 전체가 6개 필수 체크 정본 및 관측 분리 경계를 통과하는지 검증
- *   - 이름 변경·paths 필터·if skip·matrix·중복 체크 이름·continue-on-error·운영 호출 우회를 각각 변이 차단
+ *   - 이름 변경·paths 필터·if/needs skip·따옴표 키·비표준 들여쓰기·step.name 위장·continue-on-error·운영 호출 우회를 각각 변이 차단
  *   - GitHub 브랜치 보호 응답의 누락 체크·잘못된 app_id·조건부 체크 오등록·관리자 우회 허용을 차단
  */
 import { test } from "node:test";
@@ -90,6 +90,24 @@ const workflowMutationCases = [
     },
   ],
   [
+    "따옴표 키로 paths 필터를 숨기는 우회(\"paths\") 차단",
+    (w) => {
+      w["repository-security.yml"] = w["repository-security.yml"].replace(
+        "  pull_request:\n    branches: [main]\n",
+        "  pull_request:\n    branches: [main]\n    \"paths\": [\"never/**\"]\n",
+      );
+    },
+  ],
+  [
+    "pull_request 하위에서 branches 명시 제거 차단",
+    (w) => {
+      w["process-format.yml"] = w["process-format.yml"].replace(
+        "    branches: [main]\n",
+        "",
+      );
+    },
+  ],
+  [
     "앱 CI에 paths-ignore 추가(무기한 대기 유발) 차단",
     (w) => {
       w["ci.yml"] = w["ci.yml"].replace(
@@ -132,11 +150,74 @@ const workflowMutationCases = [
     },
   ],
   [
+    "필수 job이 skipped 선행 job을 needs로 의존하는 전이 skip 우회 차단",
+    (w) => {
+      w["repository-security.yml"] = w["repository-security.yml"].replace(
+        "  browser:\n    name: 실제 production CSP · 에디터 · 인쇄 · Blob SDK\n",
+        "  skip-gate:\n    if: github.event_name == 'schedule'\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo ok\n\n  browser:\n    needs: skip-gate\n    name: 실제 production CSP · 에디터 · 인쇄 · Blob SDK\n",
+      );
+    },
+  ],
+  [
     "PR 형식 job의 if 조건에 봇 예외 추가(skipped 통과 우회) 차단",
     (w) => {
       w["process-format.yml"] = w["process-format.yml"].replace(
         "if: github.event_name == 'pull_request'",
         "if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'",
+      );
+    },
+  ],
+  [
+    "PR 형식 실행 step에 봇 예외 if 추가 차단",
+    (w) => {
+      w["process-format.yml"] = w["process-format.yml"].replace(
+        "      - run: node scripts/check-process-format.mjs --event\n        env:\n          GH_TOKEN: ${{ github.token }}\n          RELEASE_PLEASE_BOT_LOGIN: ${{ vars.RELEASE_PLEASE_BOT_LOGIN }}",
+        "      - run: node scripts/check-process-format.mjs --event\n        if: github.actor != 'dependabot[bot]'\n        env:\n          GH_TOKEN: ${{ github.token }}\n          RELEASE_PLEASE_BOT_LOGIN: ${{ vars.RELEASE_PLEASE_BOT_LOGIN }}",
+      );
+    },
+  ],
+  [
+    "앱 CI의 빌드 step에 if: false 추가 차단",
+    (w) => {
+      w["ci.yml"] = w["ci.yml"].replace(
+        "      - name: Next.js 빌드\n        run: npm run build",
+        "      - name: Next.js 빌드\n        if: false\n        run: npm run build",
+      );
+    },
+  ],
+  [
+    "보안 단위 테스트 step에 따옴표 키 \"if\": \"false\" 추가 차단",
+    (w) => {
+      w["repository-security.yml"] = w["repository-security.yml"].replace(
+        "      - name: 정책 실패 경로·산출물 차단 계약\n",
+        "      - name: 정책 실패 경로·산출물 차단 계약\n        \"if\": \"false\"\n",
+      );
+    },
+  ],
+  [
+    "비표준 step 들여쓰기('-   name:' + 10칸 속성)로 if/continue-on-error 숨기기 차단",
+    (w) => {
+      w["repository-security.yml"] = w["repository-security.yml"].replace(
+        "      - name: 실제 registry와 정확한 검토 기한 대조\n        run: npm run verify:dependencies",
+        "      -   name: 실제 registry와 정확한 검토 기한 대조\n          if: github.event_name == 'schedule'\n          continue-on-error: true\n          run: npm run verify:dependencies",
+      );
+    },
+  ],
+  [
+    "step 이름에만 필수 명령을 적고 실제 run은 true로 바꾸는 위장 차단",
+    (w) => {
+      w["repository-security.yml"] = w["repository-security.yml"].replace(
+        "      - name: 실제 registry와 정확한 검토 기한 대조\n        run: npm run verify:dependencies",
+        "      - name: npm run verify:dependencies\n        run: true",
+      );
+    },
+  ],
+  [
+    "step.run 주석에만 필수 명령을 남기는 위장 차단",
+    (w) => {
+      w["repository-security.yml"] = w["repository-security.yml"].replace(
+        "      - name: 실제 registry와 정확한 검토 기한 대조\n        run: npm run verify:dependencies",
+        "      - name: 실제 registry와 정확한 검토 기한 대조\n        run: |\n          true\n          # npm run verify:dependencies",
       );
     },
   ],
@@ -186,6 +267,15 @@ const workflowMutationCases = [
     },
   ],
   [
+    "보안 job 수준 concurrency 추가(취소 우회) 차단",
+    (w) => {
+      w["repository-security.yml"] = w["repository-security.yml"].replace(
+        "  repository:\n    name: 추적 소스 · 도달 가능한 이력 · dependency 검토\n",
+        "  repository:\n    name: 추적 소스 · 도달 가능한 이력 · dependency 검토\n    concurrency:\n      group: custom-sec\n      cancel-in-progress: true\n",
+      );
+    },
+  ],
+  [
     "운영 가용성 점검의 PR 운영 호출 차단 조건 제거 차단",
     (w) => {
       w["production-smoke.yml"] = w["production-smoke.yml"].replace(
@@ -200,6 +290,15 @@ const workflowMutationCases = [
       w["authentication-measurement.yml"] = w["authentication-measurement.yml"].replace(
         / {4}paths:\n(?: {6}- [^\n]+\n)+/,
         "",
+      );
+    },
+  ],
+  [
+    "contracts의 PR OpenAPI 호환 검사를 workflow_dispatch 전용으로 바꾸는 우회 차단",
+    (w) => {
+      w["process-format.yml"] = w["process-format.yml"].replace(
+        "      - name: OpenAPI 기존 계약 추가 전용 검사\n        if: github.event_name == 'push' || github.event_name == 'pull_request'",
+        "      - name: OpenAPI 기존 계약 추가 전용 검사\n        if: github.event_name == 'workflow_dispatch'",
       );
     },
   ],

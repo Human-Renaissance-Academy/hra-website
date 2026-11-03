@@ -68,7 +68,7 @@ release-please의 활성화 조건과 별도 `RELEASE_PLEASE_TOKEN` 전달을 �
 
 1. **최소 PR 차단 보안 범위**: 추적 소스와 도달 가능한 이력의 secret(`verify:repository-secrets`)·공개 문서 개인정보 표식(`verify:public-sources`)·미검토/만료/P1 의존성 위험(`verify:dependencies`)·실제 production CSP 및 에디터/인쇄/Blob SDK 회귀(`verify:csp`)는 운영 자격증명 없이 모든 PR(fork 포함)에서 2~3분 내 병렬 실행되므로 `main` 필수 체크 정본에 포함합니다.
 2. **예약·운영 관측 분리**: `repository-security.yml`의 주간 `schedule`은 `refs/heads/main` 커밋에 기록되며 PR의 `head_sha` 체크를 덮어쓰지 않으므로 동일 정의를 복제하지 않고 유지합니다. 반면 `expanded-e2e.yml`·`authentication-measurement.yml`은 `pull_request.paths` 필터가 있어 필수 체크로 등록하면 비대상 PR에서 체크 자체가 생성되지 않아 `Expected` 상태로 무기한 대기합니다. `production-smoke.yml`은 실제 Production 가용성 관측이므로 PR 병합 조건과 결합하지 않습니다.
-3. **자동 회귀 차단**: `node scripts/check-required-checks-config.mjs`는 필수 워크플로의 `paths`/`paths-ignore`/`branches-ignore` 추가, 필수 job 이름 변경·중복 선언, `strategy` matrix·재사용 `uses`로 인한 체크 이름 변형, job/step 수준 `if` 추가(GitHub는 `skipped` 결론을 통과로 처리해 게이트가 우회됨), `continue-on-error` 추가를 차단합니다.
+3. **자동 회귀 차단**: `node scripts/check-required-checks-config.mjs`는 필수 워크플로의 `paths`/`paths-ignore`/`branches-ignore` 추가 및 `branches: [main]` 누락, 필수 job 이름 변경·중복 선언, `strategy` matrix·재사용 `uses`로 인한 체크 이름 변형, 선행 `needs` 의존 및 job/step 수준 `if` 추가(GitHub는 `skipped` 결론을 통과로 처리해 게이트가 우회됨), 실제 `step.run` 핵심 명령 누락·위장, `continue-on-error`, 따옴표 키·비표준 들여쓰기 문법 우회를 모두 차단합니다.
 4. **실제 GitHub 설정 대조**: YAML 변경만으로 GitHub 보호 규칙이 적용되지는 않습니다. 저장소 관리자는 아래 읽기 전용 명령으로 실제 `main` 보호 설정이 정본 6개(`context` + `app_id`, `strict: true`, `enforce_admins: true`)와 일치하는지 확인합니다.
 
 ```bash

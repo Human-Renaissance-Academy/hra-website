@@ -6,7 +6,7 @@
  *   - scripts/tests/repository-security-workflow.test.mjs (js-yaml 교차 검증)
  * 주요 기능:
  *   - main 병합 보호에 요구되는 정확한 check context 이름과 GitHub App ID 정본 정의
- *   - 외부 npm 패키지 없이 .github/workflows/*.yml의 트리거·skip·이름 충돌·오류 무시 우회 차단
+ *   - 외부 npm 패키지 없이 .github/workflows/*.yml 전체의 트리거·skip·needs·이름 충돌·오류 무시·문법 변칙 우회 차단(fail-closed)
  *   - 읽기 전용 GitHub branch protection 응답 JSON과 정본 설정의 정합성 대조
  */
 
@@ -20,6 +20,8 @@ export const VERCEL_APP_ID = 8329;
  * main 브랜치 병합 전에 반드시 성공해야 하는 필수 상태 검사 정본 목록.
  * - workflow가 null인 항목은 외부 GitHub App(Vercel)이 보고하는 상태 검사다.
  * - allowedJobIf가 null이면 job 수준 if 조건을 일절 허용하지 않는다(skipped 통과 우회 방지).
+ * - allowedStepIfs에 없는 단계별 if 조건은 전면 차단한다.
+ * - requiredRunSnippets는 주석을 제거한 실제 step.run 본문에서 무조건부(step.if === null)로 확인되어야 한다.
  */
 export const REQUIRED_MAIN_STATUS_CHECKS = Object.freeze([
   Object.freeze({
@@ -28,6 +30,17 @@ export const REQUIRED_MAIN_STATUS_CHECKS = Object.freeze([
     workflow: "ci.yml",
     jobId: "ci",
     allowedJobIf: null,
+    allowedJobConcurrencyGroup: null,
+    allowedStepIfs: Object.freeze([]),
+    requiredRunSnippets: Object.freeze([
+      "npm run lint",
+      "npm run typecheck",
+      "npm test",
+      "npm run build",
+      "npm run verify:auth-proxy",
+      "npm run test:academic-g1",
+      "npm run test:e2e -- tests/e2e/ci-smoke.spec.ts",
+    ]),
   }),
   Object.freeze({
     context: "PR 형식",
@@ -35,6 +48,9 @@ export const REQUIRED_MAIN_STATUS_CHECKS = Object.freeze([
     workflow: "process-format.yml",
     jobId: "pull-request",
     allowedJobIf: "github.event_name == 'pull_request'",
+    allowedJobConcurrencyGroup: "process-format-pr-${{ github.event.pull_request.number }}",
+    allowedStepIfs: Object.freeze([]),
+    requiredRunSnippets: Object.freeze(["node scripts/check-process-format.mjs --event"]),
   }),
   Object.freeze({
     context: "형식·릴리스 계약 테스트",
@@ -42,6 +58,29 @@ export const REQUIRED_MAIN_STATUS_CHECKS = Object.freeze([
     workflow: "process-format.yml",
     jobId: "contracts",
     allowedJobIf: "github.event_name != 'issues'",
+    allowedJobConcurrencyGroup: null,
+    allowedStepIfs: Object.freeze([
+      Object.freeze({
+        ifCondition: "github.event_name == 'push' || github.event_name == 'pull_request'",
+        runSnippet: 'node scripts/check-openapi-compat.mjs --base-sha "$BASE_SHA"',
+      }),
+      Object.freeze({
+        ifCondition: "github.event_name == 'workflow_dispatch'",
+        runSnippet: "node scripts/check-openapi-compat.mjs --self",
+      }),
+      Object.freeze({
+        ifCondition: "github.event_name == 'push' || github.event_name == 'pull_request'",
+        runSnippet: "node scripts/check-commit-messages.mjs --history",
+      }),
+    ]),
+    requiredRunSnippets: Object.freeze([
+      "node --test scripts/tests/release-policy.test.mjs",
+      "node scripts/check-release-config.mjs",
+      "node --test scripts/tests/required-checks-policy.test.mjs",
+      "node scripts/check-required-checks-config.mjs",
+      "node --test scripts/tests/commit-messages.test.mjs",
+      "node --test scripts/tests/openapi-append-only.test.mjs scripts/tests/openapi-cli.test.mjs",
+    ]),
   }),
   Object.freeze({
     context: "추적 소스 · 도달 가능한 이력 · dependency 검토",
@@ -49,6 +88,18 @@ export const REQUIRED_MAIN_STATUS_CHECKS = Object.freeze([
     workflow: "repository-security.yml",
     jobId: "repository",
     allowedJobIf: null,
+    allowedJobConcurrencyGroup: null,
+    allowedStepIfs: Object.freeze([]),
+    requiredRunSnippets: Object.freeze([
+      "scripts/tests/secret-scan.test.mjs",
+      "scripts/tests/dependency-policy.test.mjs",
+      "scripts/tests/repository-security-workflow.test.mjs",
+      "scripts/tests/required-checks-policy.test.mjs",
+      "node scripts/check-required-checks-config.mjs",
+      "npm run verify:public-sources",
+      "npm run verify:repository-secrets",
+      "npm run verify:dependencies",
+    ]),
   }),
   Object.freeze({
     context: "실제 production CSP · 에디터 · 인쇄 · Blob SDK",
@@ -56,6 +107,12 @@ export const REQUIRED_MAIN_STATUS_CHECKS = Object.freeze([
     workflow: "repository-security.yml",
     jobId: "browser",
     allowedJobIf: null,
+    allowedJobConcurrencyGroup: null,
+    allowedStepIfs: Object.freeze([]),
+    requiredRunSnippets: Object.freeze([
+      "node --test scripts/tests/csp-browser.test.mjs",
+      "npm run verify:csp",
+    ]),
   }),
   Object.freeze({
     context: "Vercel",
@@ -63,6 +120,9 @@ export const REQUIRED_MAIN_STATUS_CHECKS = Object.freeze([
     workflow: null,
     jobId: null,
     allowedJobIf: null,
+    allowedJobConcurrencyGroup: null,
+    allowedStepIfs: Object.freeze([]),
+    requiredRunSnippets: Object.freeze([]),
   }),
 ]);
 
@@ -104,60 +164,211 @@ export const EXPECTED_WORKFLOW_FILES = Object.freeze(
   [...REQUIRED_WORKFLOW_FILES, ...Object.keys(NON_REQUIRED_WORKFLOWS)].sort(),
 );
 
+/** 허용된 최상위·작업·단계 키 목록 (알 수 없는 키나 따옴표 키는 fail-closed 차단) */
+const ALLOWED_TOP_KEYS = new Set(["name", "run-name", "on", "permissions", "concurrency", "jobs"]);
+const ALLOWED_PR_SUBKEYS = new Set(["branches", "branches-ignore", "paths", "paths-ignore", "types"]);
+const ALLOWED_JOB_KEYS = new Set([
+  "name",
+  "if",
+  "needs",
+  "runs-on",
+  "timeout-minutes",
+  "permissions",
+  "concurrency",
+  "env",
+  "strategy",
+  "uses",
+  "with",
+  "secrets",
+  "outputs",
+  "services",
+  "container",
+  "defaults",
+  "environment",
+  "continue-on-error",
+  "steps",
+]);
+const ALLOWED_STEP_KEYS = new Set([
+  "name",
+  "id",
+  "if",
+  "uses",
+  "run",
+  "with",
+  "env",
+  "shell",
+  "working-directory",
+  "timeout-minutes",
+  "continue-on-error",
+]);
+
 /** 양끝 따옴표가 감싸진 단일 스칼라 값을 정규화한다. */
 function unquoteScalar(raw) {
-  const trimmed = raw.trim();
-  if (trimmed.length >= 2 && trimmed.startsWith('"') && trimmed.endsWith('"')) {
-    return trimmed.slice(1, -1);
+  const withoutComment = stripTrailingComment(raw).trim();
+  if (
+    withoutComment.length >= 2 &&
+    withoutComment.startsWith('"') &&
+    withoutComment.endsWith('"')
+  ) {
+    return withoutComment.slice(1, -1);
   }
-  if (trimmed.length >= 2 && trimmed.startsWith("'") && trimmed.endsWith("'")) {
-    return trimmed.slice(1, -1).replace(/''/g, "'");
+  if (
+    withoutComment.length >= 2 &&
+    withoutComment.startsWith("'") &&
+    withoutComment.endsWith("'")
+  ) {
+    return withoutComment.slice(1, -1).replace(/''/g, "'");
   }
-  // 따옴표 밖의 인라인 주석 제거
-  return trimmed.replace(/\s+#.*$/, "").trim();
+  return withoutComment;
 }
 
-/** 인라인 배열(`[a, b]`) 또는 하위 `- item` 목록에서 문자열 배열을 추출한다. */
-function parseYamlStringList(inlineValue, childLines, itemIndent) {
-  const inline = inlineValue.replace(/\s+#.*$/, "").trim();
-  if (inline.startsWith("[") && inline.endsWith("]")) {
-    const inner = inline.slice(1, -1).trim();
-    if (!inner) return [];
-    return inner.split(",").map((part) => unquoteScalar(part));
+/** 따옴표 밖의 인라인 `#` 주석만 안전하게 제거한다. */
+function stripTrailingComment(raw) {
+  let inSingle = false;
+  let inDouble = false;
+  for (let i = 0; i < raw.length; i += 1) {
+    const ch = raw[i];
+    if (ch === "'" && !inDouble) {
+      inSingle = !inSingle;
+    } else if (ch === '"' && !inSingle && raw[i - 1] !== "\\") {
+      inDouble = !inDouble;
+    } else if (ch === "#" && !inSingle && !inDouble && (i === 0 || /\s/.test(raw[i - 1]))) {
+      return raw.slice(0, i);
+    }
   }
+  return raw;
+}
+
+/** YAML 멀티라인 블록 지시자(`|`, `>`, `|-`, `>-` 등)인지 판별한다. */
+function isBlockScalarHeader(value) {
+  return /^[|>][+-]?\d*$/.test(stripTrailingComment(value).trim());
+}
+
+/** `${{ ... }}` 표현식을 제거한 구조 문자열에 flow 매핑(`{`, `}`)이 섞였는지 확인한다. */
+function hasFlowBracesOutsideExpressions(raw) {
+  const cleaned = stripTrailingComment(raw).replace(/\$\{\{[\s\S]*?\}\}/g, "");
+  // 따옴표 안의 중괄호는 제외
+  const unquoted = cleaned.replace(/'[^']*'|"(?:\\.|[^"\\])*"/g, "");
+  return /[{}]/.test(unquoted);
+}
+
+/**
+ * 인라인 배열(`[a, b]`) 또는 정확한 들여쓰기의 `- item` 목록에서 문자열 배열을 추출한다.
+ * 허용되지 않은 들여쓰기·빈 항목·비표준 줄이 섞이면 parseErrors에 기록해 우회를 막는다.
+ */
+function parseStrictStringList(filename, contextLabel, inlineValue, childLines, itemIndent, parseErrors) {
+  const inline = stripTrailingComment(inlineValue).trim();
   if (inline.length > 0) {
+    for (const child of childLines) {
+      const trimmed = child.text.trim();
+      if (trimmed && !trimmed.startsWith("#")) {
+        parseErrors.push(`${filename}:${child.lineNo}: '${contextLabel}' 인라인 값 아래에 하위 줄을 둘 수 없습니다.`);
+      }
+    }
+    if (inline.startsWith("[") && inline.endsWith("]")) {
+      const inner = inline.slice(1, -1).trim();
+      if (!inner) return [];
+      return inner.split(",").map((part) => unquoteScalar(part));
+    }
+    if (hasFlowBracesOutsideExpressions(inline) || isBlockScalarHeader(inline)) {
+      parseErrors.push(`${filename}: '${contextLabel}'에 허용되지 않은 복합/멀티라인 스칼라가 있습니다.`);
+      return [];
+    }
     return [unquoteScalar(inline)];
   }
+
   const items = [];
-  const prefix = `${" ".repeat(itemIndent)}- `;
-  for (const line of childLines) {
-    if (line.startsWith(prefix)) {
-      items.push(unquoteScalar(line.slice(prefix.length)));
+  const itemRe = new RegExp(`^ {${itemIndent}}- (\\S.*)$`);
+  for (const child of childLines) {
+    const trimmed = child.text.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const match = child.text.match(itemRe);
+    if (!match || hasFlowBracesOutsideExpressions(match[1])) {
+      parseErrors.push(
+        `${filename}:${child.lineNo}: '${contextLabel}' 목록 항목은 공백 ${itemIndent}칸과 '- 값' 형식이어야 합니다.`,
+      );
+      continue;
     }
+    items.push(unquoteScalar(match[1]));
+  }
+  if (items.length === 0) {
+    parseErrors.push(`${filename}: '${contextLabel}' 목록이 비어 있습니다.`);
   }
   return items;
 }
 
-/** 지정 들여쓰기 깊이의 하위 블록 줄만 슬라이스한다. */
-function collectIndentedBlock(lines, startIndex, minIndent) {
+/** 지정 최소 들여쓰기 이상의 연속 하위 블록(`{ lineNo, text }[]`)과 다음 인덱스를 반환한다. */
+function sliceIndentedBlock(indexedLines, startIndex, minIndent) {
   const collected = [];
-  for (let i = startIndex; i < lines.length; i += 1) {
-    const line = lines[i];
-    const trimmed = line.trim();
+  let cursor = startIndex;
+  while (cursor < indexedLines.length) {
+    const entry = indexedLines[cursor];
+    const trimmed = entry.text.trim();
     if (!trimmed || trimmed.startsWith("#")) {
-      collected.push(line);
+      collected.push(entry);
+      cursor += 1;
       continue;
     }
-    const indent = line.match(/^ */)[0].length;
+    const indent = entry.text.match(/^ */)[0].length;
     if (indent < minIndent) break;
-    collected.push(line);
+    collected.push(entry);
+    cursor += 1;
   }
-  return collected;
+  return { block: collected, nextIndex: cursor };
+}
+
+/** 멀티라인 `run:` 본문 줄에서 공통 들여쓰기를 제거해 단일 문자열로 결합한다. */
+function extractBlockScalarText(blockEntries, minContentIndent) {
+  const contentLines = [];
+  let baseIndent = null;
+  for (const entry of blockEntries) {
+    if (entry.text.trim().length === 0) {
+      contentLines.push("");
+      continue;
+    }
+    const indent = entry.text.match(/^ */)[0].length;
+    if (indent < minContentIndent) break;
+    if (baseIndent === null || indent < baseIndent) baseIndent = indent;
+    contentLines.push(entry.text);
+  }
+  if (baseIndent === null) return "";
+  return contentLines.map((line) => (line ? line.slice(baseIndent) : "")).join("\n").trim();
+}
+
+/** `concurrency:` 하위 블록을 엄격히 파싱한다. */
+function parseConcurrencyBlock(filename, inlineValue, blockEntries, keyIndent, parseErrors) {
+  if (stripTrailingComment(inlineValue).trim().length > 0) {
+    parseErrors.push(`${filename}: 'concurrency'에는 인라인 값을 사용할 수 없습니다.`);
+  }
+  const result = { group: null, cancelInProgress: null };
+  const propRe = new RegExp(`^ {${keyIndent}}([A-Za-z0-9_-]+):(.*)$`);
+  for (const entry of blockEntries) {
+    const trimmed = entry.text.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const match = entry.text.match(propRe);
+    if (!match) {
+      parseErrors.push(`${filename}:${entry.lineNo}: 'concurrency' 블록에 비표준 들여쓰기 또는 따옴표 키가 있습니다.`);
+      continue;
+    }
+    const [, cKey, cRest] = match;
+    if (cKey !== "group" && cKey !== "cancel-in-progress") {
+      parseErrors.push(`${filename}:${entry.lineNo}: 알 수 없는 concurrency 속성 '${cKey}'입니다.`);
+      continue;
+    }
+    const val = unquoteScalar(cRest);
+    if (!val || isBlockScalarHeader(cRest) || hasFlowBracesOutsideExpressions(cRest)) {
+      parseErrors.push(`${filename}:${entry.lineNo}: 'concurrency.${cKey}'는 단일 스칼라 값이어야 합니다.`);
+      continue;
+    }
+    if (cKey === "group") result.group = val;
+    if (cKey === "cancel-in-progress") result.cancelInProgress = val;
+  }
+  return result;
 }
 
 /**
- * 단일 GitHub Actions YAML 텍스트에서 트리거·동시성·작업·단계 요약 구조를 추출한다.
- * 탭 들여쓰기나 YAML anchor/alias(`&`, `*`, `<<:`)가 있으면 파서 우회를 막기 위해 오류로 기록한다.
+ * 단일 GitHub Actions YAML 텍스트에서 트리거·동시성·작업·단계 요약 구조를 fail-closed로 추출한다.
+ * 따옴표 키, 비표준 들여쓰기, 탭, YAML anchor/alias/merge, flow 매핑 등 정적 분석 우회 문법은 모두 parseErrors로 차단한다.
  */
 export function parseWorkflowSummary(filename, rawText) {
   const parseErrors = [];
@@ -171,170 +382,465 @@ export function parseWorkflowSummary(filename, rawText) {
     };
   }
 
-  const lines = rawText.replace(/\r\n/g, "\n").split("\n");
-  for (let idx = 0; idx < lines.length; idx += 1) {
-    const line = lines[idx];
-    const trimmed = line.trim();
+  const indexedLines = rawText
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((text, index) => ({ lineNo: index + 1, text }));
+
+  for (const entry of indexedLines) {
+    const trimmed = entry.text.trim();
     if (!trimmed || trimmed.startsWith("#")) continue;
-    if (line.includes("\t")) {
-      parseErrors.push(`${filename}:${idx + 1}: 탭 들여쓰기는 허용하지 않습니다.`);
+    if (entry.text.includes("\t")) {
+      parseErrors.push(`${filename}:${entry.lineNo}: 탭 들여쓰기는 허용하지 않습니다.`);
     }
-    // 키 선언 줄에서 YAML anchor/merge 키 사용 차단 (정적 검사 우회 방지)
-    if (/^\s*<<\s*:/.test(line) || /^\s*[A-Za-z0-9_-]+\s*:\s*[&*][A-Za-z0-9_-]+/.test(line)) {
-      parseErrors.push(`${filename}:${idx + 1}: YAML anchor/alias/merge 문법은 허용하지 않습니다.`);
+    // YAML anchor(&), alias(*), merge key(<<:) 전면 차단
+    if (
+      /^\s*<<\s*:/.test(entry.text) ||
+      /(?:^|:\s+|-\s+)[&*][A-Za-z0-9_-]+/.test(stripTrailingComment(entry.text))
+    ) {
+      parseErrors.push(`${filename}:${entry.lineNo}: YAML anchor/alias/merge 문법은 허용하지 않습니다.`);
     }
   }
 
-  // 1단계: 최상위(들여쓰기 0) 블록 분리
+  // 1단계: 최상위(들여쓰기 0) 블록을 빠짐없이 스캔 (인식되지 않는 줄 즉시 오류 기록)
   const topBlocks = new Map();
-  for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i];
-    const match = line.match(/^([A-Za-z0-9_-]+):(.*)$/);
-    if (!match) continue;
-    const [, key, rest] = match;
-    if (topBlocks.has(key)) {
-      parseErrors.push(`${filename}:${i + 1}: 중복된 최상위 키 '${key}'가 있습니다.`);
+  let cursor = 0;
+  while (cursor < indexedLines.length) {
+    const entry = indexedLines[cursor];
+    const trimmed = entry.text.trim();
+    if (!trimmed || trimmed.startsWith("#")) {
+      cursor += 1;
+      continue;
     }
-    const blockLines = collectIndentedBlock(lines, i + 1, 2);
-    topBlocks.set(key, { inline: rest.trim(), lines: blockLines });
+    const match = entry.text.match(/^([A-Za-z0-9_-]+):(.*)$/);
+    if (!match) {
+      parseErrors.push(
+        `${filename}:${entry.lineNo}: 최상위 키는 들여쓰기 0의 따옴표 없는 식별자여야 합니다.`,
+      );
+      cursor += 1;
+      continue;
+    }
+    const [, key, rest] = match;
+    if (!ALLOWED_TOP_KEYS.has(key)) {
+      parseErrors.push(`${filename}:${entry.lineNo}: 허용되지 않은 최상위 키 '${key}'입니다.`);
+    }
+    if (topBlocks.has(key)) {
+      parseErrors.push(`${filename}:${entry.lineNo}: 중복된 최상위 키 '${key}'가 있습니다.`);
+    }
+    const { block, nextIndex } = sliceIndentedBlock(indexedLines, cursor + 1, 2);
+    topBlocks.set(key, { lineNo: entry.lineNo, inline: stripTrailingComment(rest).trim(), lines: block });
+    cursor = nextIndex;
   }
 
-  // 2단계: on 트리거 블록 분석
+  // 2단계: on 트리거 블록 엄격 분석
   const triggers = {};
   const onBlock = topBlocks.get("on");
   if (!onBlock) {
     parseErrors.push(`${filename}: 최상위 'on:' 트리거 블록이 없습니다.`);
   } else if (onBlock.inline.length > 0) {
-    // 인라인 `on: push` 또는 `on: [push, pull_request]` 형태도 방어적으로 파싱
-    for (const ev of parseYamlStringList(onBlock.inline, [], 2)) {
-      triggers[ev] = { branches: null, branchesIgnore: false, paths: false, pathsIgnore: false, types: null };
-    }
+    parseErrors.push(`${filename}:${onBlock.lineNo}: 'on:' 트리거는 인라인 축약 대신 명시적 하위 블록으로 작성해야 합니다.`);
   } else {
-    for (let i = 0; i < onBlock.lines.length; i += 1) {
-      const line = onBlock.lines[i];
-      const evMatch = line.match(/^  ([A-Za-z0-9_-]+):(.*)$/);
-      if (!evMatch) continue;
-      const [, eventName, rest] = evMatch;
-      if (Object.hasOwn(triggers, eventName)) {
-        parseErrors.push(`${filename}: 중복된 트리거 '${eventName}'가 있습니다.`);
+    let i = 0;
+    while (i < onBlock.lines.length) {
+      const entry = onBlock.lines[i];
+      const trimmed = entry.text.trim();
+      if (!trimmed || trimmed.startsWith("#")) {
+        i += 1;
+        continue;
       }
-      const evLines = collectIndentedBlock(onBlock.lines, i + 1, 4);
+      const evMatch = entry.text.match(/^  ([A-Za-z0-9_-]+):(.*)$/);
+      if (!evMatch) {
+        parseErrors.push(
+          `${filename}:${entry.lineNo}: 'on' 하위 이벤트 키는 공백 2칸과 따옴표 없는 이름이어야 합니다.`,
+        );
+        i += 1;
+        continue;
+      }
+      const [, eventName, rest] = evMatch;
+      const inlineRest = stripTrailingComment(rest).trim();
+      if (inlineRest.length > 0) {
+        parseErrors.push(
+          `${filename}:${entry.lineNo}: 'on.${eventName}'에는 인라인 값('${inlineRest}')을 둘 수 없습니다.`,
+        );
+      }
+      if (Object.hasOwn(triggers, eventName)) {
+        parseErrors.push(`${filename}:${entry.lineNo}: 중복된 트리거 '${eventName}'가 있습니다.`);
+      }
+      const { block: evLines, nextIndex } = sliceIndentedBlock(onBlock.lines, i + 1, 4);
       const eventInfo = {
-        inline: rest.trim(),
         branches: null,
         branchesIgnore: false,
         paths: false,
         pathsIgnore: false,
         types: null,
       };
-      for (let j = 0; j < evLines.length; j += 1) {
-        const subMatch = evLines[j].match(/^    ([A-Za-z0-9_-]+):(.*)$/);
-        if (!subMatch) continue;
-        const [, subKey, subRest] = subMatch;
-        const subChildren = collectIndentedBlock(evLines, j + 1, 6);
-        if (subKey === "branches") {
-          eventInfo.branches = parseYamlStringList(subRest, subChildren, 6);
-        } else if (subKey === "branches-ignore") {
-          eventInfo.branchesIgnore = true;
-        } else if (subKey === "paths") {
-          eventInfo.paths = true;
-        } else if (subKey === "paths-ignore") {
-          eventInfo.pathsIgnore = true;
-        } else if (subKey === "types") {
-          eventInfo.types = parseYamlStringList(subRest, subChildren, 6);
+
+      if (eventName === "pull_request") {
+        let j = 0;
+        while (j < evLines.length) {
+          const subEntry = evLines[j];
+          const subTrimmed = subEntry.text.trim();
+          if (!subTrimmed || subTrimmed.startsWith("#")) {
+            j += 1;
+            continue;
+          }
+          const subMatch = subEntry.text.match(/^    ([A-Za-z0-9_-]+):(.*)$/);
+          if (!subMatch) {
+            parseErrors.push(
+              `${filename}:${subEntry.lineNo}: 'on.pull_request' 하위 키는 공백 4칸과 따옴표 없는 이름이어야 합니다.`,
+            );
+            j += 1;
+            continue;
+          }
+          const [, subKey, subRest] = subMatch;
+          if (!ALLOWED_PR_SUBKEYS.has(subKey)) {
+            parseErrors.push(
+              `${filename}:${subEntry.lineNo}: 'on.pull_request'에 허용되지 않은 하위 키 '${subKey}'가 있습니다.`,
+            );
+          }
+          const { block: subChildren, nextIndex: subNext } = sliceIndentedBlock(evLines, j + 1, 6);
+          const parsedList = parseStrictStringList(
+            filename,
+            `on.pull_request.${subKey}`,
+            subRest,
+            subChildren,
+            6,
+            parseErrors,
+          );
+          if (subKey === "branches") eventInfo.branches = parsedList;
+          if (subKey === "branches-ignore") eventInfo.branchesIgnore = true;
+          if (subKey === "paths") eventInfo.paths = true;
+          if (subKey === "paths-ignore") eventInfo.pathsIgnore = true;
+          if (subKey === "types") eventInfo.types = parsedList;
+          j = subNext;
         }
       }
+
       triggers[eventName] = eventInfo;
+      i = nextIndex;
     }
   }
 
-  // 3단계: 최상위 concurrency 블록 분석
+  // 3단계: 최상위 concurrency 블록 엄격 분석
   let concurrency = null;
   const concurrencyBlock = topBlocks.get("concurrency");
   if (concurrencyBlock) {
-    concurrency = { group: null, cancelInProgress: null };
-    for (const line of concurrencyBlock.lines) {
-      const cMatch = line.match(/^  ([A-Za-z0-9_-]+):(.*)$/);
-      if (!cMatch) continue;
-      const [, cKey, cRest] = cMatch;
-      if (cKey === "group") concurrency.group = unquoteScalar(cRest);
-      if (cKey === "cancel-in-progress") concurrency.cancelInProgress = unquoteScalar(cRest);
-    }
+    concurrency = parseConcurrencyBlock(
+      filename,
+      concurrencyBlock.inline,
+      concurrencyBlock.lines,
+      2,
+      parseErrors,
+    );
   }
 
-  // 4단계: jobs 블록 분석 (job 이름·조건·matrix·재사용 호출·continue-on-error·단계)
+  // 4단계: jobs 블록 엄격 분석 (인식되지 않는 줄·따옴표 키·비표준 들여쓰기 전면 차단)
   const jobs = {};
   const jobsBlock = topBlocks.get("jobs");
   if (!jobsBlock) {
     parseErrors.push(`${filename}: 최상위 'jobs:' 블록이 없습니다.`);
+  } else if (jobsBlock.inline.length > 0) {
+    parseErrors.push(`${filename}:${jobsBlock.lineNo}: 'jobs:'에는 인라인 값을 둘 수 없습니다.`);
   } else {
-    for (let i = 0; i < jobsBlock.lines.length; i += 1) {
-      const line = jobsBlock.lines[i];
-      const jobMatch = line.match(/^  ([A-Za-z0-9_-]+):(.*)$/);
-      if (!jobMatch) continue;
-      const [, jobId] = jobMatch;
-      if (Object.hasOwn(jobs, jobId)) {
-        parseErrors.push(`${filename}: 중복된 job ID '${jobId}'가 있습니다.`);
+    let i = 0;
+    while (i < jobsBlock.lines.length) {
+      const entry = jobsBlock.lines[i];
+      const trimmed = entry.text.trim();
+      if (!trimmed || trimmed.startsWith("#")) {
+        i += 1;
+        continue;
       }
-      const jobLines = collectIndentedBlock(jobsBlock.lines, i + 1, 4);
+      const jobMatch = entry.text.match(/^  ([A-Za-z0-9_-]+):(.*)$/);
+      if (!jobMatch) {
+        parseErrors.push(
+          `${filename}:${entry.lineNo}: 'jobs' 하위 작업 ID는 공백 2칸과 따옴표 없는 식별자여야 합니다.`,
+        );
+        i += 1;
+        continue;
+      }
+      const [, jobId, jobRest] = jobMatch;
+      if (stripTrailingComment(jobRest).trim().length > 0) {
+        parseErrors.push(`${filename}:${entry.lineNo}: job '${jobId}' 선언 줄에는 인라인 값을 둘 수 없습니다.`);
+      }
+      if (Object.hasOwn(jobs, jobId)) {
+        parseErrors.push(`${filename}:${entry.lineNo}: 중복된 job ID '${jobId}'가 있습니다.`);
+      }
+
+      const { block: jobLines, nextIndex: jobNext } = sliceIndentedBlock(jobsBlock.lines, i + 1, 4);
+      const seenJobProps = new Set();
       const jobInfo = {
         jobId,
         name: null,
         ifCondition: null,
+        hasNeeds: false,
         hasStrategy: false,
         hasReusableUses: false,
         hasContinueOnError: false,
+        concurrency: null,
         steps: [],
       };
-      for (let j = 0; j < jobLines.length; j += 1) {
-        const propMatch = jobLines[j].match(/^    ([A-Za-z0-9_-]+):(.*)$/);
-        if (!propMatch) continue;
+
+      let j = 0;
+      while (j < jobLines.length) {
+        const propEntry = jobLines[j];
+        const propTrimmed = propEntry.text.trim();
+        if (!propTrimmed || propTrimmed.startsWith("#")) {
+          j += 1;
+          continue;
+        }
+        const propMatch = propEntry.text.match(/^    ([A-Za-z0-9_-]+):(.*)$/);
+        if (!propMatch) {
+          parseErrors.push(
+            `${filename}:${propEntry.lineNo}: job '${jobId}' 속성은 공백 4칸과 따옴표 없는 키여야 합니다.`,
+          );
+          j += 1;
+          continue;
+        }
         const [, propKey, propRest] = propMatch;
-        if (propKey === "name") {
-          jobInfo.name = unquoteScalar(propRest);
-        } else if (propKey === "if") {
-          jobInfo.ifCondition = unquoteScalar(propRest);
+        if (!ALLOWED_JOB_KEYS.has(propKey)) {
+          parseErrors.push(
+            `${filename}:${propEntry.lineNo}: job '${jobId}'에 허용되지 않은 속성 '${propKey}'가 있습니다.`,
+          );
+        }
+        if (seenJobProps.has(propKey)) {
+          parseErrors.push(
+            `${filename}:${propEntry.lineNo}: job '${jobId}'에 중복된 속성 '${propKey}'가 있습니다.`,
+          );
+        }
+        seenJobProps.add(propKey);
+
+        const { block: propChildren, nextIndex: propNext } = sliceIndentedBlock(jobLines, j + 1, 6);
+        const nonCommentChildren = propChildren.filter(
+          (line) => line.text.trim() && !line.text.trim().startsWith("#"),
+        );
+
+        if (propKey === "name" || propKey === "if") {
+          const scalar = unquoteScalar(propRest);
+          if (
+            !scalar ||
+            isBlockScalarHeader(propRest) ||
+            hasFlowBracesOutsideExpressions(propRest) ||
+            nonCommentChildren.length > 0
+          ) {
+            parseErrors.push(
+              `${filename}:${propEntry.lineNo}: job '${jobId}.${propKey}'는 단일 줄 스칼라여야 합니다.`,
+            );
+          } else if (propKey === "name") {
+            jobInfo.name = scalar;
+          } else {
+            jobInfo.ifCondition = scalar;
+          }
+        } else if (propKey === "needs") {
+          jobInfo.hasNeeds = true;
         } else if (propKey === "strategy") {
           jobInfo.hasStrategy = true;
         } else if (propKey === "uses") {
           jobInfo.hasReusableUses = true;
         } else if (propKey === "continue-on-error") {
           jobInfo.hasContinueOnError = true;
+        } else if (propKey === "concurrency") {
+          jobInfo.concurrency = parseConcurrencyBlock(
+            filename,
+            propRest,
+            propChildren,
+            6,
+            parseErrors,
+          );
         } else if (propKey === "steps") {
-          const stepLines = collectIndentedBlock(jobLines, j + 1, 6);
-          let currentStep = null;
-          for (const sLine of stepLines) {
-            const trimmed = sLine.trim();
-            if (!trimmed || trimmed.startsWith("#")) continue;
-            if (/^ {6}-\s/.test(sLine)) {
-              if (currentStep) jobInfo.steps.push(currentStep);
-              currentStep = { name: null, ifCondition: null, hasContinueOnError: false, rawLines: [sLine] };
-              const inlineProp = sLine.slice(8).match(/^([A-Za-z0-9_-]+):(.*)$/);
-              if (inlineProp) {
-                const [, sKey, sVal] = inlineProp;
-                if (sKey === "name") currentStep.name = unquoteScalar(sVal);
-                if (sKey === "if") currentStep.ifCondition = unquoteScalar(sVal);
-                if (sKey === "continue-on-error") currentStep.hasContinueOnError = true;
-              }
-            } else if (currentStep) {
-              currentStep.rawLines.push(sLine);
-              const subStepProp = sLine.match(/^ {8}([A-Za-z0-9_-]+):(.*)$/);
-              if (subStepProp) {
-                const [, sKey, sVal] = subStepProp;
-                if (sKey === "name") currentStep.name = unquoteScalar(sVal);
-                if (sKey === "if") currentStep.ifCondition = unquoteScalar(sVal);
-                if (sKey === "continue-on-error") currentStep.hasContinueOnError = true;
-              }
-            }
+          if (stripTrailingComment(propRest).trim().length > 0) {
+            parseErrors.push(
+              `${filename}:${propEntry.lineNo}: job '${jobId}.steps'에는 인라인 값을 둘 수 없습니다.`,
+            );
           }
-          if (currentStep) jobInfo.steps.push(currentStep);
+          jobInfo.steps = parseStepsBlock(filename, jobId, propChildren, parseErrors);
         }
+
+        j = propNext;
       }
+
       jobs[jobId] = jobInfo;
+      i = jobNext;
     }
   }
 
   return { filename, parseErrors, triggers, concurrency, jobs };
+}
+
+/**
+ * `steps:` 하위 줄을 엄격하게 파싱한다.
+ * - 각 step 시작 줄은 반드시 `      - <따옴표 없는 키>:`(공백 6칸 + `- ` + 식별자)여야 한다.
+ * - 각 step의 후속 속성 줄은 반드시 `        <따옴표 없는 키>:`(공백 8칸 + 식별자)여야 한다.
+ * - `run` 멀티라인 블록과 `with`/`env` 하위 매핑 외의 모든 비표준 들여쓰기·따옴표 키는 즉시 parseErrors로 차단한다.
+ */
+function parseStepsBlock(filename, jobId, stepEntries, parseErrors) {
+  const steps = [];
+  let cursor = 0;
+
+  while (cursor < stepEntries.length) {
+    const entry = stepEntries[cursor];
+    const trimmed = entry.text.trim();
+    if (!trimmed || trimmed.startsWith("#")) {
+      cursor += 1;
+      continue;
+    }
+    const headerMatch = entry.text.match(/^ {6}- ([A-Za-z0-9_-]+):(.*)$/);
+    if (!headerMatch) {
+      parseErrors.push(
+        `${filename}:${entry.lineNo}: job '${jobId}'의 step 항목은 공백 6칸과 '- <키>:' 형식이어야 합니다(따옴표 키·추가 공백 금지).`,
+      );
+      cursor += 1;
+      continue;
+    }
+
+    // 다음 공백 6칸 `- ` 시작 전까지를 현재 step 범위로 분리
+    let stepEnd = cursor + 1;
+    while (stepEnd < stepEntries.length) {
+      const candidate = stepEntries[stepEnd];
+      const cTrimmed = candidate.text.trim();
+      if (!cTrimmed || cTrimmed.startsWith("#")) {
+        stepEnd += 1;
+        continue;
+      }
+      const indent = candidate.text.match(/^ */)[0].length;
+      if (indent < 6) {
+        parseErrors.push(`${filename}:${candidate.lineNo}: step 블록 내부 들여쓰기가 6칸 미만입니다.`);
+        break;
+      }
+      if (indent === 6) {
+        if (/^ {6}- /.test(candidate.text)) break;
+        parseErrors.push(
+          `${filename}:${candidate.lineNo}: 공백 6칸 줄은 새 step('- <키>:')만 허용됩니다.`,
+        );
+      }
+      stepEnd += 1;
+    }
+
+    const currentSlice = stepEntries.slice(cursor, stepEnd);
+    const seenStepKeys = new Set();
+    const stepInfo = {
+      name: null,
+      ifCondition: null,
+      hasContinueOnError: false,
+      run: null,
+    };
+
+    let sIdx = 0;
+    while (sIdx < currentSlice.length) {
+      const sEntry = currentSlice[sIdx];
+      const sTrimmed = sEntry.text.trim();
+      if (!sTrimmed || sTrimmed.startsWith("#")) {
+        sIdx += 1;
+        continue;
+      }
+
+      let propKey;
+      let propRest;
+      let childMinIndent;
+      if (sIdx === 0) {
+        const [, firstKey, firstRest] = sEntry.text.match(/^ {6}- ([A-Za-z0-9_-]+):(.*)$/);
+        propKey = firstKey;
+        propRest = firstRest;
+        childMinIndent = 10;
+      } else {
+        const subMatch = sEntry.text.match(/^ {8}([A-Za-z0-9_-]+):(.*)$/);
+        if (!subMatch) {
+          parseErrors.push(
+            `${filename}:${sEntry.lineNo}: job '${jobId}'의 step 속성은 공백 8칸과 따옴표 없는 키여야 합니다.`,
+          );
+          sIdx += 1;
+          continue;
+        }
+        [, propKey, propRest] = subMatch;
+        childMinIndent = 10;
+      }
+
+      if (!ALLOWED_STEP_KEYS.has(propKey)) {
+        parseErrors.push(
+          `${filename}:${sEntry.lineNo}: job '${jobId}' step에 허용되지 않은 키 '${propKey}'가 있습니다.`,
+        );
+      }
+      if (seenStepKeys.has(propKey)) {
+        parseErrors.push(
+          `${filename}:${sEntry.lineNo}: job '${jobId}' step에 중복된 키 '${propKey}'가 있습니다.`,
+        );
+      }
+      seenStepKeys.add(propKey);
+
+      const { block: propChildren, nextIndex: nextSIdx } = sliceIndentedBlock(
+        currentSlice,
+        sIdx + 1,
+        childMinIndent,
+      );
+      const nonCommentChildren = propChildren.filter(
+        (line) => line.text.trim() && !line.text.trim().startsWith("#"),
+      );
+
+      if (propKey === "run") {
+        if (isBlockScalarHeader(propRest)) {
+          stepInfo.run = extractBlockScalarText(propChildren, childMinIndent);
+        } else {
+          const inlineRun = unquoteScalar(propRest);
+          if (!inlineRun || nonCommentChildren.length > 0) {
+            parseErrors.push(
+              `${filename}:${sEntry.lineNo}: job '${jobId}'의 단일 줄 'run' 아래에 하위 줄이 있거나 명령이 비어 있습니다.`,
+            );
+          } else {
+            stepInfo.run = inlineRun;
+          }
+        }
+      } else if (propKey === "with" || propKey === "env") {
+        if (stripTrailingComment(propRest).trim().length > 0) {
+          parseErrors.push(
+            `${filename}:${sEntry.lineNo}: step '${propKey}'에는 인라인 매핑을 둘 수 없습니다.`,
+          );
+        }
+        for (const child of nonCommentChildren) {
+          if (!/^ {10}[A-Za-z0-9_-]+:/.test(child.text)) {
+            parseErrors.push(
+              `${filename}:${child.lineNo}: step '${propKey}' 하위 항목은 공백 10칸과 따옴표 없는 키여야 합니다.`,
+            );
+          }
+        }
+      } else {
+        const scalar = unquoteScalar(propRest);
+        if (
+          !scalar ||
+          isBlockScalarHeader(propRest) ||
+          hasFlowBracesOutsideExpressions(propRest) ||
+          nonCommentChildren.length > 0
+        ) {
+          parseErrors.push(
+            `${filename}:${sEntry.lineNo}: step '${propKey}'는 단일 줄 스칼라여야 합니다.`,
+          );
+        } else if (propKey === "name") {
+          stepInfo.name = scalar;
+        } else if (propKey === "if") {
+          stepInfo.ifCondition = scalar;
+        } else if (propKey === "continue-on-error") {
+          stepInfo.hasContinueOnError = true;
+        }
+      }
+
+      sIdx = nextSIdx;
+    }
+
+    steps.push(stepInfo);
+    cursor = stepEnd;
+  }
+
+  return steps;
+}
+
+/** 셸 주석 줄을 제거한 실제 실행 명령 텍스트를 반환한다 (`# npm run ...` 주석 위장 방지). */
+function executableRunLines(runText) {
+  if (typeof runText !== "string") return "";
+  return runText
+    .split("\n")
+    .filter((line) => {
+      const trimmed = line.trim();
+      return trimmed.length > 0 && !trimmed.startsWith("#");
+    })
+    .join("\n");
 }
 
 /**
@@ -373,11 +879,8 @@ export function validateWorkflowCheckBoundaries(workflowsByFilename) {
       errors.push(`${workflowFile}: 필수 PR 체크 워크플로에 'pull_request' 트리거가 없습니다.`);
       continue;
     }
-    if (prTrigger.inline) {
-      errors.push(`${workflowFile}: 'pull_request' 트리거는 main 브랜치를 명시하는 블록이어야 합니다.`);
-    }
-    if (Array.isArray(prTrigger.branches) && !prTrigger.branches.includes("main")) {
-      errors.push(`${workflowFile}: 'pull_request.branches'에 'main'이 포함되어야 합니다.`);
+    if (!Array.isArray(prTrigger.branches) || !prTrigger.branches.includes("main")) {
+      errors.push(`${workflowFile}: 'pull_request.branches'에 'main'이 명시적으로 포함되어야 합니다.`);
     }
     if (prTrigger.branchesIgnore) {
       errors.push(`${workflowFile}: 'pull_request.branches-ignore'는 필수 체크 누락(무기한 대기)을 유발하므로 금지됩니다.`);
@@ -407,7 +910,7 @@ export function validateWorkflowCheckBoundaries(workflowsByFilename) {
     }
   }
 
-  // 3. 각 필수 GitHub Actions 체크의 정확한 이름·if 조건·matrix/오류무시 우회 차단 검사
+  // 3. 각 필수 GitHub Actions 체크의 정확한 이름·if/needs/step-if/run/오류무시 우회 차단 검사
   const requiredActionsChecks = REQUIRED_MAIN_STATUS_CHECKS.filter(
     (item) => item.appId === GITHUB_ACTIONS_APP_ID,
   );
@@ -432,6 +935,11 @@ export function validateWorkflowCheckBoundaries(workflowsByFilename) {
     if (typeof job.name === "string" && job.name.includes("${{")) {
       errors.push(`${check.workflow} (${check.jobId}): 필수 체크 이름에는 동적 표현식(\${{ }})을 사용할 수 없습니다.`);
     }
+    if (job.hasNeeds) {
+      errors.push(
+        `${check.workflow} (${check.jobId}): 선행 job skip에 따른 전이 'skipped' 통과 우회를 막기 위해 필수 job에는 'needs'를 둘 수 없습니다.`,
+      );
+    }
     if (job.hasStrategy) {
       errors.push(`${check.workflow} (${check.jobId}): 'strategy'(matrix)는 체크 이름에 접미사를 붙여 브랜치 보호 매칭을 깨뜨리므로 금지됩니다.`);
     }
@@ -440,11 +948,62 @@ export function validateWorkflowCheckBoundaries(workflowsByFilename) {
     }
     if (job.ifCondition !== check.allowedJobIf) {
       errors.push(
-        `${check.workflow} (${check.jobId}): 허용되지 않은 job 'if' 조건입니다(GitHub는 skipped 체크를 통과로 간주해 보안 게이트가 우회됨). 실제=${JSON.stringify(job.ifCondition)}, 기대=${JSON.stringify(check.allowedJobIf)}`,
+        `${check.workflow} (${check.jobId}): 허용되지 않은 job 'if' 조건입니다(GitHub는 skipped 체크를 통과로 간주해 게이트가 우회됨). 실제=${JSON.stringify(job.ifCondition)}, 기대=${JSON.stringify(check.allowedJobIf)}`,
+      );
+    }
+    if (check.allowedJobConcurrencyGroup === null) {
+      if (job.concurrency !== null) {
+        errors.push(
+          `${check.workflow} (${check.jobId}): 허용되지 않은 job 수준 'concurrency' 설정(취소 우회 위험)이 있습니다.`,
+        );
+      }
+    } else if (job.concurrency?.group !== check.allowedJobConcurrencyGroup) {
+      errors.push(
+        `${check.workflow} (${check.jobId}): job 'concurrency.group'이 정본과 다릅니다.`,
       );
     }
     if (job.hasContinueOnError || job.steps.some((step) => step.hasContinueOnError)) {
       errors.push(`${check.workflow} (${check.jobId}): 필수 체크의 실패를 숨기는 'continue-on-error'는 금지됩니다.`);
+    }
+
+    // 허용된 (if 조건, run 본문) 쌍 외의 단계별 if 전면 차단 및 필수 조건부 단계 존재 확인
+    for (const step of job.steps) {
+      if (step.ifCondition === null) continue;
+      const runBody = executableRunLines(step.run);
+      const allowedRule = check.allowedStepIfs.find(
+        (rule) => rule.ifCondition === step.ifCondition && runBody.includes(rule.runSnippet),
+      );
+      if (!allowedRule) {
+        errors.push(
+          `${check.workflow} (${check.jobId}): 허용되지 않은 step 'if' 조건('${step.ifCondition}')입니다.`,
+        );
+      }
+    }
+    for (const rule of check.allowedStepIfs) {
+      const exists = job.steps.some(
+        (step) =>
+          step.ifCondition === rule.ifCondition &&
+          executableRunLines(step.run).includes(rule.runSnippet),
+      );
+      if (!exists) {
+        errors.push(
+          `${check.workflow} (${check.jobId}): 조건부 필수 단계('${rule.runSnippet}', if='${rule.ifCondition}')가 누락되었거나 변경되었습니다.`,
+        );
+      }
+    }
+
+    // 핵심 검증 명령이 step.name이나 주석이 아닌 실제 무조건부(step.if === null) step.run에 존재하는지 검사
+    for (const requiredSnippet of check.requiredRunSnippets) {
+      const matchedStep = job.steps.find(
+        (step) =>
+          step.ifCondition === null &&
+          executableRunLines(step.run).includes(requiredSnippet),
+      );
+      if (!matchedStep) {
+        errors.push(
+          `${check.workflow} (${check.jobId}): 조건 없는 실제 실행 단계('run')에서 필수 명령 '${requiredSnippet}'를 찾지 못했습니다.`,
+        );
+      }
     }
   }
 
@@ -472,54 +1031,7 @@ export function validateWorkflowCheckBoundaries(workflowsByFilename) {
     }
   }
 
-  // 5. 보안 게이트 핵심 실행 명령이 단계별 if 조건으로 건너뛰어지지 않는지 검증
-  if (securityWorkflow) {
-    const repoJob = securityWorkflow.jobs.repository;
-    const browserJob = securityWorkflow.jobs.browser;
-    for (const requiredCmd of [
-      "npm run verify:public-sources",
-      "npm run verify:repository-secrets",
-      "npm run verify:dependencies",
-      "node scripts/check-required-checks-config.mjs",
-    ]) {
-      const step = repoJob?.steps.find((s) => s.rawLines.join("\n").includes(requiredCmd));
-      if (!step) {
-        errors.push(`repository-security.yml (repository): 필수 검증 명령 '${requiredCmd}'가 누락되었습니다.`);
-      } else if (step.ifCondition !== null) {
-        errors.push(`repository-security.yml (repository): '${requiredCmd}' 단계에 조건부 skip('if')을 둘 수 없습니다.`);
-      }
-    }
-    for (const requiredCmd of [
-      "node --test scripts/tests/csp-browser.test.mjs",
-      "npm run verify:csp",
-    ]) {
-      const step = browserJob?.steps.find((s) => s.rawLines.join("\n").includes(requiredCmd));
-      if (!step) {
-        errors.push(`repository-security.yml (browser): 필수 검증 명령 '${requiredCmd}'가 누락되었습니다.`);
-      } else if (step.ifCondition !== null) {
-        errors.push(`repository-security.yml (browser): '${requiredCmd}' 단계에 조건부 skip('if')을 둘 수 없습니다.`);
-      }
-    }
-  }
-
-  // 6. 형식·릴리스 계약 테스트에도 본 경계 검증 명령이 연결되어 있는지 확인
-  const processFormatWorkflow = parsedByFile.get("process-format.yml");
-  if (processFormatWorkflow) {
-    const contractsJob = processFormatWorkflow.jobs.contracts;
-    for (const requiredCmd of [
-      "node --test scripts/tests/required-checks-policy.test.mjs",
-      "node scripts/check-required-checks-config.mjs",
-    ]) {
-      const step = contractsJob?.steps.find((s) => s.rawLines.join("\n").includes(requiredCmd));
-      if (!step) {
-        errors.push(`process-format.yml (contracts): '${requiredCmd}' 실행 단계가 누락되었습니다.`);
-      } else if (step.ifCondition !== null) {
-        errors.push(`process-format.yml (contracts): '${requiredCmd}' 단계에 조건부 skip('if')을 둘 수 없습니다.`);
-      }
-    }
-  }
-
-  // 7. 정기·운영 관측 및 경로 조건부 워크플로의 분리 경계 검증
+  // 5. 정기·운영 관측 및 경로 조건부 워크플로의 분리 경계 검증
   for (const [workflowFile, rule] of Object.entries(NON_REQUIRED_WORKFLOWS)) {
     const parsed = parsedByFile.get(workflowFile);
     if (!parsed) continue;
