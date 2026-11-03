@@ -795,21 +795,16 @@
       "fresh": {
         "disposition": "exclude",
         "required": false,
-        "reason": "기존 콘텐츠·계정·학적을 변경하는 seed/backfill/변환은 fresh DDL 적용 이력에서 제외한다."
+        "reason": "과거 수료생 이야기 초기값의 순수 선언만 보존하고 공개 CLI 적용은 차단한다. 운영 DB 정본이나 fresh DDL 적용 이력으로 사용하지 않는다."
       },
       "objects": ["alumni-seed"],
       "requires": ["web-base"],
-      "checks": ["이야기별 기존 행 확인·콘텐츠 INSERT를 새 구조 설치의 일부로 재생하지 않는다."],
+      "checks": ["CLI는 고정 계획·거부만 출력하고 DB·자격정보·통신·파일 읽기를 수행하지 않는다. 모듈 import는 출력·종료 상태 변화가 없어야 한다.","원문 literal과 실제 export의 독립 digest·3개 선언·필드 구조를 보존하고 실제 이름·인용·본문을 진단에 반사하지 않는다.","선언 건수는 실제 DB 건수가 아니며, 원래 분리된 name 조회·건너뛰기/INSERT는 미제공이다. 관리자가 편집한 이야기·이미지 metadata의 덮어쓰기나 전체 transaction으로 설명하지 않는다.","선언을 Page·service·fallback에 연결하거나 DB 기반 운영 콘텐츠를 파일 기반 CMS로 되돌리지 않는다."],
       "evidence": [
         {
           "file": "scripts/seed-alumni.mjs",
-          "line": 61,
-          "note": "이야기 데이터별 중복 검사."
-        },
-        {
-          "file": "scripts/seed-alumni.mjs",
-          "line": 73,
-          "note": "정적 콘텐츠 행 INSERT."
+          "line": 1,
+          "note": "수료생 이야기 선언의 보존과 접속 없는 계획·신뢰되지 않은 적용 차단의 역할 설명."
         }
       ],
       "unresolved": []
@@ -840,21 +835,16 @@
       "fresh": {
         "disposition": "exclude",
         "required": false,
-        "reason": "기존 콘텐츠·계정·학적을 변경하는 seed/backfill/변환은 fresh DDL 적용 이력에서 제외한다."
+        "reason": "과거 교수진 초기값의 순수 선언만 보존하고 공개 CLI 적용은 차단한다. 운영 DB 정본이나 fresh DDL 적용 이력으로 사용하지 않는다."
       },
       "objects": ["faculty-seed"],
       "requires": ["web-base"],
-      "checks": ["교수진 콘텐츠 INSERT를 학사 운영/출결 권한 부여로 해석하지 않는다."],
+      "checks": ["CLI는 고정 계획·거부만 출력하고 DB·자격정보·통신·파일 읽기를 수행하지 않는다. 모듈 import는 출력·종료 상태 변화가 없어야 한다.","원문 literal과 실제 export의 독립 digest·21개 선언·필드 구조를 보존하고 실제 이름·직책을 진단에 반사하지 않는다.","선언 건수는 실제 DB 건수가 아니며, 원래 분리된 이름+카테고리 조회·건너뛰기/INSERT는 미제공이다. 전체 transaction으로 설명하지 않는다.","교수진 선언을 학사 운영·출결 권한이나 승인 계정 부여로 해석하지 않고, Page·service·fallback에 연결하거나 파일 기반 CMS로 되돌리지 않는다."],
       "evidence": [
         {
           "file": "scripts/seed-faculty.mjs",
-          "line": 61,
-          "note": "교수 데이터별 중복 검사."
-        },
-        {
-          "file": "scripts/seed-faculty.mjs",
-          "line": 74,
-          "note": "정적 교수 행 INSERT."
+          "line": 1,
+          "note": "교수진 선언의 보존과 접속 없는 계획·신뢰되지 않은 적용 차단의 역할 설명."
         }
       ],
       "unresolved": []
@@ -865,21 +855,16 @@
       "fresh": {
         "disposition": "exclude",
         "required": false,
-        "reason": "기존 콘텐츠·계정·학적을 변경하는 seed/backfill/변환은 fresh DDL 적용 이력에서 제외한다."
+        "reason": "과거 언론보도 초기값의 순수 선언만 보존하고 공개 CLI 적용은 차단한다. 운영 DB 정본이나 fresh DDL 적용 이력으로 사용하지 않는다."
       },
       "objects": ["press-seed"],
       "requires": ["web-base"],
-      "checks": ["기사별 조회·INSERT는 외부 링크를 포함한 콘텐츠 관리이며 migration baseline 행이 아니다."],
+      "checks": ["CLI는 고정 계획·거부만 출력하고 DB·자격정보·통신·파일 읽기·외부 링크 확인을 수행하지 않는다. 모듈 import는 출력·종료 상태 변화가 없어야 한다.","원문 literal과 실제 export의 독립 digest·26개 선언·필드 구조를 보존하고 실제 제목·출처·외부 URL·설명을 진단에 반사하지 않는다.","선언 건수는 실제 DB 건수가 아니며, 원래 분리된 URL 조회·건너뛰기/INSERT는 미제공이다. migration baseline 행이나 전체 transaction으로 설명하지 않는다.","선언을 Page·service·fallback에 연결하거나 DB 기반 운영 콘텐츠를 파일 기반 CMS로 되돌리지 않는다."],
       "evidence": [
         {
           "file": "scripts/seed-press.mjs",
-          "line": 285,
-          "note": "기사별 중복 검사."
-        },
-        {
-          "file": "scripts/seed-press.mjs",
-          "line": 297,
-          "note": "기사 콘텐츠 행 INSERT."
+          "line": 1,
+          "note": "언론보도 선언의 보존과 접속 없는 계획·신뢰되지 않은 적용 차단의 역할 설명."
         }
       ],
       "unresolved": []
@@ -2663,11 +2648,11 @@
         {
           "source": "scripts/seed-alumni.mjs",
           "relationship": "primary",
-          "reason": "해당 inventory 원문이 이 사용자 정의 객체·효과의 선언 소유자다."
+          "reason": "이 MJS의 순수 수료생 이야기 배열이 과거 초기값의 선언 소유자다. 공개 CLI는 seed를 실행하지 않으며 이 선언은 관리자가 편집하는 운영 DB의 정본이 아니다."
         }
       ],
       "requires": ["web-base"],
-      "checks": ["관리자가 편집한 이야기·이미지 metadata를 초기 설치 원장에 합치거나 overwrite하지 않는다."],
+      "checks": ["원본 literal·실제 export의 값과 순서를 독립 digest로 대조하고 관리자가 편집한 이야기·이미지 metadata를 초기 설치 원장에 합치거나 overwrite하지 않는다.","선언 데이터 보존은 현재 운영 콘텐츠의 정확성·누락 행 판단·삽입 가능성·승인을 증명하지 않는다."],
       "unresolved": [],
       "requiredForFresh": false
     },
@@ -2697,11 +2682,11 @@
         {
           "source": "scripts/seed-faculty.mjs",
           "relationship": "primary",
-          "reason": "해당 inventory 원문이 이 사용자 정의 객체·효과의 선언 소유자다."
+          "reason": "이 MJS의 순수 교수진 배열이 과거 초기값의 선언 소유자다. 공개 CLI는 seed를 실행하지 않으며 이 선언은 관리자가 편집하는 운영 DB의 정본이 아니다."
         }
       ],
       "requires": ["web-base"],
-      "checks": ["교수진 콘텐츠 seed를 출결 업무 권한이나 실제 승인 계정 부여로 취급하지 않는다."],
+      "checks": ["원본 literal·실제 export의 값과 순서를 독립 digest로 대조하고 교수진 콘텐츠 선언을 출결 업무 권한이나 실제 승인 계정 부여로 취급하지 않는다.","선언 데이터 보존은 현재 운영 콘텐츠의 정확성·누락 행 판단·삽입 가능성·승인을 증명하지 않는다."],
       "unresolved": [],
       "requiredForFresh": false
     },
@@ -2714,11 +2699,11 @@
         {
           "source": "scripts/seed-press.mjs",
           "relationship": "primary",
-          "reason": "해당 inventory 원문이 이 사용자 정의 객체·효과의 선언 소유자다."
+          "reason": "이 MJS의 순수 언론보도 배열이 과거 초기값의 선언 소유자다. 공개 CLI는 seed를 실행하지 않으며 이 선언은 관리자가 편집하는 운영 DB의 정본이 아니다."
         }
       ],
       "requires": ["web-base"],
-      "checks": ["기사 seed의 외부 URL·중복/정렬 등 실제 데이터 효과를 fresh schema DDL과 분리한다."],
+      "checks": ["원본 literal·실제 export의 값과 순서를 독립 digest로 대조하고 기사 선언의 외부 URL·중복/정렬 등 데이터 효과를 fresh schema DDL과 분리한다.","선언 데이터 보존은 현재 운영 콘텐츠의 정확성·외부 링크 유효성·누락 행 판단·삽입 가능성·승인을 증명하지 않는다."],
       "unresolved": [],
       "requiredForFresh": false
     },
