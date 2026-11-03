@@ -37,6 +37,7 @@ function pressForm(url: string, imageUrl = "") {
 describe("언론보도 URL 검증", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.requireAdmin.mockResolvedValue({ user: { id: "admin-1", role: "ADMIN" } });
     mocks.from.mockResolvedValue([{ maxOrder: null }]);
   });
 

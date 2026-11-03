@@ -1,11 +1,13 @@
-import { eq } from "drizzle-orm";
+/**
+ * 관리자 언론보도 편집 화면의 웹 adapter입니다.
+ * UUID를 조회 전에 검증하고 서비스 DTO를 기존 폼 기본값으로 변환합니다.
+ */
 import { notFound } from "next/navigation";
 import { z } from "zod/v4";
 import { PressForm } from "@/app/(admin)/admin/press/_components/press-form";
 import { updatePressArticle } from "@/features/press/actions";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { pressArticles } from "@/lib/db/schema";
+import { getAdminItem } from "@/features/press/admin/service";
 import { toKstDateInput } from "@/lib/date-time";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +17,7 @@ type EditPressArticlePageProps = {
 };
 
 export default async function EditPressArticlePage({ params }: EditPressArticlePageProps) {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const { id } = await params;
 
@@ -27,7 +29,7 @@ export default async function EditPressArticlePage({ params }: EditPressArticleP
     notFound();
   }
 
-  const [article] = await db.select().from(pressArticles).where(eq(pressArticles.id, parsedId.data)).limit(1);
+  const article = await getAdminItem({ userId: session.user.id, role: session.user.role }, parsedId.data);
 
   if (!article) {
     notFound();

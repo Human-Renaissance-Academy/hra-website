@@ -1,11 +1,10 @@
-import { eq } from "drizzle-orm";
+/** 교수진 편집 페이지는 UUID를 사전 검증하고 서비스 결과를 기존 폼 props로 전달합니다. */
 import { notFound } from "next/navigation";
 import { z } from "zod/v4";
 import { FacultyForm } from "@/app/(admin)/admin/faculty/_components/faculty-form";
 import { updateFaculty } from "@/features/faculty/actions";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { faculty } from "@/lib/db/schema";
+import { getAdminFaculty } from "@/features/faculty/admin/service";
 
 export const metadata = { title: "교수진 수정" };
 
@@ -28,7 +27,7 @@ export default async function EditFacultyPage({ params }: EditFacultyPageProps) 
     notFound();
   }
 
-  const [facultyMember] = await db.select().from(faculty).where(eq(faculty.id, parsedId.data)).limit(1);
+  const facultyMember = await getAdminFaculty({ userId: session.user.id, role: session.user.role }, parsedId.data);
 
   if (!facultyMember) {
     notFound();

@@ -29,6 +29,7 @@ import { deletePressArticle } from "@/features/press/actions";
 describe("언론보도 삭제와 Blob 소유권", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.requireAdmin.mockResolvedValue({ user: { id: "admin-1", role: "ADMIN" } });
     mocks.findFirst.mockResolvedValue({
       imageUrl: "https://example.public.blob.vercel-storage.com/markdown-images/shared.png",
     });

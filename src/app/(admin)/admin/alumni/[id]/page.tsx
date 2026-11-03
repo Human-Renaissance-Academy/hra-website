@@ -1,11 +1,10 @@
-import { eq } from "drizzle-orm";
+/** 관리자 편집 페이지는 UUID를 먼저 검증하고 서비스의 폼 기본값을 사용합니다. */
 import { notFound } from "next/navigation";
 import { z } from "zod/v4";
 import { AlumniStoryForm } from "@/app/(admin)/admin/alumni/_components/alumni-story-form";
 import { updateAlumniStory } from "@/features/alumni/actions";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { alumniStories } from "@/lib/db/schema";
+import { getAdminStory } from "@/features/alumni/admin/service";
 
 export const dynamic = "force-dynamic";
 
@@ -26,9 +25,7 @@ export default async function EditAlumniStoryPage({ params }: EditAlumniStoryPag
     notFound();
   }
 
-  const story = await db.query.alumniStories.findFirst({
-    where: eq(alumniStories.id, parsedId.data),
-  });
+  const story = await getAdminStory({ userId: session.user.id, role: session.user.role }, parsedId.data);
 
   if (!story) {
     notFound();

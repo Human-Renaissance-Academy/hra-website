@@ -4,13 +4,11 @@
  * 관리자 공지사항 생성·수정·삭제와 고정·게시 상태 반전을 처리한다.
  * 반전은 요청마다 실행하는 명령이며, 반환 안내는 그 명령이 저장한 상태를 나타낸다.
  */
-import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod/v4";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { notices } from "@/lib/db/schema";
+import * as noticeService from "@/features/notices/admin/service";
 
 const noticeFormSchema = z.object({
   title: z.string().trim().min(1, "제목을 입력해주세요.").max(300, "제목은 300자 이하여야 합니다."),
@@ -85,20 +83,14 @@ export async function createNotice(formData: FormData): Promise<NoticeActionStat
     };
   }
 
-  await db.insert(notices).values({
-    title: parsed.data.title,
-    content: parsed.data.content,
-    status: parsed.data.status,
-    pinned: parsed.data.pinned,
-    authorId: session.user.id,
-  });
+  await noticeService.createNotice({ userId: session.user.id, role: session.user.role }, parsed.data);
 
   revalidateNoticePaths();
   redirect("/admin/notices");
 }
 
 export async function updateNotice(id: string, formData: FormData): Promise<NoticeActionState> {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const parsedId = parseNoticeId(id);
   if (!parsedId.success) {
@@ -118,33 +110,9 @@ export async function updateNotice(id: string, formData: FormData): Promise<Noti
     };
   }
 
-  // 존재 여부만 확인합니다. 본문 URL은 파일 소유권 증명이 아니므로 삭제에 사용하지 않습니다.
-  const existing = await db.query.notices.findFirst({
-    where: eq(notices.id, parsedId.data),
-    columns: {
-      id: true,
-    },
-  });
-
-  if (!existing) {
-    return {
-      success: false,
-      message: "공지사항을 찾을 수 없습니다.",
-    };
-  }
-
-  const updatedRows = await db
-    .update(notices)
-    .set({
-      title: parsed.data.title,
-      content: parsed.data.content,
-      status: parsed.data.status,
-      pinned: parsed.data.pinned,
-    })
-    .where(eq(notices.id, parsedId.data))
-    .returning({ id: notices.id });
-
-  if (updatedRows.length === 0) {
+  if (!(await noticeService.updateNotice(
+    { userId: session.user.id, role: session.user.role }, parsedId.data, parsed.data,
+  ))) {
     return {
       success: false,
       message: "공지사항을 찾을 수 없습니다.",
@@ -156,7 +124,7 @@ export async function updateNotice(id: string, formData: FormData): Promise<Noti
 }
 
 export async function deleteNotice(id: string): Promise<NoticeActionState> {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const parsedId = parseNoticeId(id);
   if (!parsedId.success) {
@@ -166,21 +134,14 @@ export async function deleteNotice(id: string): Promise<NoticeActionState> {
     };
   }
 
-  const target = await db.query.notices.findFirst({
-    where: eq(notices.id, parsedId.data),
-    columns: {
-      id: true,
-    },
-  });
-
-  if (!target) {
+  if (!(await noticeService.deleteNotice(
+    { userId: session.user.id, role: session.user.role }, parsedId.data,
+  ))) {
     return {
       success: false,
       message: "공지사항을 찾을 수 없습니다.",
     };
   }
-
-  await db.delete(notices).where(eq(notices.id, parsedId.data));
 
   revalidateNoticePaths();
   return {
@@ -194,7 +155,7 @@ export async function deleteNotice(id: string): Promise<NoticeActionState> {
  * 응답은 해당 UPDATE의 저장값 기준이고, 이후 다른 명령으로 상태가 다시 바뀔 수 있다.
  */
 export async function togglePin(id: string): Promise<NoticeActionState> {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const parsedId = parseNoticeId(id);
   if (!parsedId.success) {
@@ -204,11 +165,9 @@ export async function togglePin(id: string): Promise<NoticeActionState> {
     };
   }
 
-  // 행 잠금 획득 후의 최신 값을 SQL 안에서 반전해 동시 요청의 변경을 덮어쓰지 않는다.
-  const [updated] = await db.update(notices)
-    .set({ pinned: sql`NOT ${notices.pinned}` })
-    .where(eq(notices.id, parsedId.data))
-    .returning({ pinned: notices.pinned });
+  const updated = await noticeService.togglePin(
+    { userId: session.user.id, role: session.user.role }, parsedId.data,
+  );
 
   if (!updated) {
     return {
@@ -226,7 +185,7 @@ export async function togglePin(id: string): Promise<NoticeActionState> {
 
 /** 게시 반전도 요청마다 적용하며, 재전송·후속 명령의 의미는 togglePin과 동일하다. */
 export async function toggleStatus(id: string): Promise<NoticeActionState> {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const parsedId = parseNoticeId(id);
   if (!parsedId.success) {
@@ -236,11 +195,9 @@ export async function toggleStatus(id: string): Promise<NoticeActionState> {
     };
   }
 
-  const [updated] = await db.update(notices)
-    .set({ status: sql`CASE WHEN ${notices.status} = 'DRAFT'
-      THEN 'PUBLISHED'::notice_status ELSE 'DRAFT'::notice_status END` })
-    .where(eq(notices.id, parsedId.data))
-    .returning({ status: notices.status });
+  const updated = await noticeService.toggleStatus(
+    { userId: session.user.id, role: session.user.role }, parsedId.data,
+  );
 
   if (!updated) {
     return {
