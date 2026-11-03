@@ -252,8 +252,8 @@ const workflowMutationCases = [
     "비필수 워크플로가 필수 체크 이름을 중복 선언(결과 혼동) 차단",
     (w) => {
       w["expanded-e2e.yml"] = w["expanded-e2e.yml"].replace(
-        "name: 공개 12건 · 학사 G1 10개 필수 사례",
-        "name: 실제 production CSP · 에디터 · 인쇄 · Blob SDK",
+        / {2}expanded:\n {4}name: [^\n]+/,
+        "  expanded:\n    name: 실제 production CSP · 에디터 · 인쇄 · Blob SDK",
       );
     },
   ],
@@ -312,8 +312,10 @@ const workflowMutationCases = [
 
 for (const [caseName, mutate] of workflowMutationCases) {
   test(`워크플로 경계 회귀: ${caseName}`, () => {
+    const baseline = loadBaselineWorkflows();
     const mutated = loadBaselineWorkflows();
     mutate(mutated);
+    assert.notDeepEqual(mutated, baseline, `${caseName} 변이가 실제로 적용되지 않았습니다.`);
     const errors = validateWorkflowCheckBoundaries(mutated);
     assert.ok(errors.length > 0, `${caseName} 사례가 차단되지 않았습니다.`);
   });
@@ -355,7 +357,7 @@ for (const [name, mutate] of [
     "경로 필터가 있는 확장 E2E를 필수 체크로 잘못 등록한 경우 거부",
     (p) => {
       p.required_status_checks.checks.push({
-        context: "공개 12건 · 학사 G1 10개 필수 사례",
+        context: "공개 24건 · 학사 G1 10개 필수 사례",
         app_id: GITHUB_ACTIONS_APP_ID,
       });
     },

@@ -60,7 +60,7 @@ release-please의 활성화 조건과 별도 `RELEASE_PLEASE_TOKEN` 전달을 �
 | Vercel GitHub App | `Vercel` | `8329` | PR / `main` 커밋 배포 상태 | 예 | **필수** | 등록됨 |
 | `process-format.yml` | `이슈 형식`, `열린 이슈·PR 일괄 검사` | `15368` | `issues` / `workflow_dispatch` | PR에서는 `skipped` | 비필수 | 미등록 |
 | `authentication-measurement.yml` | `조건부 비용 비교 · 200개 계정 · 즉시 권한 회수` | `15368` | `pull_request(main, paths)`, `workflow_dispatch` | 아니오 (`paths` 일치 시에만 생성) | 비필수 (조건부 회귀) | 미등록 |
-| `expanded-e2e.yml` | `공개 12건 · 학사 G1 10개 필수 사례` | `15368` | `schedule`(일일), `pull_request(main, paths)`, `workflow_dispatch` | 아니오 (`paths` 일치 시에만 생성) | 비필수 (예약 관측) | 미등록 |
+| `expanded-e2e.yml` | `공개 24건 · 학사 G1 10개 필수 사례` | `15368` | `schedule`(일일), `pull_request(main, paths)`, `workflow_dispatch` | 아니오 (`paths` 일치 시에만 생성) | 비필수 (예약 관측) | 미등록 |
 | `production-smoke.yml` | `격리 점검·알림 보고서 계약`, `Production 읽기 점검` | `15368` | `deployment_status`, `schedule`(매시), `pull_request(main, paths)`, `workflow_dispatch` | 아니오 (`smoke`는 PR 제외) | 비필수 (운영 관측) | 미등록 |
 | `release-please.yml` | `release-please` | `15368` | `push(main)`, `workflow_dispatch` | 아니오 | 비필수 (병합 후 릴리스) | 미등록 |
 
