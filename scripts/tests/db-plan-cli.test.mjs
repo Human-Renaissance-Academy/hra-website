@@ -1,5 +1,5 @@
 /**
- * 계획 전용 스키마 CLI의 직접 실행·npm 별칭·모듈 import 경계를 실제 자식 프로세스로 검증합니다.
+ * 계획 전용 DB CLI의 직접 실행·npm 별칭·모듈 import 경계를 실제 자식 프로세스로 검증합니다.
  * DB 드라이버와 자격정보 조회, SQL 읽기·외부 통신·추가 프로세스 실행을 계수하면서 차단합니다.
  * 합성 값만 전달하며 운영 환경 파일·DB·네트워크를 사용하지 않습니다.
  */
@@ -10,6 +10,8 @@ import { copyFileSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync,
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { createHash } from "node:crypto";
+import ts from "typescript";
 
 // npm 별칭도 저장소의 실제 명령을 그대로 사용하되 환경 파일이 없는 별도 디렉터리에서 실행합니다.
 const repository = fileURLToPath(new URL("../../", import.meta.url));
@@ -19,16 +21,19 @@ const targets = [
   { name: "모집설정", script: "scripts/migrate-recruitment-singleton.mjs", alias: "db:migrate-recruitment-singleton", prefix: "RECRUITMENT_INSTALLER" },
   { name: "지원서 중복 제약", script: "scripts/migrate-add-application-submissions-unique.mjs", alias: "db:migrate-add-application-unique", prefix: "APPLICATION_UNIQUE_INSTALLER" },
   { name: "기존 요청 제한 로그", script: "scripts/migrate-add-rate-limit-tables.mjs", alias: "db:migrate-add-rate-limit-tables", prefix: "LEGACY_RATE_TABLE_INSTALLER" },
+  { name: "기수 선언", script: "scripts/seed-cohorts.mjs", alias: "seed-cohorts", prefix: "COHORT_SEED", declaredCount: 19 },
 ];
 const commands = JSON.parse(readFileSync(join(repository, "package.json"), "utf8")).scripts;
 const syntheticUrl = "postgresql://atomic-only:atomic-credential-sentinel@atomic-qa.invalid/atomic_only";
 const unsafeMarker = "ATOMIC_PRIVATE_URL_SQL_SENTINEL";
 const emptyCounts = { dbImports: 0, dbClients: 0, credentialReads: 0, network: 0, processCalls: 0, sqlReads: 0 };
+// 기수 선언의 필드 이름·타입만 고정합니다. 실제 이름·내용·날짜 값은 결과나 실패 메시지에 넣지 않습니다.
+const cohortFieldTypes = [["name", "string"], ["startDate", "string"], ["endDate", "string"], ["description", "string"], ["isActive", "boolean"], ["order", "number"], ["recruitmentStatus", "string"]];
 
 /** 네트워크를 열기 전에 실패시키며 원문을 기록하지 않는 preload와 실행 경로를 만듭니다. */
 function sandbox(t, target = targets[0]) {
   const { script, alias } = target;
-  const root = mkdtempSync(join(tmpdir(), "hra-schema-plan-cli-"));
+  const root = mkdtempSync(join(tmpdir(), "hra-db-plan-cli-"));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   mkdirSync(join(root, "scripts"));
   copyFileSync(join(repository, script), join(root, script));
@@ -112,6 +117,15 @@ if(!['npm','npm-cli.js'].includes((process.argv[1]??'').split('/').at(-1))){
         await import(${JSON.stringify(pathToFileURL(join(root, script)).href)});
         (await import('node:fs')).writeFileSync(${JSON.stringify(importCompletion)},JSON.stringify({continued:true,exitCodeUnchanged:process.exitCode===before}));
       `];
+    } else if (mode === "cohort-export") {
+      parameters = ["--input-type=module", "--eval", `
+        const before=process.exitCode;
+        const data=(await import(${JSON.stringify(pathToFileURL(join(root, script)).href)})).cohortsData;
+        const fields=${JSON.stringify(cohortFieldTypes)};
+        const fixedShape=Array.isArray(data)&&data.every(row=>row!==null&&typeof row==='object'&&!Array.isArray(row)&&Object.keys(row).length===fields.length&&fields.every(([key,type])=>Object.hasOwn(row,key)&&typeof row[key]===type));
+        const jsonSha256=fixedShape?(await import('node:crypto')).createHash('sha256').update(JSON.stringify(data)).digest('hex'):null;
+        (await import('node:fs')).writeFileSync(${JSON.stringify(importCompletion)},JSON.stringify({continued:true,exitCodeUnchanged:process.exitCode===before,declaredCount:Array.isArray(data)?data.length:null,fixedShape,jsonSha256}));
+      `];
     } else if (mode === "canary") {
       parameters = ["--input-type=module", "--eval", `
         let blocked=0;
@@ -138,6 +152,66 @@ if(!['npm','npm-cli.js'].includes((process.argv[1]??'').split('/').at(-1))){
   return { root, run };
 }
 
+test("기수 선언의 원문·실제 export는 독립 고정 해시와 개수·필드 형식을 부작용 없이 보존한다", t => {
+  const target = targets.find(item => item.alias === "seed-cohorts");
+  assert.equal(Boolean(target), true, "COHORT_DECLARATION_TARGET_PRESENT");
+  const source = readFileSync(join(repository, target.script), "utf8");
+  const ast = ts.createSourceFile(target.script, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  assert.equal(ast.parseDiagnostics.length, 0, "COHORT_DECLARATION_PARSEABLE");
+  const declarations = [];
+  // AST만 읽으며 기존 모듈을 실행하거나 기대 값을 실행 대상 export에서 만들지 않습니다.
+  function visit(node) {
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === "cohortsData") declarations.push(node);
+    ts.forEachChild(node, visit);
+  }
+  visit(ast);
+  assert.equal(declarations.length, 1, "COHORT_DECLARATION_UNIQUE");
+  const initializer = declarations[0].initializer;
+  assert.equal(Boolean(initializer && ts.isArrayLiteralExpression(initializer)), true, "COHORT_DECLARATION_ARRAY_LITERAL");
+  assert.equal(createHash("sha256").update(initializer.getText(ast)).digest("hex"), "02891d6c408c5b2323f1281544436b79e6e1d1a8dd928f386e6cad4607f730ff", "COHORT_DECLARATION_LITERAL_HASH");
+  assert.equal(initializer.elements.length, 19, "COHORT_DECLARED_COUNT");
+  // 문자열·숫자·불리언 literal만 해석하고 호출·계산·전개식은 허용하지 않습니다.
+  function primitive(node) {
+    if (ts.isStringLiteral(node)) return node.text;
+    if (ts.isNumericLiteral(node)) return Number(node.text);
+    if (node.kind === ts.SyntaxKind.TrueKeyword) return true;
+    if (node.kind === ts.SyntaxKind.FalseKeyword) return false;
+    assert.fail("COHORT_DECLARATION_PRIMITIVE_REQUIRED");
+  }
+  const declared = initializer.elements.map(row => {
+    assert.equal(ts.isObjectLiteralExpression(row), true, "COHORT_DECLARATION_ROW_LITERAL");
+    assert.equal(row.properties.length, 7, "COHORT_DECLARATION_FIELD_COUNT");
+    return Object.fromEntries(row.properties.map((property, index) => {
+      assert.equal(ts.isPropertyAssignment(property) && ts.isIdentifier(property.name), true, "COHORT_DECLARATION_LITERAL_PROPERTY");
+      const [key, type] = cohortFieldTypes[index];
+      assert.equal(property.name.text === key, true, "COHORT_DECLARATION_FIELD_NAME");
+      const value = primitive(property.initializer);
+      assert.equal(typeof value === type, true, "COHORT_DECLARATION_FIELD_TYPE");
+      return [key, value];
+    }));
+  });
+  assert.equal(new Set(declared.map(row => row.name)).size, 19, "COHORT_DECLARATION_DISTINCT_KEYS");
+  // 고정 JSON 해시는 기존 선언의 필드 순서로 직렬화한 값이며 원문 데이터 자체는 반환하지 않습니다.
+  const expectedJsonSha256 = "4ccf99a8beee050fcdf04ac0cb714305cf5efb5fe4cedadf826ed2de925f2655";
+  assert.equal(createHash("sha256").update(JSON.stringify(declared)).digest("hex"), expectedJsonSha256, "COHORT_DECLARATION_JSON_HASH");
+  const fixture = sandbox(t, target);
+  const result = fixture.run([], { mode: "cohort-export" });
+  assert.equal(result.status, 0, "COHORT_EXPORT_IMPORTED");
+  assert.equal(result.stdout.length, 0, "COHORT_EXPORT_NO_OUTPUT");
+  assert.equal(result.stderr.length, 0, "COHORT_EXPORT_NO_ERROR_OUTPUT");
+  assert.deepEqual(result.counts, emptyCounts);
+  assert.deepEqual(result.imported, { continued: true, exitCodeUnchanged: true, declaredCount: 19, fixedShape: true, jsonSha256: expectedJsonSha256 });
+  // 계획 응답에도 실제 선언의 문자열 값을 섞지 않습니다. 실패 때도 비교 결과만 기록합니다.
+  const plan = fixture.run();
+  assert.equal(plan.status, 0);
+  assert.deepEqual(plan.counts, emptyCounts);
+  for (const row of declared) {
+    for (const value of Object.values(row).filter(item => typeof item === "string" && item.length > 0)) {
+      assert.equal(plan.stdout.includes(value), false, "COHORT_PLAN_NO_DECLARATION_VALUE");
+    }
+  }
+});
+
 /** 차단기를 생략했거나 계수 파일이 사라져 0회로 오인하지 않는지 실제 자식으로 검증합니다. */
 test("격리 canary는 DB import·클라이언트·자격정보·네트워크·프로세스·SQL 읽기를 탐지한다", t => {
   const result = sandbox(t).run([], { mode: "canary" });
@@ -153,7 +227,8 @@ for (const target of targets) {
       const result = fixture.run([], { mode, env: { DATABASE_URL: "", PGPASSWORD: "" } });
       assert.equal(result.status, 0, "ATOMIC_PLAN_SUCCEEDED");
       assert.equal(result.stdout.includes(`[${target.prefix}_PLAN]`), true);
-      assert.equal(result.stderr, "");
+      if (target.declaredCount !== undefined) assert.equal(result.stdout.includes(`선언 항목 ${target.declaredCount}개`), true);
+      assert.equal(result.stderr.length, 0);
       assert.deepEqual(result.counts, emptyCounts);
     });
 
@@ -161,7 +236,8 @@ for (const target of targets) {
       const result = sandbox(t, target).run([], { mode, env: { HRA_DB_APPLY_ALLOWED: "true", HRA_DB_APPROVAL: '{"approved":"private-approval-sentinel"}' } });
       assert.equal(result.status, 0, "ATOMIC_PLAN_SUCCEEDED");
       assert.equal(result.stdout.includes(`[${target.prefix}_PLAN]`), true);
-      assert.equal(result.stderr, "");
+      if (target.declaredCount !== undefined) assert.equal(result.stdout.includes(`선언 항목 ${target.declaredCount}개`), true);
+      assert.equal(result.stderr.length, 0);
       assert.deepEqual(result.counts, emptyCounts);
     });
 
@@ -170,7 +246,7 @@ for (const target of targets) {
       for (const env of [{}, { HRA_DB_APPLY_ALLOWED: "true", HRA_DB_APPROVAL: '{"approved":"private-approval-sentinel"}', VERCEL_ENV: "development" }]) {
         const result = fixture.run(["--confirm-apply"], { mode, env });
         assert.equal(result.status, 1);
-        assert.equal(result.stdout, "");
+        assert.equal(result.stdout.length, 0);
         assert.equal(result.stderr.includes(`[${target.prefix}_TARGET_UNTRUSTED]`), true);
         assert.deepEqual(result.counts, emptyCounts);
       }
@@ -186,7 +262,7 @@ for (const target of targets) {
       ]) {
         const result = fixture.run(args, { mode });
         assert.equal(result.status, 1);
-        assert.equal(result.stdout, "");
+        assert.equal(result.stdout.length, 0);
         assert.equal(result.stderr.includes(`[${target.prefix}_ARGUMENTS]`), true);
         assert.deepEqual(result.counts, emptyCounts);
       }
@@ -196,8 +272,8 @@ for (const target of targets) {
   test(`${target.name}: 모듈 import는 출력·종료·DB import·자격정보 조회 부작용이 없다`, t => {
     const result = sandbox(t, target).run([], { mode: "import" });
     assert.equal(result.status, 0);
-    assert.equal(result.stdout, "");
-    assert.equal(result.stderr, "");
+    assert.equal(result.stdout.length, 0);
+    assert.equal(result.stderr.length, 0);
     assert.deepEqual(result.counts, emptyCounts);
     assert.deepEqual(result.imported, { continued: true, exitCodeUnchanged: true });
   });

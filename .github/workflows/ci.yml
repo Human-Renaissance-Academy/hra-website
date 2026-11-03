@@ -49,11 +49,11 @@ jobs:
           node --test scripts/tests/db-fresh-candidate-*.test.mjs
           node scripts/check-db-installation-contract.mjs
 
-      - name: 기본 DB push·스키마 설치 접속 차단 회귀
-        # 차단된 합성 대상에서 기본 접속·계획 전용 설치 명령의 우회 거부와 오프라인 SQL 생성을 검사합니다.
+      - name: 기본 DB push·관리 명령 접속 차단 회귀
+        # 차단된 합성 대상에서 기본 접속·계획 전용 관리 명령의 우회 거부와 오프라인 SQL 생성을 검사합니다.
         run: |
           node --test scripts/tests/db-push-guard.test.mjs
-          node --test scripts/tests/schema-plan-cli.test.mjs
+          node --test scripts/tests/db-plan-cli.test.mjs
 
       - name: 버전 SQL manifest·이력 snapshot 소스 계약
         # 실제 적용 이력을 만들지 않고 파일·Git·전달된 JSON의 일관성만 확인합니다.

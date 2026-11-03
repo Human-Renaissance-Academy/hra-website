@@ -1,29 +1,12 @@
 /**
- * 기수 시드 스크립트
- *
- * 1기부터 19기까지의 기수 데이터를 cohorts 테이블에 입력합니다.
- * 이미 동일한 이름의 기수가 있으면 건너뜁니다.
- *
- * 사용법:
- *   node scripts/seed-cohorts.mjs
- *
- * 환경변수:
- *   DATABASE_URL - Neon Postgres 연결 문자열 (필수)
+ * 과거 기수 선언 데이터를 보존하고 변경 계획만 안내하는 차단형 CLI입니다.
+ * 신뢰된 대상·복구·승인 경계가 마련되기 전에는 DB·자격정보·파일을 읽거나 연결하지 않습니다.
+ * 기존 이름별 조회·건너뛰기·순차 INSERT 적용은 비활성이며 기존 행·학적·계정·역할을 연결하지 않습니다.
+ * 선언 건수는 실제 DB 건수가 아니며 선언의 보존이 현재 운영 내용이나 적용 승인을 증명하지는 않습니다.
  */
 
-import { neon } from "@neondatabase/serverless";
-
-const DATABASE_URL = process.env.DATABASE_URL;
-
-if (!DATABASE_URL) {
-  console.error("❌ DATABASE_URL 환경변수가 설정되지 않았습니다.");
-  process.exit(1);
-}
-
-const sql = neon(DATABASE_URL);
-
-// /cohorts 페이지의 fallback 데이터를 그대로 옮긴 기수 데이터
-const cohortsData = [
+// 원본 배열 literal을 그대로 보존하는 순수 선언이며 화면·서비스의 콘텐츠 기본본으로 연결하지 않습니다.
+export const cohortsData = [
   { name: "19기", startDate: "2025-09-01T00:00:00.000Z", endDate: "2026-08-31T00:00:00.000Z", description: "새로운 도전을 향해 나아가는 19기", isActive: true, order: 19, recruitmentStatus: "OPEN" },
   { name: "18기", startDate: "2024-09-01T00:00:00.000Z", endDate: "2025-08-31T00:00:00.000Z", description: "함께 성장하며 미래를 그리다.", isActive: false, order: 18, recruitmentStatus: "CLOSED" },
   { name: "17기", startDate: "2023-09-01T00:00:00.000Z", endDate: "2024-08-31T00:00:00.000Z", description: "한계를 극복하고 성장으로 보답하다.", isActive: false, order: 17, recruitmentStatus: "CLOSED" },
@@ -45,60 +28,19 @@ const cohortsData = [
   { name: "1기", startDate: "2007-09-01T00:00:00.000Z", endDate: "2008-08-31T00:00:00.000Z", description: "HRA의 첫걸음, 역사의 시작.", isActive: false, order: 1, recruitmentStatus: "CLOSED" },
 ];
 
-async function main() {
-  console.log("🎓 기수 시드 데이터 입력을 시작합니다...\n");
-
-  let inserted = 0;
-  let skipped = 0;
-
-  for (const cohort of cohortsData) {
-    // 동일한 이름의 기수가 이미 있는지 먼저 확인합니다.
-    const existing = await sql`
-      SELECT id FROM cohorts WHERE name = ${cohort.name}
-    `;
-
-    if (existing.length > 0) {
-      console.log(`  ⏭️  ${cohort.name} - 이미 존재, 건너뜀`);
-      skipped++;
-      continue;
-    }
-
-    // 기수 기본 정보와 모집 상태를 함께 입력합니다.
-    await sql`
-      INSERT INTO cohorts (
-        id,
-        name,
-        description,
-        start_date,
-        end_date,
-        recruitment_status,
-        is_active,
-        "order",
-        created_at,
-        updated_at
-      )
-      VALUES (
-        gen_random_uuid(),
-        ${cohort.name},
-        ${cohort.description},
-        ${cohort.startDate},
-        ${cohort.endDate},
-        ${cohort.recruitmentStatus},
-        ${cohort.isActive},
-        ${cohort.order},
-        NOW(),
-        NOW()
-      )
-    `;
-
-    console.log(`  ✅ ${cohort.name} 입력 완료`);
-    inserted++;
+/** 이름·내용·URL·인자 원문을 출력하지 않고 선언 건수와 고정 계획 또는 오류만 제공합니다. */
+function run(args) {
+  if (args.length === 0) {
+    console.log(`기수 데이터 계획: 선언 항목 ${cohortsData.length}개. 실제 DB 건수는 조회하지 않았으며 직접 적용은 비활성입니다. 접속·변경하지 않습니다. [COHORT_SEED_PLAN]`);
+    return 0;
   }
-
-  console.log(`\n🎉 완료! 입력: ${inserted}기, 건너뜀: ${skipped}기`);
+  if (args.length === 1 && args[0] === "--confirm-apply") {
+    console.error("적용 의도만으로 대상·복구·승인을 확인할 수 없어 직접 적용을 차단합니다. [COHORT_SEED_TARGET_UNTRUSTED]");
+    return 1;
+  }
+  console.error("지원하지 않는 인자입니다. 인자 없이 변경 계획을 확인하세요. [COHORT_SEED_ARGUMENTS]");
+  return 1;
 }
 
-main().catch((err) => {
-  console.error("❌ 시드 실행 중 오류 발생:", err);
-  process.exit(1);
-});
+// 프로젝트 기준인 Node 24의 직접 실행 표식으로 모듈 import 시 출력·종료 부작용을 막습니다.
+if (import.meta.main) process.exitCode = run(process.argv.slice(2));

@@ -208,7 +208,7 @@ test("현재 인벤토리는 읽기 전용 preflight·현행 뷰와 알려진 �
     "migrate-recruitment-singleton": ["db_schema_and_data", "read_only"],
     "seed-admin": ["seed_db", "rejects"],
     "seed-alumni": ["seed_db", "writes"],
-    "seed-cohorts": ["seed_db", "writes"],
+    "seed-cohorts": ["seed_db", "read_only"],
     "seed-faculty": ["seed_db", "writes"],
     "seed-press": ["seed_db", "writes"],
   };

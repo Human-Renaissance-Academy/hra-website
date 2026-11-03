@@ -424,9 +424,9 @@
     },
     {
       "path": "scripts/seed-cohorts.mjs",
-      "sha256": "911836dd86f5e53067ebf5e0a35fa8519c0a1df13e292d69a110f3f809b28d31",
+      "sha256": "62fe488c16ae2df046f89261c0f94a2982e182fdcc1b0a3352513dd0074689ce",
       "effect": "seed_db",
-      "defaultBehavior": "writes",
+      "defaultBehavior": "read_only",
       "writeOptions": [],
       "commands": [
         "seed-cohorts"
