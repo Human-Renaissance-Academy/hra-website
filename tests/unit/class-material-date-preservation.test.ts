@@ -42,7 +42,7 @@ function editForm() {
 describe("관리자 강의자료 수업 날짜", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    mocks.requireAdmin.mockResolvedValue({ user: { id } });
+    mocks.requireAdmin.mockResolvedValue({ user: { id, role: "ADMIN" } });
     mocks.findFirst.mockResolvedValue({ id, classDate: originalDate });
     mocks.updateSet.mockReturnValue({ where: mocks.updateWhere });
     mocks.updateWhere.mockReturnValue({ returning: mocks.updateReturning });

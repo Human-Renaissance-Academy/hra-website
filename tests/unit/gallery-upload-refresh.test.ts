@@ -48,7 +48,7 @@ function findGridKey(node: ReactNode): string | null {
 describe("갤러리 업로드 후 이미지 목록", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    mocks.requireAdmin.mockResolvedValue({ user: { id: galleryId } });
+    mocks.requireAdmin.mockResolvedValue({ user: { id: galleryId, role: "ADMIN" } });
     mocks.prepareGalleryUploads.mockImplementation(async (formData: FormData) => ({ formData }));
   });
 

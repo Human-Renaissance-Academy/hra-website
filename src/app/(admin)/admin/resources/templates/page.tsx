@@ -1,6 +1,6 @@
+/** 보고서 양식 관리자 목록의 세션 확인과 표시를 담당하는 Web 어댑터입니다. */
 import Link from "next/link";
 import { formatKstDate as formatDate } from "@/lib/date-time";
-import { asc, desc } from "drizzle-orm";
 import { ResourcesTabNav } from "@/app/(admin)/admin/resources/_components/resources-tab-nav";
 import { TemplateRowActions } from "@/app/(admin)/admin/resources/templates/_components/template-row-actions";
 import { Badge } from "@/components/ui/badge";
@@ -15,8 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { reportTemplates } from "@/lib/db/schema";
+import { listAdminTemplates } from "@/features/report-templates/admin/service";
 
 export const dynamic = "force-dynamic";
 
@@ -38,22 +37,9 @@ const reportCategoryLabel = (code: string | null) => {
 };
 
 export default async function AdminResourceTemplatesPage() {
-  await requireAdmin();
+  const session = await requireAdmin();
 
-  const rows = await db
-    .select({
-      id: reportTemplates.id,
-      slug: reportTemplates.slug,
-      title: reportTemplates.title,
-      category: reportTemplates.category,
-      reportCategory: reportTemplates.reportCategory,
-      version: reportTemplates.version,
-      published: reportTemplates.published,
-      order: reportTemplates.order,
-      updatedAt: reportTemplates.updatedAt,
-    })
-    .from(reportTemplates)
-    .orderBy(asc(reportTemplates.order), desc(reportTemplates.updatedAt));
+  const rows = await listAdminTemplates({ userId: session.user.id, role: session.user.role });
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10">

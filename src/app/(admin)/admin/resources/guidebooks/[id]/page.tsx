@@ -8,15 +8,13 @@
 
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import { Button } from "@/components/ui/button";
 import { ResourcesTabNav } from "@/app/(admin)/admin/resources/_components/resources-tab-nav";
 import { GuidebookForm } from "@/app/(admin)/admin/resources/guidebooks/_components/guidebook-form";
 import { updateGuidebook } from "@/features/guidebooks/actions";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { guidebooks } from "@/lib/db/schema";
+import { getAdminGuidebook } from "@/features/guidebooks/admin/service";
 
 export const dynamic = "force-dynamic";
 
@@ -37,9 +35,7 @@ export default async function EditGuidebookPage({ params }: Props) {
     notFound();
   }
 
-  const guidebook = await db.query.guidebooks.findFirst({
-    where: eq(guidebooks.id, parsedId.data),
-  });
+  const guidebook = await getAdminGuidebook({ userId: session.user.id, role: session.user.role }, parsedId.data);
 
   if (!guidebook) {
     notFound();

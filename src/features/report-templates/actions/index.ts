@@ -15,13 +15,14 @@
  */
 "use server";
 
-import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod/v4";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { reportTemplates } from "@/lib/db/schema";
+import {
+  createAdminTemplate, hasDuplicateSlug, prepareTemplateUpdate,
+  unpublishAdminTemplate, updateAdminTemplate,
+} from "@/features/report-templates/admin/service";
 import { logServerError } from "@/lib/errors";
 
 // 폼 입력 검증 스키마
@@ -134,7 +135,8 @@ function revalidateTemplatePaths(slug?: string) {
 export async function createReportTemplate(
   formData: FormData,
 ): Promise<TemplateActionState> {
-  await requireAdmin();
+  const session = await requireAdmin();
+  const actor = { userId: session.user.id, role: session.user.role };
 
   const parsed = parseFormData(formData);
   if (!parsed.success) {
@@ -146,9 +148,7 @@ export async function createReportTemplate(
   }
 
   // 슬러그 중복 사전 검증 — DB unique 제약과 함께 이중으로 보호
-  const duplicate = await db.query.reportTemplates.findFirst({
-    where: eq(reportTemplates.slug, parsed.data.slug),
-  });
+  const duplicate = await hasDuplicateSlug(actor, parsed.data.slug);
   if (duplicate) {
     return {
       success: false,
@@ -158,17 +158,7 @@ export async function createReportTemplate(
   }
 
   try {
-    await db.insert(reportTemplates).values({
-      slug: parsed.data.slug,
-      title: parsed.data.title,
-      category: parsed.data.category,
-      reportCategory: parsed.data.reportCategory,
-      description: parsed.data.description,
-      version: parsed.data.version,
-      body: parsed.data.body,
-      published: parsed.data.published,
-      order: parsed.data.order,
-    });
+    await createAdminTemplate(actor, parsed.data);
   } catch (error) {
     logServerError("report-templates/create", error, {
       category: parsed.data.category,
@@ -189,7 +179,8 @@ export async function updateReportTemplate(
   id: string,
   formData: FormData,
 ): Promise<TemplateActionState> {
-  await requireAdmin();
+  const session = await requireAdmin();
+  const actor = { userId: session.user.id, role: session.user.role };
 
   const parsedId = idSchema.safeParse(id);
   if (!parsedId.success) {
@@ -209,44 +200,29 @@ export async function updateReportTemplate(
   }
 
   // 슬러그 변경 시 중복 검증 (자기 자신 제외)
-  const existing = await db.query.reportTemplates.findFirst({
-    where: eq(reportTemplates.slug, parsed.data.slug),
-  });
-  if (existing && existing.id !== parsedId.data) {
-    return {
-      success: false,
-      message: "이미 사용 중인 슬러그입니다.",
-      fieldErrors: { slug: "이미 사용 중인 슬러그입니다." },
-    };
+  const preparation = await prepareTemplateUpdate(actor, parsedId.data, parsed.data.slug);
+  switch (preparation.kind) {
+    case "duplicate":
+      return {
+        success: false,
+        message: "이미 사용 중인 슬러그입니다.",
+        fieldErrors: { slug: "이미 사용 중인 슬러그입니다." },
+      };
+    case "missing":
+      return { success: false, message: "양식을 찾을 수 없습니다." };
+    case "ready":
+      break;
+    default:
+      preparation satisfies never;
   }
 
   // 슬러그가 변경된 경우 이전 경로의 캐시도 함께 무효화해야 한다.
   // 이전 slug를 미리 확보(update 후에는 조회 불가).
-  const previous = await db.query.reportTemplates.findFirst({
-    where: eq(reportTemplates.id, parsedId.data),
-  });
-  if (!previous) {
-    return { success: false, message: "양식을 찾을 수 없습니다." };
-  }
-  const oldSlug = previous.slug;
+  const oldSlug = preparation.oldSlug;
 
   try {
-    const updated = await db
-      .update(reportTemplates)
-      .set({
-        slug: parsed.data.slug,
-        title: parsed.data.title,
-        category: parsed.data.category,
-        reportCategory: parsed.data.reportCategory,
-        description: parsed.data.description,
-        version: parsed.data.version,
-        body: parsed.data.body,
-        published: parsed.data.published,
-        order: parsed.data.order,
-      })
-      .where(eq(reportTemplates.id, parsedId.data))
-      .returning({ id: reportTemplates.id });
-    if (updated.length === 0) {
+    const updated = await updateAdminTemplate(actor, parsedId.data, parsed.data);
+    if (!updated) {
       return { success: false, message: "양식을 찾을 수 없습니다." };
     }
   } catch (error) {
@@ -275,7 +251,8 @@ export async function deleteReportTemplate(
   // 실제 row 삭제 시, 동일 slug의 content/ 시드가 존재하면 회원 페이지에 다시
   // 노출되어 운영자 의도와 어긋난다(resolver fallback 정책 참조).
   // DB row를 남겨두면 resolver가 published=false를 감지해 fallback을 차단한다.
-  await requireAdmin();
+  const session = await requireAdmin();
+  const actor = { userId: session.user.id, role: session.user.role };
 
   const parsedId = idSchema.safeParse(id);
   if (!parsedId.success) {
@@ -286,19 +263,10 @@ export async function deleteReportTemplate(
   }
 
   try {
-    const target = await db.query.reportTemplates.findFirst({
-      where: eq(reportTemplates.id, parsedId.data),
-    });
+    const target = await unpublishAdminTemplate(actor, parsedId.data);
     if (!target) {
       return { success: false, message: "양식을 찾을 수 없습니다." };
     }
-
-    // soft delete이므로 Blob 이미지는 삭제하지 않는다.
-    // DB row가 남아 있어야 published=false 감지로 fallback이 차단된다.
-    await db
-      .update(reportTemplates)
-      .set({ published: false })
-      .where(eq(reportTemplates.id, parsedId.data));
 
     revalidateTemplatePaths(target.slug);
     return { success: true, message: "비공개 처리되었습니다." };
