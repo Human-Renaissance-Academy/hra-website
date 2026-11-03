@@ -14,6 +14,8 @@ import { formatKstDate } from "@/lib/date-time";
 export const metadata: Metadata = {
   title: "공지사항",
   description: "HRA의 학사 일정, 행사, 모집 등 주요 소식을 확인할 수 있는 공지사항입니다.",
+  // 검색·페이지 쿼리가 붙은 주소도 기본 목록을 대표 주소(canonical)로 사용합니다.
+  alternates: { canonical: "/notices" },
 };
 
 export const dynamic = "force-dynamic";

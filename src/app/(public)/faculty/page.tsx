@@ -9,6 +9,8 @@ import { FacultyTabs } from "./_components/faculty-tabs";
 export const metadata: Metadata = {
   title: "교수진 소개",
   description: "HRA의 교육을 이끄는 다양한 분야의 교수진과 그들의 전문성을 소개합니다.",
+  // 사이트 기준 주소(metadataBase)와 합쳐 이 페이지의 대표 주소(canonical)가 됩니다.
+  alternates: { canonical: "/faculty" },
 };
 
 export const dynamic = "force-dynamic";

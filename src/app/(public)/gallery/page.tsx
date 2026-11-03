@@ -20,6 +20,8 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "갤러리",
   description: "HRA의 강의, 워크숍, 행사 현장의 생생한 모습을 사진으로 만나보세요.",
+  // 사이트 기준 주소(metadataBase)와 합쳐 이 페이지의 대표 주소(canonical)가 됩니다.
+  alternates: { canonical: "/gallery" },
 };
 
 export default async function GalleryPage() {

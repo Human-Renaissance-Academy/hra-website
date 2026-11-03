@@ -34,7 +34,7 @@ vi.mock("next/image", () => ({
   },
 }));
 
-import AlumniDetailPage, { metadata } from "@/app/(public)/alumni/[id]/page";
+import AlumniDetailPage, { generateMetadata } from "@/app/(public)/alumni/[id]/page";
 
 const dialect = new PgDialect();
 const id = "11111111-1111-4111-8111-111111111111";
@@ -75,8 +75,22 @@ beforeEach(() => {
   mocks.select.mockImplementation(queryBuilder);
 });
 
-it("정적 제목과 본문·이웃 링크·사이드바 표시를 유지한다", async () => {
-  expect(metadata.title).toBe("수료생 이야기");
+it("기존 제목을 유지하고 존재하는 이야기에만 canonical을 선언한다", async () => {
+  // #414: 제목은 그대로 두고 존재하는 상세에만 자기 경로를 대표 주소로 내보냅니다.
+  await expect(generateMetadata({ params: Promise.resolve({ id }) })).resolves.toEqual({
+    title: "수료생 이야기",
+    alternates: { canonical: `/alumni/${id}` },
+  });
+
+  // 잘못된 ID와 없는 이야기는 404이므로 canonical 없이 제목만 반환합니다.
+  await expect(generateMetadata({ params: Promise.resolve({ id: "invalid-id" }) }))
+    .resolves.toEqual({ title: "수료생 이야기" });
+  mocks.findFirst.mockResolvedValueOnce(null);
+  await expect(generateMetadata({ params: Promise.resolve({ id }) }))
+    .resolves.toEqual({ title: "수료생 이야기" });
+});
+
+it("본문·이웃 링크·사이드바 표시를 유지한다", async () => {
   const html = renderToStaticMarkup(await AlumniDetailPage({ params: Promise.resolve({ id }) }));
   expect(html).toContain("현재 수료생");
   expect(html).toContain("현재 인용");

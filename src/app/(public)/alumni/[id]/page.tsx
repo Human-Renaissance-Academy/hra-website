@@ -2,6 +2,7 @@
  * 공개 수료생 상세의 본문·이웃 링크·사이드바를 렌더링합니다.
  * UUID 검사와 조회 순서·표시 열은 수료생 Application Service/Repository에 맡깁니다.
  */
+import { cache } from "react";
 import { getPublicAlumniDetail } from "@/features/alumni/detail/service";
 import { notFound } from "next/navigation";
 import Image from "next/image";
@@ -13,19 +14,32 @@ import { MarkdownViewer } from "@/components/markdown/markdown-viewer";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "수료생 이야기",
-};
-
 interface PageProps {
   params: Promise<{
     id: string;
   }>;
 }
 
+// 메타데이터와 본문이 같은 요청에서 상세를 한 번만 조회하도록 요청 단위로 캐시합니다.
+const loadAlumniDetail = cache(getPublicAlumniDetail);
+
+/**
+ * 기존 제목("수료생 이야기")을 유지하고, 실제로 존재하는 이야기에만 canonical을 선언합니다.
+ * 잘못된 ID·없는 이야기는 404가 되므로 대표 주소를 내보내지 않습니다.
+ */
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const detail = await loadAlumniDetail(id);
+  if (!detail) return { title: "수료생 이야기" };
+  return {
+    title: "수료생 이야기",
+    alternates: { canonical: `/alumni/${detail.story.id}` },
+  };
+}
+
 export default async function AlumniDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const detail = await getPublicAlumniDetail(id);
+  const detail = await loadAlumniDetail(id);
   if (!detail) notFound();
   const { story, prevStory, nextStory, sidebarStories } = detail;
 

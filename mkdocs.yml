@@ -109,6 +109,7 @@ nav:
       - 전환 로드맵: PLATFORM-ROADMAP.md
       - 환경 분리와 배포 전략: developer/environment-strategy.md
       - 환경변수 계약 목록: developer/environment-inventory.md
+      - 검색 색인·canonical 정책: developer/seo-indexing-policy.md
   - 기록과 문서 관리:
       - 전체 경로 감사 기록: developer/site-route-audit.md
       - 문서별 검토 기록: developer/document-review-ledger.md

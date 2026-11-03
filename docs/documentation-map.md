@@ -94,6 +94,7 @@ G1은 첫 학사 기능 묶음으로, 학생·수강 이력, 과제 대상, 개�
 | [플랫폼 전환 로드맵](PLATFORM-ROADMAP.md) | 현재 안전장치를 유지하며 구조를 바꾸는 순서 |
 | [환경 분리 및 배포 전략](developer/environment-strategy.md) | 개발·검증·운영의 DB·파일·로그인 설정을 분리하는 원칙 |
 | [환경변수 계약 목록](developer/environment-inventory.md) | 소스·SDK·운영 명령·QA 입력의 설정 목록과 예시·문서 drift 검사 |
+| [검색 색인·canonical 정책](developer/seo-indexing-policy.md) | 환경별 기준 주소·canonical·robots·sitemap 규칙과 별도 운영 확인 |
 
 ## 6. 과거 기록과 저장소 공통 문서
 

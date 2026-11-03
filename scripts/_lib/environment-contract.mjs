@@ -184,7 +184,7 @@ export function renderEnvironmentReference(inventory) {
     "## 동작을 해석할 때", "",
     "- 보호 자료는 `RESOURCE_PRIVATE_BLOB_ENABLED`가 true가 아니면 기존 공개 저장소를 선택합니다. true인 상태에서 private 호스트·토큰이 없거나 잘못되면 업로드를 거부하고 공개 저장소로 되돌리지 않습니다. 기존 공개 파일 이전은 별도 #268입니다.",
     "- 학사 제출은 항상 명시한 Private Blob만 사용합니다. 업로드는 학사·업로드 gate가 모두 true여야 합니다. 정리는 사용자 기능과 독립된 cleanup gate로 실행하며 실제 삭제에는 별도 delete gate가 필요합니다. 기본은 비활성·dry-run입니다.",
-    "- 사이트 메타데이터 주소는 VERCEL_PROJECT_PRODUCTION_URL → VERCEL_URL → production 고정 주소 → 개발 NEXT_PUBLIC_APP_URL/localhost 순서입니다. NEXT_PUBLIC_APP_URL을 바꿔도 production 주소의 우선순위를 덮지 않습니다.",
+    "- 사이트 메타데이터 주소는 `src/lib/site-url.ts`가 정합니다. VERCEL_ENV=production이면 VERCEL_PROJECT_PRODUCTION_URL → 고정 운영 주소, 다른 VERCEL_ENV이면 VERCEL_URL → NEXT_PUBLIC_APP_URL/localhost, Vercel 밖이면 production 실행은 고정 운영 주소, 개발은 NEXT_PUBLIC_APP_URL/localhost입니다. 검색 색인은 VERCEL_ENV=production에서만 허용합니다([색인 정책](seo-indexing-policy.md)).",
     "- `vercel.json`의 유일한 일정은 `/api/cron/cleanup-rate-limits`, `0 3 * * *` (03:00 UTC/12:00 KST)입니다. 두 cleanup API는 CRON_SECRET 누락 시 503, 인증 실패 시 401입니다. 학사 cleanup 예약은 승인 전 자동 등록하지 않습니다.",
     "- 웹 OAuth callback은 환경별 `/api/auth/callback/google`·`/api/auth/callback/kakao`입니다. 향후 Mobile deep link·토큰 세션은 별도 설계이며 현재 웹 callback 설정이 모바일 인증 구현을 뜻하지 않습니다.",
     "- 인증 URL 선택은 위 metadataBase 주소 선택과 별도입니다. Auth.js는 AUTH_URL ?? NEXTAUTH_URL로 origin/basePath를 선택합니다. canonical 값의 빈 문자열도 nullish가 아니므로 호환 별칭을 막습니다. 새 설정은 AUTH_URL·AUTH_SECRET을 사용하며 NEXTAUTH_URL·NEXTAUTH_SECRET은 기존 호환 입력으로 구분합니다.",

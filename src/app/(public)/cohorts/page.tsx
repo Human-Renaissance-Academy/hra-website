@@ -14,6 +14,8 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "기수 소개",
   description: "1기부터 현재까지 HRA의 모든 기수와 함께한 청년들의 발자취를 한눈에 확인하세요.",
+  // 사이트 기준 주소(metadataBase)와 합쳐 이 페이지의 대표 주소(canonical)가 됩니다.
+  alternates: { canonical: "/cohorts" },
 };
 
 function formatPeriod(startDate: Date | null, endDate: Date | null) {

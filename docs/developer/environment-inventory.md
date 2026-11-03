@@ -10,7 +10,7 @@ Production·Preview·Development는 DB·공개/비공개 Blob·OAuth·세션 비
 
 - 보호 자료는 `RESOURCE_PRIVATE_BLOB_ENABLED`가 true가 아니면 기존 공개 저장소를 선택합니다. true인 상태에서 private 호스트·토큰이 없거나 잘못되면 업로드를 거부하고 공개 저장소로 되돌리지 않습니다. 기존 공개 파일 이전은 별도 #268입니다.
 - 학사 제출은 항상 명시한 Private Blob만 사용합니다. 업로드는 학사·업로드 gate가 모두 true여야 합니다. 정리는 사용자 기능과 독립된 cleanup gate로 실행하며 실제 삭제에는 별도 delete gate가 필요합니다. 기본은 비활성·dry-run입니다.
-- 사이트 메타데이터 주소는 VERCEL_PROJECT_PRODUCTION_URL → VERCEL_URL → production 고정 주소 → 개발 NEXT_PUBLIC_APP_URL/localhost 순서입니다. NEXT_PUBLIC_APP_URL을 바꿔도 production 주소의 우선순위를 덮지 않습니다.
+- 사이트 메타데이터 주소는 `src/lib/site-url.ts`가 정합니다. VERCEL_ENV=production이면 VERCEL_PROJECT_PRODUCTION_URL → 고정 운영 주소, 다른 VERCEL_ENV이면 VERCEL_URL → NEXT_PUBLIC_APP_URL/localhost, Vercel 밖이면 production 실행은 고정 운영 주소, 개발은 NEXT_PUBLIC_APP_URL/localhost입니다. 검색 색인은 VERCEL_ENV=production에서만 허용합니다([색인 정책](seo-indexing-policy.md)).
 - `vercel.json`의 유일한 일정은 `/api/cron/cleanup-rate-limits`, `0 3 * * *` (03:00 UTC/12:00 KST)입니다. 두 cleanup API는 CRON_SECRET 누락 시 503, 인증 실패 시 401입니다. 학사 cleanup 예약은 승인 전 자동 등록하지 않습니다.
 - 웹 OAuth callback은 환경별 `/api/auth/callback/google`·`/api/auth/callback/kakao`입니다. 향후 Mobile deep link·토큰 세션은 별도 설계이며 현재 웹 callback 설정이 모바일 인증 구현을 뜻하지 않습니다.
 - 인증 URL 선택은 위 metadataBase 주소 선택과 별도입니다. Auth.js는 AUTH_URL ?? NEXTAUTH_URL로 origin/basePath를 선택합니다. canonical 값의 빈 문자열도 nullish가 아니므로 호환 별칭을 막습니다. 새 설정은 AUTH_URL·AUTH_SECRET을 사용하며 NEXTAUTH_URL·NEXTAUTH_SECRET은 기존 호환 입력으로 구분합니다.
@@ -39,7 +39,7 @@ Production·Preview·Development는 DB·공개/비공개 Blob·OAuth·세션 비
 | `CRON_SECRET` | cleanup API Bearer 인증 | Development / Preview / Production; 환경별 독립 설정; Preview에 Production 자격정보·연결 상속 금지 | 예 | 승인된 환경의 예약/수동 cleanup 호출 | 두 cleanup API에서 누락 503, 인증 실패 401; 학사 cleanup 일정은 미등록 | 앱 예시 |
 | `DATABASE_URL` | Neon DB 접속 | Development / Preview / Production; 환경별 독립 설정; Preview에 Production 자격정보·연결 상속 금지 | 예 | DB 기능·상태 점검·DB 운영 명령 | 미설정 시 DB 호출 오류, health 503. 앱은 Neon HTTP 드라이버이며 일반 로컬 PG URL로 대체하지 않음 | 앱 예시 |
 | `HEALTH_CHECK_SECRET` | health 상세 응답 인증 | Development / Preview / Production; 환경별 독립 설정; Preview에 Production 자격정보·연결 상속 금지 | 예 | 허용한 운영자가 상세 상태를 조회할 때만 | 없으면 상세 정보 숨김; 기본 DB 점검과 HTTP 200/503은 수행 | 앱 예시 |
-| `NEXT_PUBLIC_APP_URL` | 개발 메타데이터 URL fallback; 비밀값 금지 | Development / Preview / Production; 환경별 독립 설정; Preview에 Production 자격정보·연결 상속 금지 | 아니요 | Vercel URL이 없는 개발 환경에서 주소 변경 시 | Vercel production URL·배포 URL 우선; production은 고정 주소, 개발 기본 localhost | 앱 예시 |
+| `NEXT_PUBLIC_APP_URL` | 개발 메타데이터 URL fallback; 비밀값 금지 | Development / Preview / Production; 환경별 독립 설정; Preview에 Production 자격정보·연결 상속 금지 | 아니요 | Vercel URL이 없는 개발 환경에서 주소 변경 시 | Vercel Production은 운영 URL, Preview는 배포 URL 우선; Vercel 밖 production은 고정 주소, 개발 기본 localhost. 색인 허용과 무관 | 앱 예시 |
 | `RESOURCE_PRIVATE_BLOB_ENABLED` | 새 보호 자료의 private 쓰기 전환 | Development / Preview / Production; 환경별 독립 설정; Preview에 Production 자격정보·연결 상속 금지 | 아니요 | 저장소 준비와 기존 파일 이전 검토 후 true | 정확한 true가 아니면 기존 public 쓰기 저장소 선택; 기존 공개 파일 보호 완료를 뜻하지 않음 | 앱 예시 |
 | `RESOURCE_PRIVATE_BLOB_HOST` | 보호 자료 전용 Private Blob 호스트 | Development / Preview / Production; 환경별 독립 설정; Preview에 Production 자격정보·연결 상속 금지 | 아니요 | 보호 자료 private 모드·private 파일 읽기/이전 | private 모드에서 누락·잘못된 private 호스트면 오류; 공개 fallback 없음 | 앱 예시 |
 | `RESOURCE_PRIVATE_READ_WRITE_TOKEN` | 보호 자료 전용 서버 token | Development / Preview / Production; 환경별 독립 설정; Preview에 Production 자격정보·연결 상속 금지 | 예 | 보호 자료 private 업로드·읽기·정리 | private token 누락 시 해당 작업을 거부 | 앱 예시 |
@@ -77,8 +77,9 @@ Production·Preview·Development는 DB·공개/비공개 Blob·OAuth·세션 비
 | --- | --- | --- | --- | --- | --- | --- |
 | `NODE_ENV` | Node/Next 실행 모드 | Development / Preview / Production; 플랫폼이 해당 실행에 제공; 직접 복제하지 않음 | 아니요 | 실행 도구가 제공 | production일 때 메타데이터 URL의 production fallback 선택; 임의 설정으로 보안 기능을 우회하지 않음 | 앱 예시에 넣지 않음 |
 | `VERCEL` | Vercel 신뢰 프록시 경계 표시 | Development / Preview / Production; 플랫폼이 해당 실행에 제공; 직접 복제하지 않음 | 아니요 | Vercel 플랫폼에서 제공 | 1이면 x-vercel-forwarded-for만 신뢰; 아니면 검증된 일반 프록시 헤더도 순서대로 확인 | 앱 예시에 넣지 않음 |
-| `VERCEL_PROJECT_PRODUCTION_URL` | Vercel production 도메인 메타데이터 우선값 | Development / Preview / Production; 플랫폼이 해당 실행에 제공; 직접 복제하지 않음 | 아니요 | Vercel에서 제공하는 경우만 | 없으면 VERCEL_URL, 그다음 실행 모드별 fallback | 앱 예시에 넣지 않음 |
-| `VERCEL_URL` | 현재 Vercel 배포 도메인 | Development / Preview / Production; 플랫폼이 해당 실행에 제공; 직접 복제하지 않음 | 아니요 | Vercel에서 제공하는 경우만 | production URL보다 낮은 우선순위; 없으면 실행 모드별 fallback | 앱 예시에 넣지 않음 |
+| `VERCEL_ENV` | Vercel 배포 환경 구분(production·preview·development) | Development / Preview / Production; 플랫폼이 해당 실행에 제공; 직접 복제하지 않음 | 아니요 | Vercel에서 제공하는 경우만 | 정확한 production일 때만 운영 canonical·검색 색인 허용; 다른 값이나 미설정이면 noindex와 robots 전체 차단 | 앱 예시에 넣지 않음 |
+| `VERCEL_PROJECT_PRODUCTION_URL` | Vercel production 도메인 메타데이터 우선값 | Development / Preview / Production; 플랫폼이 해당 실행에 제공; 직접 복제하지 않음 | 아니요 | Vercel에서 제공하는 경우만 | VERCEL_ENV=production에서만 사용; 없으면 고정 운영 주소. Preview에서는 사용하지 않음 | 앱 예시에 넣지 않음 |
+| `VERCEL_URL` | 현재 Vercel 배포 도메인 | Development / Preview / Production; 플랫폼이 해당 실행에 제공; 직접 복제하지 않음 | 아니요 | Vercel에서 제공하는 경우만 | VERCEL_ENV가 production이 아닐 때의 기준 주소; 없으면 NEXT_PUBLIC_APP_URL/localhost | 앱 예시에 넣지 않음 |
 
 ## 격리 QA 입력
 

@@ -16,6 +16,8 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "언론보도",
   description: "HRA의 활동과 비전이 다양한 언론 매체를 통해 어떻게 소개되었는지 확인해보세요.",
+  // 검색·페이지 쿼리가 붙은 주소도 기본 목록을 대표 주소(canonical)로 사용합니다.
+  alternates: { canonical: "/press" },
 };
 
 // 게시판에 표시할 날짜 형식 (예: 2025.04.26)
