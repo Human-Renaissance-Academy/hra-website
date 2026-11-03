@@ -62,11 +62,14 @@ export function parseMarkdownImageAlt(tokens: MarkdownToken[]): string {
  * TipTap 이미지 노드 속성 → 마크다운 또는 HTML img 태그
  * 크기가 지정된 경우 <img> HTML로 직렬화 → 표시 측 rehype-raw 가 파싱
  */
-export function renderImageMarkdown(attrs: Record<string, unknown> | undefined): string {
-  const src = (attrs?.src as string) ?? "";
-  const alt = (attrs?.alt as string) ?? "";
+export function renderImageMarkdown(
+  // 이미지 노드 속성 — width 는 임의 값이 올 수 있어 normalizeImageWidth 로 검증한다.
+  attrs: { src?: string | null; alt?: string | null; title?: string | null; width?: unknown } | undefined,
+): string {
+  const src = attrs?.src ?? "";
+  const alt = attrs?.alt ?? "";
   const width = normalizeImageWidth(attrs?.width);
-  const title = attrs?.title as string | null;
+  const title = attrs?.title;
 
   if (width) {
     // CR·LF를 문자 참조로 보존해 원래 설명을 복원하고, 여러 줄 속성이 inline HTML로

@@ -137,7 +137,7 @@ export function pickCellBreakPlaceholder(tableNode: JSONContent): string {
     if (!serialized.includes(candidate)) return candidate;
   }
   // 256개가 모두 쓰인 표는 현실적으로 없다. 그래도 값은 돌려준다.
-  return "";
+  return "\uE000";
 }
 
 /**

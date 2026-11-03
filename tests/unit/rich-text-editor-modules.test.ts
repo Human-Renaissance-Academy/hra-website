@@ -132,9 +132,9 @@ describe("table.ts 표 변환", () => {
   });
 
   it("표에 이미 쓰인 사설 영역 문자를 피해 셀 줄바꿈 임시 문자를 고른다", () => {
-    expect(pickCellBreakPlaceholder(table(row(cell("tableCell", [paragraph(text("값"))]))))).toBe("");
-    const used = table(row(cell("tableCell", [paragraph(text(""))])));
-    expect(pickCellBreakPlaceholder(used)).toBe("");
+    expect(pickCellBreakPlaceholder(table(row(cell("tableCell", [paragraph(text("값"))]))))).toBe("\uE000");
+    const used = table(row(cell("tableCell", [paragraph(text("\uE000\uE001"))])));
+    expect(pickCellBreakPlaceholder(used)).toBe("\uE002");
   });
 
   it("열 너비가 없으면 GFM 표로 저장하고 셀 안 줄바꿈·문단 구분을 <br> 로, 본문의 사설 문자는 그대로 둔다", () => {
@@ -142,13 +142,13 @@ describe("table.ts 표 변환", () => {
       row(cell("tableHeader", [paragraph(text("이름"))]), cell("tableHeader", [paragraph(text("메모"))])),
       row(
         cell("tableCell", [paragraph(text("김철수"), { type: "hardBreak" }, text("이영희"))]),
-        cell("tableCell", [paragraph(text("첫 줄")), paragraph(text("둘째줄"))]),
+        cell("tableCell", [paragraph(text("첫 줄")), paragraph(text("둘째\uE000줄"))]),
       ),
     );
     expect(hasTableColWidths(node)).toBe(false);
     const markdown = renderTableKeepingBreaks(node, plainTextHelpers());
     expect(markdown).toContain("김철수<br>이영희");
-    expect(markdown).toContain("첫 줄<br>둘째줄");
+    expect(markdown).toContain("첫 줄<br>둘째\uE000줄");
     // 헤더 행 바로 다음 줄이 GFM 구분선이다.
     const lines = markdown.split("\n").filter((line) => line.trim() !== "");
     expect(lines[0]).toMatch(/^\|\s*이름\s*\|\s*메모\s*\|$/);
@@ -294,12 +294,16 @@ describe("분리한 함수와 RichTextEditor 저장값의 일치 및 원본 ↔ 
     renderImageMarkdown(image),
   ].join("\n");
 
-  it("에디터가 저장한 이미지 문자열은 renderImageMarkdown 결과와 같다", async () => {
+  it("에디터가 저장한 이미지 문자열은 고정 기대값 및 renderImageMarkdown 결과와 같다", async () => {
     const opened = await open("");
     await act(async () => {
-      opened.editor.commands.insertContent({ type: "image", attrs: { ...image, width: "40%" } });
+      opened.editor.commands.insertContent({ type: "image", attrs: { ...image, width: "50%" } });
     });
-    expect(opened.saved()).toContain(renderImageMarkdown({ ...image, width: "40%" }));
+    // 함수 결과와만 비교하면 자기 참조가 되므로, 저장 형식을 손으로 적은 고정 문자열로도 확인한다.
+    const expected =
+      '<img src="/images/표지(가).png?a=1&amp;b=&quot;2&quot;" alt="설명 *별* [괄호] &lt;꺾쇠&gt; &amp;amp;" title="제목 &quot;인용&quot;" style="width: 50%" />';
+    expect(opened.saved()).toContain(expected);
+    expect(renderImageMarkdown({ ...image, width: "50%" })).toBe(expected);
   });
 
   it("소스 모드에서 입력한 원본이 편집·재저장·미리보기에서 특수문자·표 서식·이미지 너비를 유지한다", async () => {
