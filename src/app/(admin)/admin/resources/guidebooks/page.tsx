@@ -1,6 +1,6 @@
+/** 관리자 가이드북 목록의 웹 인가·장애 안내·표시를 담당하며 조회는 서비스에 위임합니다. */
 import Link from "next/link";
 import { formatKstDate as formatDate } from "@/lib/date-time";
-import { desc } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -14,28 +14,18 @@ import {
 import { ResourcesTabNav } from "@/app/(admin)/admin/resources/_components/resources-tab-nav";
 import { GuidebookRowActions } from "@/app/(admin)/admin/resources/guidebooks/_components/guidebook-row-actions";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { guidebooks } from "@/lib/db/schema";
+import { listAdminGuidebooks } from "@/features/guidebooks/admin/service";
 import { logServerError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
 
 
 export default async function AdminGuidebooksPage() {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const { rows, hasDbError } = await (async () => {
     try {
-      const rows = await db
-        .select({
-          id: guidebooks.id,
-          title: guidebooks.title,
-          fileUrl: guidebooks.fileUrl,
-          fileName: guidebooks.fileName,
-          createdAt: guidebooks.createdAt,
-        })
-        .from(guidebooks)
-        .orderBy(desc(guidebooks.createdAt));
+      const rows = await listAdminGuidebooks({ userId: session.user.id, role: session.user.role });
 
       return { rows, hasDbError: false };
     } catch (error) {

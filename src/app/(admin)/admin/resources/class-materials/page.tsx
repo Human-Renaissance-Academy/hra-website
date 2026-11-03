@@ -1,6 +1,6 @@
+/** 관리자 강의자료 목록의 세션·표시·조회 오류 처리를 담당하는 Web 어댑터입니다. */
 import Link from "next/link";
 import { formatKstDate as formatDate } from "@/lib/date-time";
-import { desc, eq } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -14,8 +14,7 @@ import {
 import { ResourcesTabNav } from "@/app/(admin)/admin/resources/_components/resources-tab-nav";
 import { ClassMaterialRowActions } from "@/app/(admin)/admin/resources/class-materials/_components/class-material-row-actions";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { classMaterials, users } from "@/lib/db/schema";
+import { listAdminMaterials } from "@/features/class-materials/admin/service";
 import { logServerError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
@@ -24,23 +23,11 @@ export const dynamic = "force-dynamic";
 const formatAudience = (audience: string) => (audience === "FACULTY" ? "교수용" : "학생용");
 
 export default async function AdminClassMaterialsPage() {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const { rows, hasDbError } = await (async () => {
     try {
-      const rows = await db
-        .select({
-          id: classMaterials.id,
-          title: classMaterials.title,
-          weekNumber: classMaterials.weekNumber,
-          lectureTitle: classMaterials.lectureTitle,
-          audience: classMaterials.audience,
-          createdAt: classMaterials.createdAt,
-          uploaderName: users.name,
-        })
-        .from(classMaterials)
-        .leftJoin(users, eq(classMaterials.uploadedById, users.id))
-        .orderBy(desc(classMaterials.createdAt));
+      const rows = await listAdminMaterials({ userId: session.user.id, role: session.user.role });
 
       return { rows, hasDbError: false };
     } catch (error) {

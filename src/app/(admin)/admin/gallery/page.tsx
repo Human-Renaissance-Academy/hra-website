@@ -9,7 +9,6 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { desc } from "drizzle-orm";
 import { CalendarDays, ImageIcon, PencilLine, Plus } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button-variants";
 import {
@@ -22,8 +21,7 @@ import {
 } from "@/components/ui/card";
 import { GalleryDeleteButton } from "@/app/(admin)/admin/gallery/_components/gallery-delete-button";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { galleries } from "@/lib/db/schema";
+import { listAdminAlbums } from "@/features/gallery/admin/service";
 import { formatKstDate } from "@/lib/date-time";
 
 const excerptDescription = (value: string | null, maxLength = 90) => {
@@ -41,18 +39,8 @@ const excerptDescription = (value: string | null, maxLength = 90) => {
 export const dynamic = "force-dynamic";
 
 export default async function AdminGalleryPage() {
-  await requireAdmin();
-
-  const albums = await db.query.galleries.findMany({
-    orderBy: [desc(galleries.createdAt)],
-    with: {
-      images: {
-        columns: {
-          id: true,
-        },
-      },
-    },
-  });
+  const session = await requireAdmin();
+  const albums = await listAdminAlbums({ userId: session.user.id, role: session.user.role });
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-4 px-4 py-6 sm:space-y-6 sm:px-6 sm:py-10">

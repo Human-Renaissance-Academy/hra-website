@@ -15,12 +15,16 @@
  */
 "use server";
 
-import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { guidebooks } from "@/lib/db/schema";
+import {
+  createAdminGuidebook,
+  deleteAdminGuidebook,
+  getGuidebookUpdateTarget,
+  replaceAdminGuidebookFile,
+  updateAdminGuidebookTitle,
+} from "@/features/guidebooks/admin/service";
 import { logServerError } from "@/lib/errors";
 import { validateResourceUploadReference } from "@/lib/resource-upload-server";
 
@@ -64,7 +68,7 @@ export async function createGuidebook(formData: FormData): Promise<GuidebookActi
     const uploaded = await validateResourceUploadReference("guidebooks", session.user.id, uploadedFileUrl, uploadedFileName);
     if ("error" in uploaded) return { success: false, error: uploaded.error };
 
-    await db.insert(guidebooks).values({
+    await createAdminGuidebook({ userId: session.user.id, role: session.user.role }, {
       title: parsed.data.title,
       fileUrl: uploaded.url,
       fileName: uploaded.fileName,
@@ -108,9 +112,8 @@ export async function updateGuidebook(id: string, formData: FormData): Promise<G
   }
 
   try {
-    const target = await db.query.guidebooks.findFirst({
-      where: eq(guidebooks.id, parsedId.data),
-    });
+    const actor = { userId: session.user.id, role: session.user.role };
+    const target = await getGuidebookUpdateTarget(actor, parsedId.data);
     if (!target) {
       return { success: false, error: "가이드북을 찾을 수 없습니다." };
     }
@@ -130,24 +133,16 @@ export async function updateGuidebook(id: string, formData: FormData): Promise<G
       const uploaded = await validateResourceUploadReference("guidebooks", session.user.id, uploadedFileUrl, uploadedFileName);
       if ("error" in uploaded) return { success: false, error: uploaded.error };
 
-      const [updated] = await db
-        .update(guidebooks)
-        .set({ title: parsed.data.title, fileUrl: uploaded.url, fileName: uploaded.fileName })
-        .where(and(eq(guidebooks.id, parsedId.data), eq(guidebooks.fileUrl, target.fileUrl)))
-        .returning({ id: guidebooks.id });
-
-      if (!updated) {
-        return { success: false, error: "가이드북 정보가 변경됐습니다. 새로고침 후 다시 시도해주세요." };
-      }
+      const result = await replaceAdminGuidebookFile(actor, parsedId.data, {
+        title: parsed.data.title, fileUrl: uploaded.url, fileName: uploaded.fileName,
+        previousFileUrl: target.fileUrl,
+      });
+      if (!result.success) return result;
 
     } else {
       // 파일 교체 없이 제목만 수정
-      const [updated] = await db
-        .update(guidebooks)
-        .set({ title: parsed.data.title })
-        .where(eq(guidebooks.id, parsedId.data))
-        .returning({ id: guidebooks.id });
-      if (!updated) return { success: false, error: "가이드북을 찾을 수 없습니다." };
+      const result = await updateAdminGuidebookTitle(actor, parsedId.data, parsed.data.title);
+      if (!result.success) return result;
     }
 
     revalidateGuidebookPaths();
@@ -163,7 +158,7 @@ export async function updateGuidebook(id: string, formData: FormData): Promise<G
 }
 
 export async function deleteGuidebook(id: string): Promise<GuidebookActionState> {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const parsedId = guidebookIdSchema.safeParse(id);
   if (!parsedId.success) {
@@ -174,21 +169,8 @@ export async function deleteGuidebook(id: string): Promise<GuidebookActionState>
   }
 
   try {
-    const target = await db.query.guidebooks.findFirst({
-      where: eq(guidebooks.id, parsedId.data),
-    });
-
-    if (!target) {
-      return {
-        success: false,
-        error: "가이드북을 찾을 수 없습니다.",
-      };
-    }
-
-    const [deleted] = await db.delete(guidebooks)
-      .where(eq(guidebooks.id, parsedId.data))
-      .returning({ id: guidebooks.id });
-    if (!deleted) return { success: false, error: "가이드북을 찾을 수 없습니다." };
+    const result = await deleteAdminGuidebook({ userId: session.user.id, role: session.user.role }, parsedId.data);
+    if (!result.success) return result;
 
     revalidateGuidebookPaths();
 

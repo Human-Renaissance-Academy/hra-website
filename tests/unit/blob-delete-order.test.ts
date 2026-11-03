@@ -111,7 +111,7 @@ function alumniForm() {
 describe("기존 Blob 보존", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    mocks.requireAdmin.mockResolvedValue({ user: { id } });
+    mocks.requireAdmin.mockResolvedValue({ user: { id, role: "ADMIN" } });
     mocks.selectWhere.mockResolvedValue([{ imageUrl: oldUrl }]);
     mocks.put.mockImplementation(async (path: string) => ({ url: `https://${projectBlobHost}/${path}` }));
     mocks.recordOwnedBlob.mockResolvedValue(undefined);
