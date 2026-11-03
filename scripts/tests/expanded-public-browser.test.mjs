@@ -13,7 +13,7 @@ import Reporter, { requiredPublicBrowserCases } from "../../tests/support/expand
 import { publicBrowserSpecs, prepareExpandedPublicBrowser } from "../../tests/support/expanded-public-browser.mjs";
 
 const repository = path.resolve(fileURLToPath(new URL("../..", import.meta.url)));
-const counts = [1, 5, 3, 3];
+const counts = [1, 5, 5, 3];
 const cases = () => publicBrowserSpecs.flatMap((file, index) => Array.from({ length: counts[index] }, (_, line) => ({
   title: `[PUBLIC:${Object.entries(requiredPublicBrowserCases).filter(([, name]) => name === file)[line][0]}] Bearer secret-token https://private.invalid`, expectedStatus: "passed", location: { file: `/private/${file}`, line: line + 1 },
 })));
@@ -52,12 +52,12 @@ async function report(t, { mutate = () => {}, list = false, execute = true, stat
   }
 }
 
-test("12건 성공과 원문 오류의 정제", async (t) => {
+test("14건 성공과 원문 오류의 정제", async (t) => {
   const { end, summary, output } = await report(t);
   assert.equal(end.status, "passed");
-  assert.equal(summary.completed, 12);
+  assert.equal(summary.completed, 14);
   assert.deepEqual(summary.cases.map((item) => item.caseId).sort(), Object.keys(requiredPublicBrowserCases).sort());
-  assert.equal(output.at(-1), "PASS E2E_PUBLIC_REQUIRED:12");
+  assert.equal(output.at(-1), "PASS E2E_PUBLIC_REQUIRED:14");
 });
 
 test("목록 모드는 수집만 검증하고 일반 모드는 실행 누락을 거부", async (t) => {
@@ -113,7 +113,7 @@ test("설정은 네 명세·Chromium·산출물 차단 및 원점 경계를 고�
 });
 
 /** 실제 TS 명세 로더와 ESM 리포터를 함께 실행하여 수집 경계도 검증한다. */
-test("실제 Playwright 목록은 지정한 12건만 수집한다", async (t) => {
+test("실제 Playwright 목록은 지정한 14건만 수집한다", async (t) => {
   const fixtureRoot = await mkdtemp(path.join(tmpdir(), "public-list-"));
   t.after(() => rm(fixtureRoot, { recursive: true, force: true }));
   const { configPath, summaryPath } = await prepareExpandedPublicBrowser({ repository, fixtureRoot, origin: "http://127.0.0.1:3100" });
@@ -124,7 +124,7 @@ test("실제 Playwright 목록은 지정한 12건만 수집한다", async (t) =>
   });
   assert.equal(result.status, 0, "필수 공개 명세 수집은 성공해야 한다");
   const summary = JSON.parse(await readFile(summaryPath, "utf8"));
-  assert.equal(summary.collected, 12);
+  assert.equal(summary.collected, 14);
   assert.equal(summary.completed, 0);
   assert.equal(summary.status, "passed");
   assert.equal(summary.mode, "list");

@@ -96,7 +96,7 @@ function launch(args, environment, browserOutput = false) {
     for (const line of lines) {
       if (/^(?:COLLECT|PASS|FAIL) E2E_PUBLIC:[A-Za-z0-9_.:-]+$/.test(line) ||
           /^FAIL E2E_PUBLIC_ERROR:[A-Z0-9_]+:[A-Z_]+:\d+$/.test(line) ||
-          /^(?:COLLECT|PASS|FAIL) E2E_PUBLIC_REQUIRED(?::12)?$/.test(line)) console.log(line);
+          /^(?:COLLECT|PASS|FAIL) E2E_PUBLIC_REQUIRED(?::14)?$/.test(line)) console.log(line);
     }
     if (pending.length > 4096) pending = "";
   });
@@ -442,7 +442,7 @@ try {
         await stopChild(browser);
         check(!cleanupFailed, "SITE_ROUTE_BROWSER_CLEANUP_FAILED");
       }
-      check(browserSummary?.status === "passed" && browserSummary.completed === 12, "SITE_ROUTE_BROWSER_INCOMPLETE");
+      check(browserSummary?.status === "passed" && browserSummary.completed === 14, "SITE_ROUTE_BROWSER_INCOMPLETE");
     } else {
       phase = "HTTP";
       await audit(origin, sessions, routes);

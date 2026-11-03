@@ -1,17 +1,17 @@
 /**
- * 공개 브라우저 필수 12건의 수집·실행을 엄격히 검증한다.
+ * 공개 브라우저 필수 14건의 수집·실행을 엄격히 검증한다.
  * 임의 오류·출력·첨부를 버리고 고정 파일명과 줄 번호만 안전하게 보고한다.
  */
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import { publicBrowserSpecs } from "./expanded-public-browser.mjs";
 
-const counts = [1, 5, 3, 3];
+const counts = [1, 5, 5, 3];
 // 고정 사례 식별자만 산출물에 넣고 임의 제목은 저장하지 않는다.
 export const requiredPublicBrowserCases = Object.freeze({
   HOME: "home.spec.ts",
   ...Object.fromEntries([390, 768, 800, 1024, 1280].map((width) => [`CALENDAR_${width}`, "home-calendar-responsive.spec.ts"])),
-  KEYBOARD_HEADER: "keyboard-navigation.spec.ts", KEYBOARD_CONTENT: "keyboard-navigation.spec.ts", KEYBOARD_CALENDAR: "keyboard-navigation.spec.ts",
+  KEYBOARD_HEADER: "keyboard-navigation.spec.ts", KEYBOARD_CONTENT: "keyboard-navigation.spec.ts", KEYBOARD_CALENDAR: "keyboard-navigation.spec.ts", KEYBOARD_MOBILE_HEADER: "keyboard-navigation.spec.ts", KEYBOARD_MOBILE_HEADER_768: "keyboard-navigation.spec.ts",
   SEARCH_DRAFT: "notice-search-history.spec.ts", SEARCH_BACK: "notice-search-history.spec.ts", SEARCH_FORWARD: "notice-search-history.spec.ts",
 });
 const required = Object.keys(requiredPublicBrowserCases).length;
@@ -115,10 +115,10 @@ export default class ExpandedPublicReporter {
       if (!this.summaryPath) throw new Error("E2E_PUBLIC_SUMMARY_MISSING");
       await writeFile(this.summaryPath, `${JSON.stringify(summary, null, 2)}\n`, { flag: "w" });
     } catch {
-      console.log("FAIL E2E_PUBLIC_REQUIRED:12");
+      console.log("FAIL E2E_PUBLIC_REQUIRED:14");
       return { status: "failed" };
     }
-    console.log(`${failed ? "FAIL" : this.listOnly ? "COLLECT" : "PASS"} E2E_PUBLIC_REQUIRED:12`);
+    console.log(`${failed ? "FAIL" : this.listOnly ? "COLLECT" : "PASS"} E2E_PUBLIC_REQUIRED:14`);
     return { status: failed ? "failed" : "passed" };
   }
 }

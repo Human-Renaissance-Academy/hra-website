@@ -77,6 +77,17 @@ test("[PUBLIC:KEYBOARD_MOBILE_HEADER] 390px 모바일 메뉴가 확장 상태를
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
   await expect(panel).toHaveCount(0);
   await expect(toggle).toBeFocused();
+
+  // 메뉴를 다시 연 뒤 포커스가 헤더 밖으로 나가면 메뉴가 닫힌다.
+  await page.keyboard.press("Enter");
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await page.evaluate(() => {
+    const outside = document.createElement("button");
+    outside.id = "focus-out-probe";
+    document.body.appendChild(outside);
+    outside.focus();
+  });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
 });
 
 /** #410 767px→768px 경계에서 열린 모바일 메뉴가 닫히고 스크롤 잠금이 풀리는지 검증한다. */

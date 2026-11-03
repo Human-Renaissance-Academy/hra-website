@@ -59,7 +59,7 @@ Vitest 설정은 `tests/unit/**/*.test.{ts,tsx}`를 수집하므로 TSX를 위�
 
 CI는 이 검증에 운영 DB·Blob 자격 증명을 전달하지 않습니다. Node 24 설정과 실제 실행 버전 확인 방법은 [사전 준비](../getting-started/prerequisites.md)에 정리되어 있습니다.
 
-기본 CI 밖의 공개 홈·검색 기록·모바일 달력·키보드 탐색 12건은 별도 [확장 E2E 회귀](../developer/expanded-e2e-quality-gate.md)에서 예약·수동 실행합니다. 확장 작업은 기존 G1 10개 필수 사례도 재실행합니다. 선택하지 않은 spec과 실제 OAuth/Blob 공급자는 해당 안내의 제한 범위를 따르며, 기본 CI가 모든 E2E를 실행하는 것으로 표현하지 않습니다.
+기본 CI 밖의 공개 홈·검색 기록·모바일 달력·키보드 탐색 14건은 별도 [확장 E2E 회귀](../developer/expanded-e2e-quality-gate.md)에서 예약·수동 실행합니다. 확장 작업은 기존 G1 10개 필수 사례도 재실행합니다. 선택하지 않은 spec과 실제 OAuth/Blob 공급자는 해당 안내의 제한 범위를 따르며, 기본 CI가 모든 E2E를 실행하는 것으로 표현하지 않습니다.
 
 `prebuild`의 Node 버전 로그는 해당 빌드의 실행 버전 증거이며, 현재 운영 Vercel 배포의 런타임이 이미 일치한다는 증거는 아닙니다. 운영 일치 여부는 미확인으로 남깁니다.
 

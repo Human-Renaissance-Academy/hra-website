@@ -135,7 +135,16 @@ export function Header({ session }: HeaderProps) {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-[#D9D9D9]">
+    <header
+      className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-[#D9D9D9]"
+      onBlur={(event) => {
+        // 모바일 메뉴가 열린 상태에서 포커스가 헤더 밖의 다른 요소로 옮겨가면 메뉴를 닫는다.
+        // relatedTarget 이 null(창 전환·비포커스 영역 클릭)이면 닫지 않아 터치 탭 동작을 해치지 않는다.
+        if (mobileOpen && event.relatedTarget instanceof Node && !event.currentTarget.contains(event.relatedTarget)) {
+          setMobileOpen(false);
+        }
+      }}
+    >
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
          {/* 로고 — 모바일 메뉴가 열린 상태에서 눌러도 메뉴가 닫히도록 onClick 추가 */}
          <Link href="/" onClick={() => setMobileOpen(false)} className="text-xl font-bold tracking-tight text-gray-900">
@@ -326,7 +335,7 @@ export function Header({ session }: HeaderProps) {
        {mobileOpen && (
          <div id={`${mobileMenuId}-panel`} className="border-t border-[#D9D9D9] bg-white md:hidden overflow-y-auto max-h-[calc(100vh-64px)] shadow-[var(--shadow-soft)] absolute w-full">
           <div className="flex flex-col px-4 py-4">
-             {visibleNavItems.map((item) => {
+             {visibleNavItems.map((item, index) => {
                if (item.subItems) {
                 const isOpen = openMobileDropdown === item.label;
                 return (
@@ -335,14 +344,14 @@ export function Header({ session }: HeaderProps) {
                       type="button"
                       onClick={() => setOpenMobileDropdown(isOpen ? null : item.label)}
                       aria-expanded={isOpen}
-                      aria-controls={`${mobileMenuId}-sub-${item.label}`}
+                      aria-controls={`${mobileMenuId}-sub-${index}`}
                       className="flex w-full items-center justify-between py-4 text-left text-sm font-medium text-gray-900"
                     >
                       {item.label}
                       <ChevronDown className={cn("size-4 transition-transform", isOpen && "rotate-180")} />
                     </button>
                     {isOpen && (
-                      <div id={`${mobileMenuId}-sub-${item.label}`} className="flex flex-col pb-4 pl-4 space-y-4">
+                      <div id={`${mobileMenuId}-sub-${index}`} className="flex flex-col pb-4 pl-4 space-y-4">
                         {item.subItems.map((sub) => (
                           <Link
                             key={sub.href}

@@ -60,7 +60,7 @@ export const environmentInventory = {
     variable("CI", "tooling", "Playwright CI 실행 모드", false, "CI 도구가 제공", "없으면 로컬 설정; 있으면 forbidOnly·재시도·worker 제한 적용"),
     variable("PLAYWRIGHT_BASE_URL", "qa", "Playwright의 합성 검증 앱 주소", false, "외부에서 준비한 검증 서버를 사용할 때", "미설정이면 로컬 webServer 준비와 기본 localhost 사용"),
     variable("HRA_PUBLIC_E2E_ORIGIN", "qa", "확장 공개 브라우저의 허용 원점", false, "격리 공개 실행기가 생성한 숫자 루프백 HTTP 원점", "미설정이면 일반 Playwright 동작; 확장 실행기는 반드시 자체 앱 주소를 전달"),
-    variable("HRA_PUBLIC_E2E_LIST", "qa", "확장 공개 reporter의 수집 전용 구분", false, "격리 실행기의 --list 단계에서만 true", "true가 아니면 필수 12개 사례의 실제 완료까지 검증"),
+    variable("HRA_PUBLIC_E2E_LIST", "qa", "확장 공개 reporter의 수집 전용 구분", false, "격리 실행기의 --list 단계에서만 true", "true가 아니면 필수 14개 사례의 실제 완료까지 검증"),
     variable("GITHUB_EVENT_PATH", "tooling", "GitHub event JSON 파일 경로", false, "process-format --event를 GitHub runner에서 실행", "runner가 제공하지 않으면 event 모드 읽기 실패"),
     variable("GITHUB_REPOSITORY", "tooling", "형식 검사 대상 저장소 이름", false, "GitHub runner 또는 명시한 대상", "미설정이면 gh repo view로 저장소 조회"),
     variable("GITHUB_STEP_SUMMARY", "tooling", "Actions가 제공하는 단계별 Markdown 요약 파일", false, "운영 smoke 또는 명시적 합성 알림 경로의 요약 작성", "없으면 정제 JSON과 종료 코드만 제공; 이메일 수신을 의미하지 않음"),
