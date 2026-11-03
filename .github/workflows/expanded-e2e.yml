@@ -18,6 +18,8 @@ on:
       - tests/e2e/home-calendar-responsive.spec.ts
       - tests/e2e/keyboard-navigation.spec.ts
       - tests/e2e/notice-search-history.spec.ts
+      - tests/e2e/home-hero-reduced-motion.spec.ts
+      - tests/e2e/faq-accordion.spec.ts
 
 permissions:
   contents: read
@@ -28,7 +30,7 @@ concurrency:
 
 jobs:
   expanded:
-    name: 공개 14건 · 학사 G1 10개 필수 사례
+    name: 공개 24건 · 학사 G1 10개 필수 사례
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:

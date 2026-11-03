@@ -22,7 +22,7 @@ export const test = base.extend({
     let routeFailed = false;
     const active = new Set<Promise<void>>();
     // 브라우저 URL 의미를 바꾸지 않도록 리디렉션은 따라가지 않고 실패 처리한다.
-    // 이 검증의 네 공개 명세는 직접 응답하는 페이지에만 의존한다.
+    // 이 검증의 여섯 공개 명세는 직접 응답하는 페이지에만 의존한다.
     await context.route("**/*", (route) => {
       const work = (async () => {
         if (new URL(route.request().url()).origin !== origin) {

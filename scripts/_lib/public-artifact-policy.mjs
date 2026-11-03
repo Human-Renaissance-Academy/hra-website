@@ -17,7 +17,7 @@ const digest = (value, length) => { if (typeof value !== 'string' || !new RegExp
 const timing = value => { object(value, ['p50', 'p95']); number(value.p50); number(value.p95); if (value.p50 > value.p95) reject(); };
 const countDistribution = value => { object(value, ['total', 'p50', 'p95']); number(value.total, 100000, true); number(value.p50, 100000, true); number(value.p95, 100000, true); if (value.p50 > value.p95 || value.p95 > value.total) reject(); };
 
-const browserFiles = { HOME: 'home.spec.ts', CALENDAR_390: 'home-calendar-responsive.spec.ts', CALENDAR_768: 'home-calendar-responsive.spec.ts', CALENDAR_800: 'home-calendar-responsive.spec.ts', CALENDAR_1024: 'home-calendar-responsive.spec.ts', CALENDAR_1280: 'home-calendar-responsive.spec.ts', KEYBOARD_HEADER: 'keyboard-navigation.spec.ts', KEYBOARD_CONTENT: 'keyboard-navigation.spec.ts', KEYBOARD_CALENDAR: 'keyboard-navigation.spec.ts', KEYBOARD_MOBILE_HEADER: 'keyboard-navigation.spec.ts', KEYBOARD_MOBILE_HEADER_768: 'keyboard-navigation.spec.ts', SEARCH_DRAFT: 'notice-search-history.spec.ts', SEARCH_BACK: 'notice-search-history.spec.ts', SEARCH_FORWARD: 'notice-search-history.spec.ts' };
+const browserFiles = { HOME: 'home.spec.ts', CALENDAR_390: 'home-calendar-responsive.spec.ts', CALENDAR_768: 'home-calendar-responsive.spec.ts', CALENDAR_800: 'home-calendar-responsive.spec.ts', CALENDAR_1024: 'home-calendar-responsive.spec.ts', CALENDAR_1280: 'home-calendar-responsive.spec.ts', KEYBOARD_HEADER: 'keyboard-navigation.spec.ts', KEYBOARD_CONTENT: 'keyboard-navigation.spec.ts', KEYBOARD_CALENDAR: 'keyboard-navigation.spec.ts', KEYBOARD_MOBILE_HEADER: 'keyboard-navigation.spec.ts', KEYBOARD_MOBILE_HEADER_768: 'keyboard-navigation.spec.ts', SEARCH_DRAFT: 'notice-search-history.spec.ts', SEARCH_BACK: 'notice-search-history.spec.ts', SEARCH_FORWARD: 'notice-search-history.spec.ts', HERO_CLS_390: 'home-hero-reduced-motion.spec.ts', HERO_CLS_768: 'home-hero-reduced-motion.spec.ts', HERO_CLS_1024: 'home-hero-reduced-motion.spec.ts', HERO_CLS_1280: 'home-hero-reduced-motion.spec.ts', HERO_REDUCED: 'home-hero-reduced-motion.spec.ts', HERO_SSR: 'home-hero-reduced-motion.spec.ts', FAQ_COLLAPSED: 'faq-accordion.spec.ts', FAQ_COLLAPSED_TAB: 'faq-accordion.spec.ts', FAQ_OPEN: 'faq-accordion.spec.ts', FAQ_CONTACT: 'faq-accordion.spec.ts' };
 /** 공개 브라우저 모드에서는 HTTP 전수 검사 결과를 섞지 않습니다. */
 function expanded(report) {
   object(report, ['sourceSha', 'scope', 'browser', 'completed', 'cleanupComplete', 'coverageHealthy', 'phase', 'limitations', 'summary', 'diagnostics', 'results']);
@@ -26,14 +26,14 @@ function expanded(report) {
   exact(report.scope, { appRoot: '.', only: null, publicBrowser: true });
   for (const key of ['completed', 'cleanupComplete', 'coverageHealthy']) bool(report[key]);
   choice(report.phase, ['INPUT', 'SCHEMA', 'BUILD', 'SERVER', 'AUTH', 'BROWSER_COLLECTION', 'BROWSER_EXECUTION', 'COMPLETE']);
-  exact(report.limitations, ['실제 Blob 업로드·파일 스트림 미검증', '정상 CRUD·서버 액션 쓰기 미검증', '공개 4개 spec 외 브라우저는 별도 G1 검증 결과를 확인', '알려진 동적 경로 외 합성 식별자는 fixture 제약']);
+  exact(report.limitations, ['실제 Blob 업로드·파일 스트림 미검증', '정상 CRUD·서버 액션 쓰기 미검증', '공개 6개 spec 외 브라우저는 별도 G1 검증 결과를 확인', '알려진 동적 경로 외 합성 식별자는 fixture 제약']);
   exact(report.summary, { routes: 0, records: 0, classifications: {} }); exact(report.results, []);
   list(report.diagnostics, 30, value => choice(value, ['STARTUP_RETRY', 'CHILD_SIGNAL_FAILED', 'CHILD_GROUP_EXIT_UNCONFIRMED', 'CHILD_START_FAILED', 'SERVER_ACTION_SERIALIZATION', 'CLIENT_FUNCTION_ON_SERVER', 'FORM_DATA_PARSE_FAILURE', 'AUTH_FAILURE', 'INTERRUPTED', 'RUN_TIMEOUT', 'SITE_ROUTE_EXECUTION_FAILED', 'SITE_ROUTE_DATABASE_CLEANUP_FAILED', 'SITE_ROUTE_BROWSER_FAILED', 'SITE_ROUTE_BROWSER_INCOMPLETE', 'SITE_ROUTE_BROWSER_CLEANUP_FAILED', 'SITE_ROUTE_BUILD_FAILED', 'SITE_ROUTE_BUILD_CLEANUP_FAILED', 'SITE_ROUTE_SERVER_NOT_READY']));
   if (report.browser === null) return;
   const browser = report.browser; object(browser, ['status', 'mode', 'required', 'collected', 'completed', 'cases']);
-  choice(browser.status, ['passed', 'failed']); choice(browser.mode, ['list', 'run']); exact(browser.required, 14); number(browser.collected, 14, true); number(browser.completed, 14, true);
+  choice(browser.status, ['passed', 'failed']); choice(browser.mode, ['list', 'run']); exact(browser.required, 24); number(browser.collected, 24, true); number(browser.completed, 24, true);
   const seen = new Set();
-  list(browser.cases, 14, item => {
+  list(browser.cases, 24, item => {
     object(item, ['file', 'caseId', 'line', 'status', 'errors']); choice(item.caseId, [...Object.keys(browserFiles), 'UNKNOWN']);
     choice(item.file, [...new Set(Object.values(browserFiles)), 'UNKNOWN']);
     if (item.caseId !== 'UNKNOWN' && browserFiles[item.caseId] !== item.file || seen.has(item.caseId)) reject(); seen.add(item.caseId);

@@ -1,6 +1,6 @@
 /**
  * 격리 공개 브라우저 검증의 전용 설정을 작성한다.
- * 네 개의 고정 명세만 수집하고 보고서와 실행 산출물을 일회용 루트에 둔다.
+ * 여섯 개의 고정 명세만 수집하고 보고서와 실행 산출물을 일회용 루트에 둔다.
  */
 import { lstat, realpath, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -8,6 +8,7 @@ import path from "node:path";
 // 기본 스모크 설정과 독립된 필수 명세 목록이다.
 export const publicBrowserSpecs = Object.freeze([
   "home.spec.ts", "home-calendar-responsive.spec.ts", "keyboard-navigation.spec.ts", "notice-search-history.spec.ts",
+  "home-hero-reduced-motion.spec.ts", "faq-accordion.spec.ts",
 ]);
 
 /** 외부 호스트·인증정보·경로를 포함하지 않는 HTTP 루프백 원점만 허용한다. */
