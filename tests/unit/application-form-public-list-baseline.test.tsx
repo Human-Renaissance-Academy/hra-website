@@ -31,10 +31,11 @@ beforeEach(() => {
   mocks.select.mockImplementation(() => ({ from: () => ({ where: () => ({ orderBy: result }) }) }));
 });
 
-it("동적 공개 목록이 비었으면 모집 없음 안내만 표시한다", async () => {
+it("동적 공개 목록이 비었으면 공개 양식 없음과 외부 접수 확인 경로를 안내한다", async () => {
   expect(dynamic).toBe("force-dynamic");
   const html = renderToStaticMarkup(await RecruitmentApplyPage());
-  expect(html).toContain("현재 진행 중인 모집이 없습니다.");
+  expect(html).toContain("현재 공개된 홈페이지 지원서 양식이 없습니다.");
+  expect(html).toContain('href="/recruitment#apply-channels"');
   expect(html).toContain("홈페이지 공지사항을 확인해주세요.");
   expect(html).not.toContain("지원서 작성하기");
 });
@@ -46,8 +47,8 @@ it("조회된 공개 양식을 순서대로 제목·설명·상세 링크와 함
   expect(html).toContain(first.description);
   expect(html).toContain(`href="/recruitment/apply/${first.id}"`);
   expect(html).toContain(`href="/recruitment/apply/${second.id}"`);
-  expect((html.match(/진행중/g) ?? [])).toHaveLength(2);
-  expect(html).not.toContain("현재 진행 중인 모집이 없습니다.");
+  expect((html.match(/접수 중/g) ?? [])).toHaveLength(2);
+  expect(html).not.toContain("현재 공개된 홈페이지 지원서 양식이 없습니다.");
 });
 
 it("DB 조회 실패를 빈 목록으로 바꾸지 않고 상위 오류 경계로 전달한다", async () => {

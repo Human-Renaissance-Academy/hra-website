@@ -301,7 +301,7 @@ export function Header({ session }: HeaderProps) {
               )}
              
              <Link
-  href="/recruitment/apply"
+  href="/recruitment#apply-channels"
   className="ml-2 inline-flex items-center justify-center rounded-lg bg-[#2563EB] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
 >
   지원하기
@@ -312,7 +312,7 @@ export function Header({ session }: HeaderProps) {
          <div className="flex items-center gap-3 md:hidden">
            {/* 지원하기 — 모바일 메뉴가 열린 채 이동하면 스크롤 잠금이 다음 페이지까지 따라가므로 여기서 닫는다 */}
            <Link
-  href="/recruitment/apply"
+  href="/recruitment#apply-channels"
   onClick={() => setMobileOpen(false)}
   className="inline-flex items-center justify-center rounded-lg bg-[#2563EB] px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
 >

@@ -2,12 +2,18 @@
  * 공개 지원 양식 목록 Page입니다.
  * 발행 정책과 DB 조회는 Application Service에 맡기고 카드·상세 링크만 표시합니다.
  * 질문 조회와 실제 제출 인가는 별도의 상세 Page·Server Action에서 처리합니다.
+ * 이 목록은 홈페이지 지원서(공개 양식)만 다루므로, 외부 지원서(구글폼) 안내는
+ * 모집안내의 접수 채널 영역으로 연결합니다(#412).
  */
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronRight, FileText } from "lucide-react";
 import { listPublishedApplicationForms } from "@/features/applications/public-list/service";
+import { APPLY_CHANNELS_ANCHOR } from "@/features/recruitment/intake-channels";
+
+// 외부 지원서 접수 여부를 확인할 수 있는 모집안내 접수 채널 영역 경로
+const channelsHref = `/recruitment#${APPLY_CHANNELS_ANCHOR}`;
 
 export const dynamic = "force-dynamic";
 
@@ -22,18 +28,31 @@ export default async function RecruitmentApplyPage() {
           모집 지원
         </Badge>
         <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
-          지원서 작성
+          홈페이지 지원서 작성
         </h1>
         <p className="max-w-2xl text-lg text-slate-500 leading-relaxed">
-          현재 지원 가능한 모집 양식 목록입니다. 지원을 원하시는 항목을 선택해주세요.
+          현재 공개된 홈페이지 지원서 양식 목록입니다. 지원을 원하시는 항목을 선택해주세요.
+        </p>
+        <p className="max-w-2xl text-sm text-slate-500">
+          외부 지원서(구글폼) 접수 여부와 모집 일정은{" "}
+          <Link href={channelsHref} className="font-medium text-blue-700 underline underline-offset-2">
+            모집안내의 지원서 접수 채널
+          </Link>
+          에서 확인할 수 있습니다.
         </p>
       </section>
 
       {publishedForms.length === 0 ? (
         <Card className="rounded-2xl border-slate-200 bg-white py-0 shadow-sm">
           <CardContent className="py-20 text-center text-slate-500">
-            <p className="text-lg">현재 진행 중인 모집이 없습니다.</p>
-            <p className="mt-1 text-sm">새로운 모집 소식은 홈페이지 공지사항을 확인해주세요.</p>
+            <p className="text-lg">현재 공개된 홈페이지 지원서 양식이 없습니다.</p>
+            <p className="mt-1 text-sm">
+              외부 지원서(구글폼) 채널로 접수 중일 수 있으니{" "}
+              <Link href={channelsHref} className="font-medium text-blue-700 underline underline-offset-2">
+                모집안내
+              </Link>
+              를 확인해주세요. 새로운 모집 소식은 홈페이지 공지사항을 확인해주세요.
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -45,7 +64,7 @@ export default async function RecruitmentApplyPage() {
                   <FileText className="size-5 text-blue-600" />
                   {form.title}
                 </CardTitle>
-                <Badge variant="secondary" className="bg-blue-50 text-blue-700">진행중</Badge>
+                <Badge variant="secondary" className="bg-blue-50 text-blue-700">접수 중</Badge>
               </CardHeader>
               <CardContent>
                 <p className="text-slate-600 mb-6">{form.description}</p>
@@ -53,7 +72,7 @@ export default async function RecruitmentApplyPage() {
                   href={`/recruitment/apply/${form.id}`}
                   className="inline-flex items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 transition-colors w-full sm:w-auto"
                 >
-                  지원서 작성하기
+                  홈페이지 지원서 작성하기
                   <ChevronRight className="ml-2 size-4" />
                 </Link>
               </CardContent>
