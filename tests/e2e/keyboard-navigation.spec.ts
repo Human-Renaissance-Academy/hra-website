@@ -45,3 +45,61 @@ test("[PUBLIC:KEYBOARD_CALENDAR] 달력 버튼에 이름이 있고 홈 제목이
   await expect(page.getByRole("button", { name: "이전 달 보기" })).toBeVisible();
   await expect(page.getByRole("button", { name: "다음 달 보기" })).toBeVisible();
 });
+
+/** #410 390px 모바일 헤더 메뉴의 확장 상태 노출과 Escape 닫기·포커스 복귀를 검증한다. */
+test("[PUBLIC:KEYBOARD_MOBILE_HEADER] 390px 모바일 메뉴가 확장 상태를 노출하고 Escape로 닫힌다", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/about");
+  const toggle = page.getByRole("button", { name: "메뉴 열기/닫기" });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+  await toggle.focus();
+  await page.keyboard.press("Enter");
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  const panelId = await toggle.getAttribute("aria-controls");
+  expect(panelId).toBeTruthy();
+  const panel = page.locator(`[id="${panelId}"]`);
+  await expect(panel).toBeVisible();
+
+  // 하위 메뉴 버튼도 상태와 제어 대상을 노출한다.
+  const intro = panel.getByRole("button", { name: "소개" });
+  await expect(intro).toHaveAttribute("aria-expanded", "false");
+  await intro.focus();
+  await page.keyboard.press("Enter");
+  await expect(intro).toHaveAttribute("aria-expanded", "true");
+  const subId = await intro.getAttribute("aria-controls");
+  await expect(page.locator(`[id="${subId}"]`).getByRole("link", { name: "커리큘럼" })).toBeVisible();
+  await page.keyboard.press("Enter");
+  await expect(intro).toHaveAttribute("aria-expanded", "false");
+
+  // Escape 는 메뉴를 닫고 포커스를 토글 버튼으로 돌려준다.
+  await page.keyboard.press("Escape");
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(panel).toHaveCount(0);
+  await expect(toggle).toBeFocused();
+
+  // 메뉴를 다시 연 뒤 포커스가 헤더 밖으로 나가면 메뉴가 닫힌다.
+  await page.keyboard.press("Enter");
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await page.evaluate(() => {
+    const outside = document.createElement("button");
+    outside.id = "focus-out-probe";
+    document.body.appendChild(outside);
+    outside.focus();
+  });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+});
+
+/** #410 767px→768px 경계에서 열린 모바일 메뉴가 닫히고 스크롤 잠금이 풀리는지 검증한다. */
+test("[PUBLIC:KEYBOARD_MOBILE_HEADER_768] 768px 이상으로 넓어지면 모바일 메뉴가 닫힌다", async ({ page }) => {
+  await page.setViewportSize({ width: 767, height: 900 });
+  await page.goto("/about");
+  const toggle = page.getByRole("button", { name: "메뉴 열기/닫기" });
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+
+  await page.setViewportSize({ width: 768, height: 900 });
+  await expect(toggle).toBeHidden();
+  await expect(page.locator("body")).not.toHaveCSS("overflow", "hidden");
+  await expect(page.locator("header").getByRole("button", { name: "소개" })).toBeVisible();
+});

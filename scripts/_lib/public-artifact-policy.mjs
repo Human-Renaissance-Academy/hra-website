@@ -17,7 +17,7 @@ const digest = (value, length) => { if (typeof value !== 'string' || !new RegExp
 const timing = value => { object(value, ['p50', 'p95']); number(value.p50); number(value.p95); if (value.p50 > value.p95) reject(); };
 const countDistribution = value => { object(value, ['total', 'p50', 'p95']); number(value.total, 100000, true); number(value.p50, 100000, true); number(value.p95, 100000, true); if (value.p50 > value.p95 || value.p95 > value.total) reject(); };
 
-const browserFiles = { HOME: 'home.spec.ts', CALENDAR_390: 'home-calendar-responsive.spec.ts', CALENDAR_768: 'home-calendar-responsive.spec.ts', CALENDAR_800: 'home-calendar-responsive.spec.ts', CALENDAR_1024: 'home-calendar-responsive.spec.ts', CALENDAR_1280: 'home-calendar-responsive.spec.ts', KEYBOARD_HEADER: 'keyboard-navigation.spec.ts', KEYBOARD_CONTENT: 'keyboard-navigation.spec.ts', KEYBOARD_CALENDAR: 'keyboard-navigation.spec.ts', SEARCH_DRAFT: 'notice-search-history.spec.ts', SEARCH_BACK: 'notice-search-history.spec.ts', SEARCH_FORWARD: 'notice-search-history.spec.ts' };
+const browserFiles = { HOME: 'home.spec.ts', CALENDAR_390: 'home-calendar-responsive.spec.ts', CALENDAR_768: 'home-calendar-responsive.spec.ts', CALENDAR_800: 'home-calendar-responsive.spec.ts', CALENDAR_1024: 'home-calendar-responsive.spec.ts', CALENDAR_1280: 'home-calendar-responsive.spec.ts', KEYBOARD_HEADER: 'keyboard-navigation.spec.ts', KEYBOARD_CONTENT: 'keyboard-navigation.spec.ts', KEYBOARD_CALENDAR: 'keyboard-navigation.spec.ts', KEYBOARD_MOBILE_HEADER: 'keyboard-navigation.spec.ts', KEYBOARD_MOBILE_HEADER_768: 'keyboard-navigation.spec.ts', SEARCH_DRAFT: 'notice-search-history.spec.ts', SEARCH_BACK: 'notice-search-history.spec.ts', SEARCH_FORWARD: 'notice-search-history.spec.ts' };
 /** 공개 브라우저 모드에서는 HTTP 전수 검사 결과를 섞지 않습니다. */
 function expanded(report) {
   object(report, ['sourceSha', 'scope', 'browser', 'completed', 'cleanupComplete', 'coverageHealthy', 'phase', 'limitations', 'summary', 'diagnostics', 'results']);
@@ -31,9 +31,9 @@ function expanded(report) {
   list(report.diagnostics, 30, value => choice(value, ['STARTUP_RETRY', 'CHILD_SIGNAL_FAILED', 'CHILD_GROUP_EXIT_UNCONFIRMED', 'CHILD_START_FAILED', 'SERVER_ACTION_SERIALIZATION', 'CLIENT_FUNCTION_ON_SERVER', 'FORM_DATA_PARSE_FAILURE', 'AUTH_FAILURE', 'INTERRUPTED', 'RUN_TIMEOUT', 'SITE_ROUTE_EXECUTION_FAILED', 'SITE_ROUTE_DATABASE_CLEANUP_FAILED', 'SITE_ROUTE_BROWSER_FAILED', 'SITE_ROUTE_BROWSER_INCOMPLETE', 'SITE_ROUTE_BROWSER_CLEANUP_FAILED', 'SITE_ROUTE_BUILD_FAILED', 'SITE_ROUTE_BUILD_CLEANUP_FAILED', 'SITE_ROUTE_SERVER_NOT_READY']));
   if (report.browser === null) return;
   const browser = report.browser; object(browser, ['status', 'mode', 'required', 'collected', 'completed', 'cases']);
-  choice(browser.status, ['passed', 'failed']); choice(browser.mode, ['list', 'run']); exact(browser.required, 12); number(browser.collected, 12, true); number(browser.completed, 12, true);
+  choice(browser.status, ['passed', 'failed']); choice(browser.mode, ['list', 'run']); exact(browser.required, 14); number(browser.collected, 14, true); number(browser.completed, 14, true);
   const seen = new Set();
-  list(browser.cases, 12, item => {
+  list(browser.cases, 14, item => {
     object(item, ['file', 'caseId', 'line', 'status', 'errors']); choice(item.caseId, [...Object.keys(browserFiles), 'UNKNOWN']);
     choice(item.file, [...new Set(Object.values(browserFiles)), 'UNKNOWN']);
     if (item.caseId !== 'UNKNOWN' && browserFiles[item.caseId] !== item.file || seen.has(item.caseId)) reject(); seen.add(item.caseId);
