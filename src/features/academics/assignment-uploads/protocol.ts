@@ -19,6 +19,11 @@ type UploadProtocolOptions = {
   readBody?: (request: Request) => Promise<unknown>;
   errorResponse?: (error: unknown, observation: AcademicObservation) => Response;
   responseHeaders?: Readonly<Record<string, string>>;
+  // v1 어댑터만 토큰 요청에 인증 범위·Origin 정책을 제공하며 callback에는 적용하지 않습니다.
+  tokenTransport?: {
+    run: (handler: () => Promise<Response>) => Promise<Response>;
+    assertOrigin: (request: Request) => void | Promise<void>;
+  };
 };
 // 원본 JSON의 추가 속성을 보존해 SDK가 서명 검증에 같은 본문을 사용하게 한다.
 const bodySchema=z.discriminatedUnion("type",[
@@ -34,9 +39,11 @@ export async function handleAssignmentUploadProtocol(request: Request, options: 
     assertAcademicUploadsEnabled();
     const body=await (options.readBody ?? readUploadJson)(request);if(!isUploadBody(body))throw new AcademicUploadError("INVALID_FILE");
     if(body.type==="blob.upload-completed")observation=createAcademicObservation("UPLOAD_RECEIPT","UPLOAD_INTENT");
+    const execute = async (): Promise<Response> => {
+    try {
     const result=await handleUpload({body,request,token:academicSubmissionStore().token,
       onBeforeGenerateToken:async(pathname,payload,multipart)=>{
-        assertUploadOrigin(request);
+        await (options.tokenTransport?.assertOrigin ?? assertUploadOrigin)(request);
         let input:unknown;try{input=JSON.parse(payload??"");}catch{throw new AcademicUploadError("INVALID_FILE");}
         const authorization=await authorizeAssignmentUploadToken(input,pathname,multipart,observation);
         const reservation=await reserveUploadAttempt(extractClientIp(request.headers));
@@ -57,5 +64,10 @@ export async function handleAssignmentUploadProtocol(request: Request, options: 
     });
     observation.emit("COMPLETED");
     return Response.json(result,{headers:{"Cache-Control":"no-store",...options.responseHeaders,"X-Request-Id":observation.correlationId}});
+    } catch(error) { return (options.errorResponse ?? uploadErrorResponse)(error, observation); }
+    };
+    // 검증된 원본 객체를 한 번만 읽고 SDK에 그대로 전달합니다. 완료 권한은 SDK 서명만 제공합니다.
+    return body.type === "blob.generate-client-token" && options.tokenTransport
+      ? options.tokenTransport.run(execute) : execute();
   }catch(error){return (options.errorResponse ?? uploadErrorResponse)(error,observation);}
 }

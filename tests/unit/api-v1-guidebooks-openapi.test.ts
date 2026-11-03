@@ -55,7 +55,8 @@ describe("#272 승인 회원 가이드북 목록 OpenAPI 3.1 계약", () => {
     expect(operation.description).toContain("PENDING은 403");
     expect(operation.description).toContain("모바일 Bearer 인증은 아직 지원하지 않습니다");
     expect(operation.description).not.toContain("session-token");
-    expect(openapi.components.securitySchemes).toBeUndefined();
+    expect(Object.keys(openapi.components.securitySchemes)).toEqual(["bearerAuth"]);
+    expect(operation).not.toHaveProperty("security");
     const responses = {
       "200": "GuidebookListResponse", "400": "InvalidInputError",
       "401": "UnauthenticatedError", "403": "ForbiddenError", "503": "UnavailableError",

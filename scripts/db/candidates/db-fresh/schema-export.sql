@@ -1,9 +1,9 @@
 -- 신규 owned-local DB 설치 검증 전용 Drizzle export 후보입니다. 운영 이력이나 적용 승인을 나타내지 않습니다.
--- 원본: src/lib/db/schema.ts (SHA256 6873861242b429974f917f6a60d51f6b585daa357a1d63dd7e5448c464d51e77), drizzle-kit 0.31.10 exportQaSchemaSql().
--- 원본 생성 SQL SHA256: 24688481f7454df960537b5aebfd65d3818449c2839f4a1dcea8863e30a6d1f3.
--- 수동 검토한 차이: 비한정 CREATE TABLE 대상 45개에만 "public".을 명시했습니다.
+-- 원본: src/lib/db/schema.ts (SHA256 db0cf6ce1111455a2726b25aa23b1f349d271e665b9be6d68f84ded0beb65eb5), drizzle-kit 0.31.10 exportQaSchemaSql().
+-- 원본 생성 SQL SHA256: e6da7f90332505af92a6656ea624c0ad14f6695d0b8ec190e0f784b364d04b84.
+-- 수동 검토한 차이: 비한정 CREATE TABLE 대상 47개에만 "public".을 명시했습니다.
 -- enum/컬럼/제약/FK/index/기본값과 ALTER·INDEX 문장은 원본 바이트 그대로입니다.
--- scripts/tests/db-fresh-candidate-export.test.mjs가 원본 재생성과 정확한 45개 차이를 검증합니다.
+-- 모바일 세션·가족 이력 추가를 독립 reference와 후보 bundle에서 대조합니다.
 CREATE TYPE "public"."application_question_type" AS ENUM('SHORT_ANSWER', 'LONG_ANSWER', 'MULTIPLE_CHOICE', 'CHECKBOX', 'DROPDOWN');
 CREATE TYPE "public"."application_status" AS ENUM('PENDING', 'ACCEPTED', 'REJECTED');
 CREATE TYPE "public"."enrollment_status" AS ENUM('ENROLLED');
@@ -332,6 +332,42 @@ CREATE TABLE "public"."markdown_image_assets" (
 	CONSTRAINT "markdown_image_assets_url_unique" UNIQUE("url")
 );
 
+CREATE TABLE "public"."mobile_session_refresh_history" (
+	"refresh_hash" text PRIMARY KEY NOT NULL,
+	"session_id" uuid NOT NULL,
+	"consumed_at" timestamp with time zone NOT NULL,
+	CONSTRAINT "mobile_session_refresh_history_hash_check" CHECK ("mobile_session_refresh_history"."refresh_hash" ~ '^[0-9a-f]{64}$')
+);
+
+CREATE TABLE "public"."mobile_sessions" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"user_id" uuid NOT NULL,
+	"access_hash" text NOT NULL,
+	"refresh_hash" text NOT NULL,
+	"prev_refresh_hash" text,
+	"session_version" integer NOT NULL,
+	"access_expires_at" timestamp with time zone NOT NULL,
+	"refresh_expires_at" timestamp with time zone NOT NULL,
+	"absolute_expires_at" timestamp with time zone NOT NULL,
+	"rotated_at" timestamp with time zone NOT NULL,
+	"last_used_at" timestamp with time zone NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"revoked_at" timestamp with time zone,
+	"revoke_reason" text,
+	"platform" varchar(7),
+	"app_version" varchar(64),
+	"device_name" varchar(100),
+	CONSTRAINT "mobile_sessions_access_hash_unique" UNIQUE("access_hash"),
+	CONSTRAINT "mobile_sessions_refresh_hash_unique" UNIQUE("refresh_hash"),
+	CONSTRAINT "mobile_sessions_access_hash_check" CHECK ("mobile_sessions"."access_hash" ~ '^[0-9a-f]{64}$'),
+	CONSTRAINT "mobile_sessions_refresh_hash_check" CHECK ("mobile_sessions"."refresh_hash" ~ '^[0-9a-f]{64}$'),
+	CONSTRAINT "mobile_sessions_prev_refresh_hash_check" CHECK ("mobile_sessions"."prev_refresh_hash" IS NULL OR "mobile_sessions"."prev_refresh_hash" ~ '^[0-9a-f]{64}$'),
+	CONSTRAINT "mobile_sessions_version_check" CHECK ("mobile_sessions"."session_version" >= 0),
+	CONSTRAINT "mobile_sessions_platform_check" CHECK ("mobile_sessions"."platform" IS NULL OR "mobile_sessions"."platform" IN ('ANDROID','IOS')),
+	CONSTRAINT "mobile_sessions_revocation_check" CHECK (("mobile_sessions"."revoked_at" IS NULL AND "mobile_sessions"."revoke_reason" IS NULL) OR ("mobile_sessions"."revoked_at" IS NOT NULL AND "mobile_sessions"."revoke_reason" IS NOT NULL AND "mobile_sessions"."revoke_reason" IN ('LOGOUT','LOGOUT_ALL','REUSE_DETECTED','ADMIN','EXPIRED_CLEANUP'))),
+	CONSTRAINT "mobile_sessions_time_order_check" CHECK ("mobile_sessions"."created_at" <= "mobile_sessions"."rotated_at" AND "mobile_sessions"."rotated_at" <= "mobile_sessions"."last_used_at" AND "mobile_sessions"."rotated_at" < "mobile_sessions"."access_expires_at" AND "mobile_sessions"."access_expires_at" <= "mobile_sessions"."refresh_expires_at" AND "mobile_sessions"."refresh_expires_at" <= "mobile_sessions"."absolute_expires_at" AND ("mobile_sessions"."revoked_at" IS NULL OR "mobile_sessions"."revoked_at" >= "mobile_sessions"."created_at"))
+);
+
 CREATE TABLE "public"."notice_attachments" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"notice_id" uuid NOT NULL,
@@ -591,6 +627,8 @@ ALTER TABLE "cohort_enrollments" ADD CONSTRAINT "cohort_enrollments_created_by_u
 ALTER TABLE "gallery_images" ADD CONSTRAINT "gallery_images_gallery_id_galleries_id_fk" FOREIGN KEY ("gallery_id") REFERENCES "public"."galleries"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "applications" ADD CONSTRAINT "applications_cohort_id_cohorts_id_fk" FOREIGN KEY ("cohort_id") REFERENCES "public"."cohorts"("id") ON DELETE restrict ON UPDATE no action;
 ALTER TABLE "markdown_image_assets" ADD CONSTRAINT "markdown_image_assets_uploaded_by_id_users_id_fk" FOREIGN KEY ("uploaded_by_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;
+ALTER TABLE "mobile_session_refresh_history" ADD CONSTRAINT "mobile_session_refresh_history_session_id_mobile_sessions_id_fk" FOREIGN KEY ("session_id") REFERENCES "public"."mobile_sessions"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "mobile_sessions" ADD CONSTRAINT "mobile_sessions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "notice_attachments" ADD CONSTRAINT "notice_attachments_notice_id_notices_id_fk" FOREIGN KEY ("notice_id") REFERENCES "public"."notices"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "notices" ADD CONSTRAINT "notices_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;
 ALTER TABLE "rate_limit_events" ADD CONSTRAINT "rate_limit_events_submission_id_application_submissions_id_fk" FOREIGN KEY ("submission_id") REFERENCES "public"."application_submissions"("id") ON DELETE cascade ON UPDATE no action;
@@ -626,6 +664,11 @@ CREATE INDEX "cohort_enrollments_cohort_status_idx" ON "cohort_enrollments" USIN
 CREATE INDEX "idx_login_attempts_ip_attempted" ON "login_attempts" USING btree ("ip","attempted_at");
 CREATE INDEX "idx_login_attempts_email_attempted" ON "login_attempts" USING btree ("email","attempted_at");
 CREATE INDEX "idx_markdown_image_assets_created_at" ON "markdown_image_assets" USING btree ("created_at");
+CREATE INDEX "mobile_session_refresh_history_session_idx" ON "mobile_session_refresh_history" USING btree ("session_id");
+CREATE INDEX "mobile_sessions_active_user_idx" ON "mobile_sessions" USING btree ("user_id") WHERE "mobile_sessions"."revoked_at" IS NULL;
+CREATE INDEX "mobile_sessions_user_idx" ON "mobile_sessions" USING btree ("user_id");
+CREATE INDEX "mobile_sessions_expiry_idx" ON "mobile_sessions" USING btree ("refresh_expires_at");
+CREATE INDEX "mobile_sessions_prev_refresh_idx" ON "mobile_sessions" USING btree ("prev_refresh_hash") WHERE "mobile_sessions"."prev_refresh_hash" IS NOT NULL;
 CREATE INDEX "idx_rate_limit_scope_key_time" ON "rate_limit_events" USING btree ("scope","key_hash","attempted_at");
 CREATE INDEX "idx_rate_limit_attempted_at" ON "rate_limit_events" USING btree ("attempted_at");
 CREATE INDEX "idx_rate_limit_submission_id" ON "rate_limit_events" USING btree ("submission_id");

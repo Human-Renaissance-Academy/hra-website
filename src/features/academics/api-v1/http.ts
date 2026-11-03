@@ -15,9 +15,10 @@ import { SubmissionFinalizationError } from "@/features/academics/submissions/va
 import { AcademicAccessError } from "@/lib/academic-permissions";
 import { logServerError } from "@/lib/errors";
 import { isSameRequestOrigin } from "@/lib/request-origin";
+import { revalidateMobilePrincipalOverride } from "@/lib/api-v1-principal";
 
 /** 개인 결과와 오류가 공유 캐시나 다른 쿠키의 응답으로 재사용되지 않도록 합니다. */
-export const academicApiHeaders = { "Cache-Control": "private, no-store", Vary: "Cookie" };
+export const academicApiHeaders = { "Cache-Control": "private, no-store", Vary: "Cookie, Authorization" };
 
 /** HTTP 입력 단계에서만 발생하는 공통 오류이며 내부 오류 원문은 보관하지 않습니다. */
 export class AcademicApiHttpError extends Error {
@@ -68,7 +69,15 @@ async function readBoundedJson(request: Request): Promise<unknown> {
 
 /** 쿠키로 인증하는 사용자 명령은 본문을 읽기 전부터 동일 Origin을 필수로 확인합니다. */
 export async function readAcademicApiJson(request: Request): Promise<unknown> {
-  if (!isSameRequestOrigin(request)) throw new AcademicApiHttpError("FORBIDDEN");
+  const principal = await revalidateMobilePrincipalOverride();
+  switch (principal.kind) {
+    case "REVOKED": throw new AcademicApiHttpError("UNAUTHENTICATED");
+    case "NO_OVERRIDE":
+      if (!isSameRequestOrigin(request)) throw new AcademicApiHttpError("FORBIDDEN");
+      break;
+    case "VALID": break;
+    default: { const exhaustive: never = principal; throw exhaustive; }
+  }
   return readBoundedJson(request);
 }
 

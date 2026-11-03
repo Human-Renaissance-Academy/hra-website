@@ -108,7 +108,7 @@ describe("학사 오류의 공통 HTTP 계약", () => {
     expect(body.error).toMatchObject({ code, requestId });
     expect(JSON.stringify(body)).not.toMatch(/private:|SQL|개인정보/);
     expect(response.headers.get("Cache-Control")).toBe("private, no-store");
-    expect(response.headers.get("Vary")).toBe("Cookie");
+    expect(response.headers.get("Vary")?.split(",").map((token) => token.trim().toLowerCase())).toEqual(expect.arrayContaining(["cookie", "authorization"]));
     expect(response.headers.get("X-Request-Id")).toBe(requestId);
   });
 

@@ -33,7 +33,8 @@ describe("#272 본인 프로필 OpenAPI 3.1 계약", () => {
     expect(operation.description).toContain("PENDING 사용자도 자신의 프로필만");
     expect(operation.description).toContain("query key는 허용하지 않습니다");
     expect(operation.description).not.toContain("session-token");
-    expect(openapi.components.securitySchemes).toBeUndefined();
+    expect(Object.keys(openapi.components.securitySchemes)).toEqual(["bearerAuth"]);
+    expect(operation).not.toHaveProperty("security");
   });
 
   it("200·400·401·503의 DTO·오류 코드와 비공개 무저장 캐시 헤더를 고정한다", () => {

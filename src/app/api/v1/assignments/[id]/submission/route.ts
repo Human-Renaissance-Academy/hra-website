@@ -3,6 +3,7 @@
  * 본인 과제 상세와 같은 실시간 인가를 재사용하고 원본 파일 전달은 보호 다운로드에 맡깁니다.
  */
 import { z } from "zod/v4";
+import { withApiV1Principal } from "@/lib/api-v1-principal";
 import { apiV1AssignmentSubmissionResponseSchema } from "@hra/contracts/api-v1";
 import { getMyAssignment } from "@/features/academics/student-assignments/queries";
 import {
@@ -17,6 +18,10 @@ export const runtime = "nodejs";
 
 /** 아직 제출하지 않은 본인 과제는 null 두 필드로 표시하며 제출물 존재를 타인에게 공개하지 않습니다. */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
+  return withApiV1Principal(request, () => handleGet(request, { params }), (code) => academicApiErrorResponse(new AcademicApiHttpError(code), crypto.randomUUID()));
+}
+
+async function handleGet(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
   const requestId = crypto.randomUUID();
   try {
     assertNoAcademicApiQuery(request);

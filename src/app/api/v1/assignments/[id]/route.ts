@@ -3,6 +3,7 @@
  * 다른 학생의 대상·초안·파일 저장 위치는 기존 상세 조회 서비스와 명시 DTO로 차단합니다.
  */
 import { z } from "zod/v4";
+import { withApiV1Principal } from "@/lib/api-v1-principal";
 import { apiV1AssignmentDetailResponseSchema } from "@hra/contracts/api-v1";
 import { getMyAssignment } from "@/features/academics/student-assignments/queries";
 import {
@@ -17,6 +18,10 @@ export const runtime = "nodejs";
 
 /** 잘못된 식별자도 없는 과제와 같은 고정 404를 사용합니다. */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
+  return withApiV1Principal(request, () => handleGet(request, { params }), (code) => academicApiErrorResponse(new AcademicApiHttpError(code), crypto.randomUUID()));
+}
+
+async function handleGet(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
   const requestId = crypto.randomUUID();
   try {
     assertNoAcademicApiQuery(request);

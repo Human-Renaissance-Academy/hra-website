@@ -4,7 +4,10 @@
  */
 import { handleAssignmentUploadProtocol } from "@/features/academics/assignment-uploads/protocol";
 import { recordUploadFailure } from "@/features/academics/assignment-uploads/observability";
+import { assertUploadOrigin } from "@/features/academics/assignment-uploads/http";
+import { revalidateMobilePrincipalOverride, withApiV1Principal } from "@/lib/api-v1-principal";
 import {
+  AcademicApiHttpError,
   academicApiErrorResponse,
   academicApiHeaders,
   readAcademicApiProtocolJson,
@@ -18,6 +21,19 @@ export async function POST(request: Request): Promise<Response> {
   return handleAssignmentUploadProtocol(request, {
     readBody: readAcademicApiProtocolJson,
     responseHeaders: academicApiHeaders,
+    tokenTransport: {
+      run: (handler) => withApiV1Principal(request, handler, (code) =>
+        academicApiErrorResponse(new AcademicApiHttpError(code), crypto.randomUUID())),
+      assertOrigin: async (input) => {
+        const principal = await revalidateMobilePrincipalOverride();
+        switch (principal.kind) {
+          case "NO_OVERRIDE": return assertUploadOrigin(input);
+          case "VALID": return;
+          case "REVOKED": throw new AcademicApiHttpError("UNAUTHENTICATED");
+          default: { const exhaustive: never = principal; throw exhaustive; }
+        }
+      },
+    },
     errorResponse: (error, observation) => {
       recordUploadFailure(observation, error);
       return academicApiErrorResponse(error, observation.correlationId);

@@ -29,8 +29,8 @@ test('독립 reference와 전체 fresh bundle의 prefix·실패·재개 gate', {
   const started = Date.now(), bundle = await prepareFreshBundle({ postgresBin }), summary = bundle.summary(), contracts = bundle.contracts();
   t.after(async () => { await bundle.close(); cleanupEvidence(bundle); ensure(Date.now() - started < 900000, 'FRESH_BUNDLE_BOUNDED_RUN'); });
 
-  await t.test('사전 기대 C0..C18와 source/raw/candidate hash를 분리하고 동결한다', () => {
-    assert.equal(summary.migrations, 18); assert.equal(summary.contracts, 19);
+  await t.test('사전 기대 C0..C19와 source/raw/candidate hash를 분리하고 동결한다', () => {
+    assert.equal(summary.migrations, 19); assert.equal(summary.contracts, 20);
     assert.notEqual(summary.rawExportDigest, summary.candidateExportDigest, 'FRESH_EXPORT_DELTA_VISIBLE');
     for (const hash of [summary.manifestDigest, summary.rawExportDigest, summary.candidateExportDigest, summary.schemaAuthorityDigest]) assert.match(hash, /^[a-f0-9]{64}$/);
     ensure(Object.isFrozen(summary) && Object.isFrozen(contracts) && contracts.every(row => Object.isFrozen(row) && Object.isFrozen(row.counts)), 'FRESH_EXPECTED_CONTRACTS_IMMUTABLE');
@@ -50,7 +50,7 @@ test('독립 reference와 전체 fresh bundle의 prefix·실패·재개 gate', {
     const observed = await bundle.inspect(factory); ensure(!observed.ledgerExact && !observed.catalogMatches && observed.rows === 0, 'FRESH_NATIVE_LEDGER_NOT_OBSERVED');
     assert.equal(factory.evidence().helperCalls, 0);
   });
-  await t.test('각 prefix 종료 후 같은 bytes의 append 재개와 전체18 완료·replay0·독립 동작', async t => {
+  await t.test('각 prefix 종료 후 같은 bytes의 append 재개와 전체19 완료·replay0·독립 동작', async t => {
     const factory = await owned(t);
     for (let prefixLength = 1; prefixLength <= summary.migrations; prefixLength++) {
       const before = factory.evidence().helperCalls, result = await bundle.run(factory, { prefixLength });
@@ -62,18 +62,18 @@ test('독립 reference와 전체 fresh bundle의 prefix·실패·재개 gate', {
     }
     const before = factory.evidence().helperCalls, retry = await bundle.run(factory);
     ensure(retry.manifestCompleted && retry.pending === 0 && retry.catalogDigest === contracts.at(-1).digest && retry.behaviors >= 17, 'FRESH_SAME_IMMUTABLE_RETRY');
-    assert.equal(factory.evidence().helperCalls, before); assert.equal(factory.evidence().commits, 18);
-    ensure(factory.evidence().lockRequests >= 19, 'FRESH_SHARED_GLOBAL_LOCK');
+    assert.equal(factory.evidence().helperCalls, before); assert.equal(factory.evidence().commits, 19);
+    ensure(factory.evidence().lockRequests >= 20, 'FRESH_SHARED_GLOBAL_LOCK');
   });
-  for (const position of [1, 9, 18]) await t.test(`실제 wire COMMIT ACK 유실 ${position} prefix reconcile 후 남은 파일만 재개`, async t => {
+  for (const position of [1, 9, 19]) await t.test(`실제 wire COMMIT ACK 유실 ${position} prefix reconcile 후 남은 파일만 재개`, async t => {
     const factory = await owned(t); factory.faults.dropCommitAckAt(position);
     const unknown = await bundle.run(factory);
     ensure(unknown.phase === 'VERIFIED' && unknown.firstErrorCode === 'COMMIT_OUTCOME_UNKNOWN' && unknown.phases.includes('RECONNECTING') && unknown.phases.includes('RECONCILING'), 'FRESH_ACK_RECONCILIATION');
-    assert.equal(unknown.applied, position); assert.equal(unknown.pending, 18 - position); assert.equal(unknown.manifestCompleted, position === 18); assert.equal(unknown.catalogDigest, contracts[position].digest);
+    assert.equal(unknown.applied, position); assert.equal(unknown.pending, 19 - position); assert.equal(unknown.manifestCompleted, position === 19); assert.equal(unknown.catalogDigest, contracts[position].digest);
     assert.equal(factory.evidence().helperCalls, position, 'FRESH_UNKNOWN_AUTO_REPLAY'); assert.equal(factory.evidence().droppedCommitAcks, 1);
     const observed = await bundle.inspect(factory); ensure(observed.ledgerExact && observed.catalogMatches && observed.rows === position, 'FRESH_UNKNOWN_EXACT_PREFIX');
-    const completed = await bundle.run(factory); ensure(completed.manifestCompleted && completed.applied === 18 && completed.behaviors >= 17, 'FRESH_UNKNOWN_EXPLICIT_RESUME');
-    assert.equal(factory.evidence().helperCalls, 18, 'FRESH_UNKNOWN_RESUME_REPLAYED');
+    const completed = await bundle.run(factory); ensure(completed.manifestCompleted && completed.applied === 19 && completed.behaviors >= 17, 'FRESH_UNKNOWN_EXPLICIT_RESUME');
+    assert.equal(factory.evidence().helperCalls, 19, 'FRESH_UNKNOWN_RESUME_REPLAYED');
   });
   for (const mode of ['statement', 'lock']) await t.test(`전체 bundle의 ${mode} timeout은 실패 파일 객체·row만 rollback하고 prefix2 보존`, { timeout: 45000 }, async t => {
     const factory = await owned(t); let holder;
@@ -87,28 +87,28 @@ test('독립 reference와 전체 fresh bundle의 prefix·실패·재개 gate', {
     try { result = await bundle.run(factory); }
     finally { if (holder) { await holder.query('ROLLBACK'); await holder.close(); } }
     ensure(result.phase === 'FAILED_PRECOMMIT' && result.code === 'LEDGER_INSERT_FAILED' && !result.manifestCompleted && !result.phases.includes('COMMIT_OUTCOME_UNKNOWN') && result.cleanupComplete, 'FRESH_TIMEOUT_ATOMIC_FAILURE');
-    assert.equal(result.applied, 2); assert.equal(result.pending, 16); assert.equal(factory.evidence().helperCalls, 3);
+    assert.equal(result.applied, 2); assert.equal(result.pending, 17); assert.equal(factory.evidence().helperCalls, 3);
     const observed = await bundle.inspect(factory); ensure(observed.ledgerExact && observed.catalogMatches && observed.rows === 2 && observed.catalogDigest === contracts[2].digest, 'FRESH_TIMEOUT_PREFIX_PRESERVED');
     const partial = (await query(factory, "SELECT to_regclass('public.fresh_bundle_partial_canary') IS NULL AND to_regprocedure('public.inspect_academic_enrollment_candidates()') IS NULL AS absent")).rows[0].absent;
     ensure(partial, 'FRESH_TIMEOUT_OBJECTS_ROLLED_BACK');
-    const resumed = await bundle.run(factory); ensure(resumed.manifestCompleted, 'FRESH_TIMEOUT_EXPLICIT_RESUME'); assert.equal(factory.evidence().helperCalls, 19);
+    const resumed = await bundle.run(factory); ensure(resumed.manifestCompleted, 'FRESH_TIMEOUT_EXPLICIT_RESUME'); assert.equal(factory.evidence().helperCalls, 20);
   });
   await t.test('같은 full bundle의 physical backend 변경은 다음 write 전에 차단', async t => {
     const factory = await owned(t); factory.faults.displaceIdentityAfterNextHelper(); const result = await bundle.run(factory);
     ensure(result.phase === 'FAILED_PRECOMMIT' && result.code === 'BACKEND_CHANGED' && !result.manifestCompleted, 'FRESH_BACKEND_CHANGE_BLOCKED');
     assert.equal(factory.evidence().helperCalls, 1); const observed = await bundle.inspect(factory); ensure(observed.ledgerExact && observed.catalogMatches && observed.rows === 0, 'FRESH_BACKEND_ROLLBACK_C0');
   });
-  await t.test('full18 ledger checksum drift는 catalog가 같아도 재적용 없이 거부', async t => {
+  await t.test('full19 ledger checksum drift는 catalog가 같아도 재적용 없이 거부', async t => {
     const factory = await owned(t); ensure((await bundle.run(factory)).manifestCompleted, 'FRESH_LEDGER_SETUP'); const before = factory.evidence().helperCalls;
     await query(factory, "UPDATE hra_migrations.applied_migrations SET sha256=repeat('f',64) WHERE sequence=1");
     const result = await bundle.run(factory); ensure(result.phase === 'BLOCKED' && result.code === 'LEDGER_PREFIX_MISMATCH' && !result.manifestCompleted, 'FRESH_LEDGER_DRIFT_BLOCKED'); assert.equal(factory.evidence().helperCalls, before);
-    const observed = await bundle.inspect(factory); ensure(!observed.ledgerExact && observed.rows === 18 && observed.catalogDigest === contracts.at(-1).digest, 'FRESH_LEDGER_CATALOG_INDEPENDENT');
+    const observed = await bundle.inspect(factory); ensure(!observed.ledgerExact && observed.rows === 19 && observed.catalogDigest === contracts.at(-1).digest, 'FRESH_LEDGER_CATALOG_INDEPENDENT');
   });
-  await t.test('full18 ACL drift는 ledger가 같아도 복구·재적용 없이 거부', async t => {
+  await t.test('full19 ACL drift는 ledger가 같아도 복구·재적용 없이 거부', async t => {
     const factory = await owned(t); ensure((await bundle.run(factory)).manifestCompleted, 'FRESH_ACL_SETUP'); const before = factory.evidence().helperCalls;
     await query(factory, 'GRANT EXECUTE ON FUNCTION public.register_academic_roster(uuid,uuid,uuid,uuid,text,text,uuid) TO PUBLIC');
     const result = await bundle.run(factory); ensure(result.phase === 'BLOCKED' && result.code === 'CATALOG_MISMATCH' && !result.manifestCompleted, 'FRESH_ACL_DRIFT_BLOCKED'); assert.equal(factory.evidence().helperCalls, before);
-    const observed = await bundle.inspect(factory); ensure(observed.ledgerExact && observed.rows === 18 && !observed.catalogMatches, 'FRESH_ACL_LEDGER_INDEPENDENT');
+    const observed = await bundle.inspect(factory); ensure(observed.ledgerExact && observed.rows === 19 && !observed.catalogMatches, 'FRESH_ACL_LEDGER_INDEPENDENT');
   });
   await t.test('ACK 재연결 target 교체는 외국 소유 DB의 bootstrap/write 전에 차단', async t => {
     const factory = await owned(t), foreign = await owned(t); factory.faults.dropCommitAckAt(1);

@@ -60,7 +60,8 @@ describe("학사 API v1 OpenAPI 경계", () => {
         } });
       }
     }
-    expect(openapi.components.securitySchemes).toBeUndefined();
+    expect(Object.keys(openapi.components.securitySchemes)).toEqual(["bearerAuth"]);
+    for (const [path, method] of routes) expect(openapi.paths[path][method]).not.toHaveProperty("security");
   });
 
   it("DB 행과 독립된 DTO·본문의 필수 허용 필드를 Zod와 동일하게 선언한다", () => {

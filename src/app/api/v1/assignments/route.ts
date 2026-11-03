@@ -7,6 +7,7 @@ import {
   apiV1AssignmentListResponseSchema,
 } from "@hra/contracts/api-v1";
 import { getMyAssignments } from "@/features/academics/student-assignments/queries";
+import { withApiV1Principal } from "@/lib/api-v1-principal";
 import {
   AcademicApiHttpError,
   academicApiErrorResponse,
@@ -32,6 +33,10 @@ function parseQuery(request: Request) {
 
 /** 서비스의 다음 페이지 표식을 유지하고, 제공하지 않는 전체 개수를 추정하지 않습니다. */
 export async function GET(request: Request): Promise<Response> {
+  return withApiV1Principal(request, () => handleGet(request), (code) => academicApiErrorResponse(new AcademicApiHttpError(code), crypto.randomUUID()));
+}
+
+async function handleGet(request: Request): Promise<Response> {
   const requestId = crypto.randomUUID();
   try {
     const result = await getMyAssignments(parseQuery(request));

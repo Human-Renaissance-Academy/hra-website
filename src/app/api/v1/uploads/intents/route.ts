@@ -12,12 +12,17 @@ import {
   readAcademicApiJson,
 } from "@/features/academics/api-v1/http";
 import { createAcademicObservation } from "@/lib/academic-observability";
+import { withApiV1Principal } from "@/lib/api-v1-principal";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /** 요청의 식별자를 인증 정보로 사용하지 않으며 서비스가 확인한 의도 결과만 반환합니다. */
 export async function POST(request: Request): Promise<Response> {
+  return withApiV1Principal(request, () => handlePost(request), (code) => academicApiErrorResponse(new AcademicApiHttpError(code), crypto.randomUUID()));
+}
+
+async function handlePost(request: Request): Promise<Response> {
   const observation = createAcademicObservation("UPLOAD_INTENT", "UPLOAD_INTENT");
   try {
     const input = apiV1UploadIntentInputSchema.safeParse(await readAcademicApiJson(request));

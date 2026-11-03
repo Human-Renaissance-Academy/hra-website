@@ -65,7 +65,7 @@ const writeRequest = (body: unknown = finalizeInput, options: { origin?: string 
 /** 성공·실패 모두 캐시를 막고 응답 헤더와 오류 본문의 추적 ID를 연결합니다. */
 function expectPrivateHeaders(response: Response) {
   expect(response.headers.get("cache-control")).toBe("private, no-store");
-  expect(response.headers.get("vary")).toBe("Cookie");
+  expect(response.headers.get("vary")?.split(",").map((token) => token.trim().toLowerCase())).toEqual(expect.arrayContaining(["cookie", "authorization"]));
   expect(response.headers.get("x-request-id")).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-/);
 }
 

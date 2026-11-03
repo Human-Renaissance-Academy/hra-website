@@ -3,6 +3,7 @@
  * 실제 객체 크기·내용·해시와 현재 대상·기한·요청 예산을 재확인한 뒤 검증 상태만 반환합니다.
  */
 import { z } from "zod/v4";
+import { withApiV1Principal } from "@/lib/api-v1-principal";
 import { apiV1UploadSelectionInputSchema, apiV1UploadVerifiedResponseSchema } from "@hra/contracts/api-v1";
 import { verifyAssignmentUploadIntent } from "@/features/academics/assignment-uploads/server";
 import { recordUploadFailure } from "@/features/academics/assignment-uploads/observability";
@@ -20,6 +21,10 @@ export const maxDuration = 120;
 
 /** 식별자를 제외한 파일 메타·저장 위치는 신뢰하지 않고 서버 원장을 다시 읽습니다. */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
+  return withApiV1Principal(request, () => handlePost(request, { params }), (code) => academicApiErrorResponse(new AcademicApiHttpError(code), crypto.randomUUID()));
+}
+
+async function handlePost(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
   const observation = createAcademicObservation("UPLOAD_VERIFY", "UPLOAD_INTENT");
   try {
     const input = apiV1UploadSelectionInputSchema.safeParse(await readAcademicApiJson(request));

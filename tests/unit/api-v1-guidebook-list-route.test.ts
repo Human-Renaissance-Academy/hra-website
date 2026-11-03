@@ -33,7 +33,7 @@ it("승인 회원은 Blob 정보를 제외한 ID·제목과 페이지 정보만 
   const response = await GET(request());
   expect(response.status).toBe(200);
   expect(response.headers.get("cache-control")).toBe("private, no-store");
-  expect(response.headers.get("vary")).toBe("Cookie");
+  expect(response.headers.get("vary")?.split(",").map((token) => token.trim().toLowerCase())).toEqual(expect.arrayContaining(["cookie", "authorization"]));
   expect(mocks.list).toHaveBeenCalledWith({
     principal: { userId, role: "MEMBER" }, page: 1, pageSize: 10,
   });
