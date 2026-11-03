@@ -7,7 +7,7 @@ const policy = JSON.parse(readFileSync(new URL('../../security/dependency-triage
 const lock = JSON.parse(readFileSync(new URL('../../package-lock.json', import.meta.url)));
 // 실제 원장의 독립 nodes/via 집합으로 npm 응답을 복원한다. 공격 조건 설명은 응답 metadata와 분리한다.
 const audit = { auditReportVersion: 2, vulnerabilities: Object.fromEntries(policy.packages.map(pkg => [pkg.name, { name: pkg.name, severity: pkg.severity, range: pkg.range, nodes: pkg.nodes.map(node => node.path), via: pkg.via.map(v => v.source ? { ...v, url: 'https://github.com/advisories/' + v.id } : v.dependency) }])) };
-test('현재 정확한 집합은 package 수와 advisory 수를 구분한다', () => { assert.deepEqual(verifyDependencyPolicy(audit, lock, policy, '2026-10-28'), { affectedPackages: 12, advisoryEntries: 22, p1: 0 }); });
+test('현재 정확한 집합은 package 수와 advisory 수를 구분한다', () => { assert.deepEqual(verifyDependencyPolicy(audit, lock, policy, '2026-11-03'), { affectedPackages: 31, advisoryEntries: 23, p1: 0 }); });
 for (const [name, change] of [
   ['새 advisory', a => a.vulnerabilities.vite.via[0].source++],
   ['영향 범위 변경', a => a.vulnerabilities.vite.via[0].range += ' || 99.0.0'],
@@ -16,19 +16,19 @@ for (const [name, change] of [
   ['패키지 누락', a => delete a.vulnerabilities.vite],
   ['통신 오류 응답', a => a.error = { code: 'ENETWORK', summary: 'sensitive sentinel' }],
   ['잘못된 via', a => a.vulnerabilities.vite.via = [null]],
-]) test(name + ' 차단', () => { const input = structuredClone(audit); change(input); assert.throws(() => verifyDependencyPolicy(input, lock, policy, '2026-10-28'), /DEPENDENCY_/); });
+]) test(name + ' 차단', () => { const input = structuredClone(audit); change(input); assert.throws(() => verifyDependencyPolicy(input, lock, policy, '2026-11-03'), /DEPENDENCY_/); });
 for (const [name, change] of [
   ['미분류', p => p.assessments.pop()], ['P1', p => p.assessments[0].priority = 'P1'],
   ['owner 누락', p => p.assessments[0].owner = ''], ['설명 누락', p => p.assessments[0].assessment = ''],
   ['중복 검토', p => p.assessments[0] = p.assessments[1]],
-]) test(name + ' 원장 차단', () => { const input = structuredClone(policy); change(input); assert.throws(() => verifyDependencyPolicy(audit, lock, input, '2026-10-28'), /DEPENDENCY_/); });
+]) test(name + ' 원장 차단', () => { const input = structuredClone(policy); change(input); assert.throws(() => verifyDependencyPolicy(audit, lock, input, '2026-11-03'), /DEPENDENCY_/); });
 test('검토 기한 만료 차단', () => assert.throws(() => verifyDependencyPolicy(audit, lock, policy, '2026-11-06'), /DEPENDENCY_TRIAGE_INVALID/));
-test('lock 설치 버전 변경 차단', () => { const input = structuredClone(lock); input.packages['node_modules/vite'].version = '99.0.0'; assert.throws(() => verifyDependencyPolicy(audit, input, policy, '2026-10-28'), /DEPENDENCY_TRIAGE_CHANGED/); });
+test('lock 설치 버전 변경 차단', () => { const input = structuredClone(lock); input.packages['node_modules/vite'].version = '99.0.0'; assert.throws(() => verifyDependencyPolicy(audit, input, policy, '2026-11-03'), /DEPENDENCY_TRIAGE_CHANGED/); });
 test('깨진 audit는 정상 0건이 아니다', () => { for (const input of [null, {}, { auditReportVersion: 2, vulnerabilities: [] }]) assert.throws(() => dependencySnapshot(input, lock), /DEPENDENCY_REPORT_INVALID/); });
 
 // 감사 응답의 제목·영향 범위는 원문에 민감한 문자열이 섞일 수 있으므로 진단에는 식별자만 남긴다.
 function capturePolicyError(inputAudit, inputLock = lock) {
-  try { verifyDependencyPolicy(inputAudit, inputLock, policy, '2026-10-28'); }
+  try { verifyDependencyPolicy(inputAudit, inputLock, policy, '2026-11-03'); }
   catch (error) { return error; }
   assert.fail('변경된 감사 결과가 차단되지 않았다');
 }
@@ -75,7 +75,7 @@ test('새 설치 경로는 경로만 진단하고 실제 lock 일치 검사를 �
   const error = capturePolicyError(input, inputLock);
   assert.deepEqual(error.diagnostics, [{ kind: 'NODE_ONLY_IN_AUDIT', package: 'vite', path: 'node_modules/fixture-vite' }]);
   assert.doesNotMatch(JSON.stringify(error.diagnostics), /99\.0\.0/);
-  assert.throws(() => verifyDependencyPolicy(input, lock, policy, '2026-10-28'), /DEPENDENCY_LOCK_MISMATCH/);
+  assert.throws(() => verifyDependencyPolicy(input, lock, policy, '2026-11-03'), /DEPENDENCY_LOCK_MISMATCH/);
 });
 
 test('변경이 20건을 넘으면 생략 건수를 남기면서 차단한다', () => {
@@ -106,19 +106,19 @@ test('손상된 원장은 원문 없이 실패 차단한다', () => {
   const input = structuredClone(policy);
   input.packages[0].via = [null];
   let error;
-  try { verifyDependencyPolicy(audit, lock, input, '2026-10-28'); }
+  try { verifyDependencyPolicy(audit, lock, input, '2026-11-03'); }
   catch (caught) { error = caught; }
   assert.equal(error?.message, 'DEPENDENCY_TRIAGE_CHANGED');
   assert.deepEqual(dependencyDiagnosticLines(error), ['DEPENDENCY_TRIAGE_CHANGED']);
 });
 
-test('v2 원장은 29개 권고별 판단과 5개 공유 사용 맥락을 유지한다', () => {
+test('v2 원장은 69개 권고별 판단과 7개 공유 사용 맥락을 유지한다', () => {
   assert.equal(policy.schemaVersion, 2);
-  assert.equal(policy.assessments.length, 29);
-  assert.equal(policy.contexts.length, 5);
-  assert.equal(new Set(policy.assessments.map(item => item.contextId)).size, 5);
-  assert.deepEqual(policy.contexts.map(context => policy.assessments.filter(item => item.contextId === context.id).length).sort((a, b) => a - b), [3, 4, 5, 5, 12]);
-  assert.deepEqual(verifyDependencyPolicy(audit, lock, policy, '2026-10-28'), { affectedPackages: 12, advisoryEntries: 22, p1: 0 });
+  assert.equal(policy.assessments.length, 69);
+  assert.equal(policy.contexts.length, 7);
+  assert.equal(new Set(policy.assessments.map(item => item.contextId)).size, 7);
+  assert.deepEqual(policy.contexts.map(context => policy.assessments.filter(item => item.contextId === context.id).length).sort((a, b) => a - b), [3, 3, 4, 5, 5, 12, 37]);
+  assert.deepEqual(verifyDependencyPolicy(audit, lock, policy, '2026-11-03'), { affectedPackages: 31, advisoryEntries: 23, p1: 0 });
 });
 
 for (const [name, change] of [
@@ -135,13 +135,13 @@ for (const [name, change] of [
 ]) test(name + ' 차단', () => {
   const input = structuredClone(policy);
   change(input);
-  assert.throws(() => verifyDependencyPolicy(audit, lock, input, '2026-10-28'), /DEPENDENCY_/);
+  assert.throws(() => verifyDependencyPolicy(audit, lock, input, '2026-11-03'), /DEPENDENCY_/);
 });
 
 test('구 schema v1은 새 검토 원장으로 자동 승인하지 않는다', () => {
   const input = structuredClone(policy);
   input.schemaVersion = 1;
-  assert.throws(() => verifyDependencyPolicy(audit, lock, input, '2026-10-28'), /DEPENDENCY_TRIAGE_CHANGED/);
+  assert.throws(() => verifyDependencyPolicy(audit, lock, input, '2026-11-03'), /DEPENDENCY_TRIAGE_CHANGED/);
 });
 
 test('동일 GHSA의 다른 source ID는 각각 진단하고 차단한다', () => {
@@ -164,13 +164,31 @@ test('패치된 YAML 설치본은 임시 평가·공유 맥락 없이 확인한�
   const cliAssessments = policy.assessments.filter(item => item.contextId === 'shadcn-registry-cli');
   assert.equal(cliAssessments.length, 4);
   assert.ok(cliAssessments.every(item => item.reviewedOn === '2026-10-28' && item.reviewBy === '2026-11-05'));
-  assert.deepEqual(verifyDependencyPolicy(audit, lock, policy, '2026-10-30'), { affectedPackages: 12, advisoryEntries: 22, p1: 0 });
+  assert.deepEqual(verifyDependencyPolicy(audit, lock, policy, '2026-11-03'), { affectedPackages: 31, advisoryEntries: 23, p1: 0 });
+});
+
+// minimatch 신규 권고는 CLI dev=false 경로와 개발 도구 경로를 분리하고 기존 2026-11-05 기한을 연장하지 않습니다.
+test('minimatch 신규 권고는 사용면을 분리하고 기존 검토일·기한을 보존한다', () => {
+  const priorAssessments = policy.assessments.slice(0, 29);
+  const addedAssessments = policy.assessments.slice(29);
+  assert.equal(addedAssessments.length, 40);
+  assert.ok(priorAssessments.every(item => ['2026-10-22', '2026-10-28'].includes(item.reviewedOn) && item.reviewBy === '2026-11-05'));
+  assert.ok(addedAssessments.every(item => item.reviewedOn === '2026-11-03' && item.reviewBy === '2026-11-05'));
+  assert.equal(addedAssessments.filter(item => item.contextId === 'tooling-minimatch-glob').length, 37);
+  assert.deepEqual(addedAssessments.filter(item => item.contextId === 'shadcn-ts-morph-glob').map(item => item.key), [
+    '@ts-morph/common:minimatch',
+    'shadcn:ts-morph',
+    'ts-morph:@ts-morph/common',
+  ]);
+  const minimatchPkg = policy.packages.find(item => item.name === 'minimatch');
+  assert.equal(minimatchPkg?.range, '<11.0.1');
+  assert.deepEqual(minimatchPkg?.via.map(item => `${item.id}:${item.source}`), ['GHSA-g3hv-75wg-m249:1244012']);
 });
 
 // 실제 원장의 기한을 늘리지 않고 합성 평가만 만료시켜 일반 실패 차단이 남아 있음을 확인합니다.
 test('YAML 예외를 제거해도 다른 평가의 만료는 계속 차단한다', () => {
   const input = structuredClone(policy);
-  input.assessments[0].reviewBy = '2026-10-29';
-  assert.deepEqual(verifyDependencyPolicy(audit, lock, input, '2026-10-29'), { affectedPackages: 12, advisoryEntries: 22, p1: 0 });
-  assert.throws(() => verifyDependencyPolicy(audit, lock, input, '2026-10-30'), /DEPENDENCY_TRIAGE_INVALID/);
+  input.assessments[0].reviewBy = '2026-11-03';
+  assert.deepEqual(verifyDependencyPolicy(audit, lock, input, '2026-11-03'), { affectedPackages: 31, advisoryEntries: 23, p1: 0 });
+  assert.throws(() => verifyDependencyPolicy(audit, lock, input, '2026-11-04'), /DEPENDENCY_TRIAGE_INVALID/);
 });
