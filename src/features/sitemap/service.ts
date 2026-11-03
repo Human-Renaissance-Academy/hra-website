@@ -24,7 +24,9 @@ export type PublicSitemapEntry = {
   lastModified?: Date;
 };
 
-// 공개 헤더 메뉴에 있는 정적 공개 경로입니다. 보호·작성 경로(/recruitment/apply, /pending 등)는 넣지 않습니다.
+// 공개 헤더 메뉴에 있는 정적 공개 경로입니다. 보호 경로(/pending 등)는 넣지 않습니다.
+// /recruitment/apply 는 크롤링은 허용하지만, 모집 기간에 따라 내용이 바뀌는 지원서 진입 화면이고
+// 모집안내(/recruitment)에서 바로 연결되므로 sitemap에는 별도로 넣지 않습니다.
 export const PUBLIC_STATIC_SITEMAP_PATHS = [
   "/",
   "/about",

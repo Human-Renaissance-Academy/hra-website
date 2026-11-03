@@ -7,6 +7,7 @@
  * - sitemap repository: 공지 조회가 PUBLISHED 조건을 SQL에 포함
  */
 import { PgDialect } from "drizzle-orm/pg-core";
+import { getTableColumns } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -32,7 +33,7 @@ const alumniId = "20000000-0000-4000-8000-000000000002";
 const galleryId = "30000000-0000-4000-8000-000000000003";
 const updatedAt = new Date("2026-10-30T00:00:00Z");
 
-// sitemap에 절대 나오면 안 되는 보호·작성·시스템 경로 접두어입니다.
+// sitemap에 절대 나오면 안 되는 보호·시스템 경로 접두어입니다. /recruitment/apply는 크롤링은 허용하지만 sitemap에는 넣지 않습니다.
 const protectedPrefixes = ["/admin", "/member", "/mypage", "/resources", "/login", "/register", "/pending", "/recruitment/apply", "/api", "/system-error"];
 
 /** Production 환경변수를 설정합니다. */
@@ -69,8 +70,15 @@ describe("robots.txt", () => {
     expect(result.rules).toEqual({
       userAgent: "*",
       allow: "/",
-      disallow: ["/admin", "/member", "/mypage", "/resources", "/login", "/register", "/pending", "/recruitment/apply", "/system-error", "/api/"],
+      disallow: ["/admin", "/member", "/mypage", "/resources", "/login", "/register", "/pending", "/system-error", "/api/"],
     });
+  });
+
+  it("공개 지원서 목록(/recruitment/apply)은 크롤링을 막지 않는다", () => {
+    stubProduction();
+    const rules = robots().rules;
+    const disallow = Array.isArray(rules) ? [] : [rules.disallow ?? []].flat();
+    expect(disallow.some((path) => "/recruitment/apply".startsWith(path) && path !== "/")).toBe(false);
   });
 
   it("Preview와 Vercel 밖 실행은 전체 크롤링을 막고 sitemap을 안내하지 않는다", () => {
@@ -85,6 +93,19 @@ describe("robots.txt", () => {
 });
 
 describe("sitemap.xml route", () => {
+  it("요청마다 DB를 조회하지 않도록 1시간 재생성(ISR) 캐시를 사용한다", async () => {
+    const routeModule: Record<string, unknown> = await import("@/app/sitemap");
+    expect(routeModule.revalidate).toBe(3600);
+    expect(routeModule.dynamic).toBeUndefined();
+  });
+
+  it("빌드 중 DB에 접속할 수 없어도 Production sitemap은 실패하지 않고 정적 경로를 반환한다", async () => {
+    stubProduction();
+    mocks.noticeRows.mockRejectedValue(new Error("connect ECONNREFUSED"));
+    const urls = (await sitemap()).map((entry) => entry.url);
+    expect(urls).toEqual(PUBLIC_STATIC_SITEMAP_PATHS.map((path) => `https://hra-website-theta.vercel.app${path === "/" ? "/" : path}`));
+  });
+
   it("Production은 운영 주소 기준의 절대 URL만 내보낸다", async () => {
     stubProduction();
     const entries = await sitemap();
@@ -167,5 +188,31 @@ describe("sitemap repository", () => {
     });
     expect(captured.limit).toBe(7);
     vi.doUnmock("@/lib/db");
+  });
+
+  it("수료생·갤러리는 게시 상태 열이 없어 공개 목록처럼 전체 행을 조회한다", async () => {
+    const wheres: unknown[] = [];
+    const chain = {
+      from: () => chain,
+      where: (condition: unknown) => { wheres.push(condition); return chain; },
+      orderBy: () => chain,
+      limit: async () => [],
+    };
+    // 앞 테스트에서 불러온 repository 모듈을 버리고 새 DB 대역으로 다시 불러옵니다.
+    vi.resetModules();
+    vi.doMock("@/lib/db", () => ({ db: { select: () => chain } }));
+    const repository = await vi.importActual<typeof import("@/features/sitemap/repository")>("@/features/sitemap/repository");
+    await repository.listAlumniStorySitemapRows(3);
+    await repository.listGallerySitemapRows(3);
+    expect(wheres).toEqual([]);
+    vi.doUnmock("@/lib/db");
+
+    // 게시·공개 여부 열이 생기면 이 검사가 실패합니다. 그때는 공개 목록·상세 쿼리와 같은 필터를
+    // src/features/sitemap/repository.ts 에도 적용한 뒤 이 기대값을 갱신해야 합니다.
+    const { alumniStories, galleries } = await vi.importActual<typeof import("@/lib/db/schema")>("@/lib/db/schema");
+    const visibilityColumn = /status|publish|visib|public|hidden|draft|private/i;
+    for (const table of [alumniStories, galleries]) {
+      expect(Object.keys(getTableColumns(table)).filter((name) => visibilityColumn.test(name))).toEqual([]);
+    }
   });
 });

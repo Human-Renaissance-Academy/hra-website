@@ -16,7 +16,8 @@ import { absoluteSiteUrl, getSiteConfig } from "@/lib/site-url";
 // 환경변수에 따라 응답이 달라지므로 빌드 시점 값으로 고정하지 않고 요청마다 생성합니다.
 export const dynamic = "force-dynamic";
 
-// 검색 결과에 노출할 필요가 없는 비공개·작성·시스템 경로 접두어입니다. (학사 화면은 /admin 아래에 있습니다.)
+// 검색 결과에 노출할 필요가 없는 비공개·시스템 경로 접두어입니다. (학사 화면은 /admin 아래에 있습니다.)
+// /recruitment/apply 는 공개 지원서 목록이자 모집안내의 주요 링크 대상이므로 크롤링을 막지 않습니다.
 const ROBOTS_DISALLOWED_PATHS = [
   "/admin",
   "/member",
@@ -25,7 +26,6 @@ const ROBOTS_DISALLOWED_PATHS = [
   "/login",
   "/register",
   "/pending",
-  "/recruitment/apply",
   "/system-error",
   "/api/",
 ] as const;
