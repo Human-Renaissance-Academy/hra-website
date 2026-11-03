@@ -68,7 +68,7 @@ function dependencyChanges(snapshot, recorded) {
 export function dependencyDiagnosticLines(error) {
   if (!(error instanceof Error) || !/^DEPENDENCY_[A-Z_]+$/.test(error.message)) return ['DEPENDENCY_CHECK_FAILED'];
   const lines = [error.message];
-  if (error.message === 'DEPENDENCY_TRIAGE_CHANGED' && Array.isArray(error.diagnostics)) {
+  if (['DEPENDENCY_TRIAGE_CHANGED', 'DEPENDENCY_LOCK_REGISTRY_INVALID'].includes(error.message) && Array.isArray(error.diagnostics)) {
     for (const item of error.diagnostics) lines.push(`DEPENDENCY_CHANGE ${canonical(item)}`);
   }
   return lines;
@@ -77,8 +77,22 @@ export function dependencyDiagnosticLines(error) {
 const contextFields = ['usedApi', 'callLocations', 'assessment', 'residualAssumptions'];
 const contextKeys = ['assessment', 'callLocations', 'id', 'residualAssumptions', 'usedApi'].join(',');
 const assessmentKeys = ['attackCondition', 'contextId', 'key', 'owner', 'priority', 'reviewBy', 'reviewedOn'].join(',');
+/** 모든 lock `resolved`가 공식 npm registry를 가리키는지 확인한다(워크스페이스 link 제외). 외부 피드 주소는 출력하지 않고 설치 경로만 진단한다(#432). */
+export function lockRegistryViolations(lock) {
+  if (!lock?.packages || typeof lock.packages !== 'object') throw new Error('DEPENDENCY_REPORT_INVALID');
+  return Object.entries(lock.packages)
+    .filter(([, pkg]) => pkg && pkg.link !== true && pkg.resolved !== undefined && !(typeof pkg.resolved === 'string' && pkg.resolved.startsWith('https://registry.npmjs.org/')))
+    .map(([path]) => ({ kind: 'RESOLVED_NOT_OFFICIAL_REGISTRY', path: safeLabel(path) }))
+    .sort((a, b) => a.path.localeCompare(b.path));
+}
 /** 변경/누락/만료/미분류/P1은 차단한다. 공유 맥락은 검토 책임과 위험 수용 권한을 대체하지 않는다. */
 export function verifyDependencyPolicy(audit, lock, policy, today = new Date().toISOString().slice(0, 10)) {
+  const registryViolations = lockRegistryViolations(lock);
+  if (registryViolations.length) {
+    const error = new Error('DEPENDENCY_LOCK_REGISTRY_INVALID');
+    error.diagnostics = registryViolations.slice(0, 20);
+    throw error;
+  }
   const snapshot = dependencySnapshot(audit, lock);
   if (!policy || policy.schemaVersion !== 2 || !Array.isArray(policy.packages)
     || !Array.isArray(policy.contexts) || !Array.isArray(policy.assessments)) throw new Error('DEPENDENCY_TRIAGE_CHANGED');
