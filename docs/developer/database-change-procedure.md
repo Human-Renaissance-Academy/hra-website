@@ -55,6 +55,7 @@ Linux의 `/dev/shm`과 PostgreSQL 실행 파일을 준비하고 `HRA_TEST_PG_BIN
 | `db:migrate-recruitment-singleton` | 모집설정 고정 키·기본행의 설치 계획 | DB 접속 없는 계획만 제공. 순수 기본행 SQL 선언은 유지하지만 `--confirm-apply`도 접속 전에 차단 |
 | `db:migrate-add-application-unique` | 같은 양식·이메일의 지원서 중복 제약 설치 계획 | DB 접속 없는 계획만 제공. 기존 catalog·중복 검사·ALTER·경합 재확인·사후 조회는 미제공 |
 | `db:migrate-add-rate-limit-tables` | 과거 로그인·업로드 로그 테이블과 인덱스의 설치 계획 | DB 접속 없는 계획만 제공. 기존 사전 검사·대상별 설치·사후 조회는 미제공이며 현재 예약 함수 설치 도구와 별개 |
+| `seed-cohorts` | 과거 기수 선언 19건을 보존한 초기 데이터 계획 | 접속 없는 계획만 제공. 선언 건수는 실제 DB 건수가 아니며 조회·건너뛰기·누락 행 입력은 미제공 |
 | 그 밖의 `db:migrate-*` | 스크립트별 구조 변경 | 이름만으로 dry-run이라 가정하지 않음; 실행 즉시 변경하는 스크립트가 있음 |
 
 두 한정 컬럼 명령은 `.env`가 없어도 무인자 계획을 출력합니다. 적용하려면 승인된 대상의 명시적 DB URL과 `--confirm-apply`를 전달해야 합니다. 이 인자는 실행 의도를 표시할 뿐 실제 DB identity·백업·운영 승인을 증명하지 않습니다. 기존 컬럼의 타입·NOT NULL·기본값·소유권이 다르면 자동 보정하지 않고 실패하며, 이미 저장된 `session_version` 값은 변경하지 않습니다.
@@ -64,6 +65,8 @@ Linux의 `/dev/shm`과 PostgreSQL 실행 파일을 준비하고 `HRA_TEST_PG_BIN
 지원서 중복 제약 명령도 `.env` 없이 계획만 출력하고 `--confirm-apply`를 접속 전에 차단합니다. 현재 명령은 기존 제약·동명 relation·동등 index·중복 행을 조회하거나 단일 `ALTER`, 경합 오류 후 재확인, 사후 검증을 수행하지 않습니다. 이전 경로도 이 단계 전체를 한 transaction으로 묶지는 않았습니다. 실제 제약 선언과 앱의 특정 이름 `23505` 오류 처리는 유지하지만, 이 회귀를 비활성화한 기존 DB 설치 경로의 동등성 증거로 사용하지 않습니다. 필요한 제약이 없는 DB에는 관련 앱 기능을 배포하지 말고 [#280](https://github.com/yeongseon/hra-website/issues/280)의 검증된 업그레이드 경계를 먼저 마련합니다. 계획 출력은 DB 상태 검사나 적용 완료를 뜻하지 않습니다.
 
 과거 로그 설치 명령도 `.env` 없이 계획만 출력하고 `--confirm-apply`를 접속 전에 차단합니다. 대상은 `login_attempts`·`upload_rate_limit_log` 두 테이블과 인덱스 세 개입니다. 기존 사전 검사·대상별 테이블/인덱스 transaction·사후 조회는 미제공입니다. 이전에도 두 대상 전체를 한 transaction으로 묶지 않아 첫 대상만 반영될 수 있었습니다. 이 변경은 해당 로그 테이블의 불필요함이나 실제 DB의 준비 상태를 판정하지 않습니다. 현재 요청 제한의 `rate_limit_events`·예약 함수·별도 `db:migrate-rate-limit-reservations` 도구와 런타임은 유지하며, 필요한 객체가 없는 DB의 준비는 [#280](https://github.com/yeongseon/hra-website/issues/280)의 검증된 경계를 먼저 마련합니다. schema export·현재 요청 제한 회귀를 비활성화한 기존 DB 설치 경로의 동등성 증거로 사용하지 않습니다.
+
+기수 seed도 `.env` 없이 접속 없는 계획만 출력하고 `--confirm-apply`를 차단합니다. 같은 MJS의 순수 선언 19건은 과거 초기값을 보존한 것이며 현재 운영 DB의 건수·내용·적용 가능성을 증명하지 않습니다. 이전의 항목별 name 조회 후 건너뛰기/INSERT는 미제공이며, 그 경로도 upsert·`ON CONFLICT`·전체 transaction은 아니어서 일부 행만 반영될 수 있었습니다. 기존 행 수정·회원/학적/권한 연결을 수행하던 도구로 해석하지 않습니다. 현재 화면·service는 계속 DB를 정본으로 사용하며 새 export를 파일 기반 fallback이나 CMS로 연결하지 않습니다. 선언·hash·합성 조회 회귀를 실제 seed나 운영 승인으로 사용하지 말고 [#280](https://github.com/yeongseon/hra-website/issues/280)의 검증된 데이터 적용 경계를 먼저 마련합니다. 다른 seed와 기존 `seed-admin` 보호 조건은 유지합니다.
 
 기본 `drizzle.config.ts`는 `.env`·`DATABASE_URL`과 DB credentials를 읽지 않습니다. 따라서 기본 설정의 `npx drizzle-kit push`·`npx drizzle-kit migrate`도 접속 정보 부족으로 중단합니다. `npm run db:push -- --isolated`·`--apply`·URL·자체 승인 JSON으로 이를 활성화할 수 없습니다. 도구가 소유한 일회성 DB에 대한 별도 push 기능도 아직 제공하지 않습니다.
 

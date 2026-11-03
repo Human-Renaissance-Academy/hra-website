@@ -820,21 +820,16 @@
       "fresh": {
         "disposition": "exclude",
         "required": false,
-        "reason": "기존 콘텐츠·계정·학적을 변경하는 seed/backfill/변환은 fresh DDL 적용 이력에서 제외한다."
+        "reason": "과거 기수 초기값의 순수 선언만 보존하고 공개 CLI 적용은 차단한다. 운영 DB 정본이나 fresh DDL 적용 이력으로 사용하지 않는다."
       },
       "objects": ["cohort-seed"],
       "requires": ["web-base"],
-      "checks": ["기수별 콘텐츠 INSERT가 회원 기수·학적의 실제 연결을 만들었다고 추론하지 않는다."],
+      "checks": ["CLI는 고정 계획·거부만 출력하고 DB·자격정보·통신·파일 읽기를 수행하지 않는다. 모듈 import는 출력·종료 상태 변화가 없어야 한다.","원문 literal과 실제 export의 독립 digest·19개 선언·필드 구조를 보존하고 실제 이름·내용·URL을 진단에 반사하지 않는다.","선언 건수는 실제 DB 건수가 아니며, 원래 분리된 name 조회·건너뛰기/INSERT는 미제공이다. 계정·학적·권한 연결이나 전체 transaction으로 설명하지 않는다.","선언을 Page·service·fallback에 연결하거나 DB 기반 운영 콘텐츠를 파일 기반 CMS로 되돌리지 않는다."],
       "evidence": [
         {
           "file": "scripts/seed-cohorts.mjs",
-          "line": 54,
-          "note": "기수 데이터별 중복 검사."
-        },
-        {
-          "file": "scripts/seed-cohorts.mjs",
-          "line": 68,
-          "note": "정적 기수 행 INSERT."
+          "line": 1,
+          "note": "기수 선언의 보존과 접속 없는 계획·신뢰되지 않은 적용 차단의 역할 설명."
         }
       ],
       "unresolved": []
@@ -2685,11 +2680,11 @@
         {
           "source": "scripts/seed-cohorts.mjs",
           "relationship": "primary",
-          "reason": "해당 inventory 원문이 이 사용자 정의 객체·효과의 선언 소유자다."
+          "reason": "이 MJS의 순수 기수 배열이 과거 초기값의 선언 소유자다. 공개 CLI는 seed를 실행하지 않으며 이 선언은 관리자가 편집하는 운영 DB의 정본이 아니다."
         }
       ],
       "requires": ["web-base"],
-      "checks": ["기수 콘텐츠 seed를 학적·회원 자동 연결 또는 실제 운영 baseline으로 취급하지 않는다."],
+      "checks": ["원본 literal·실제 export의 값과 순서를 독립 digest로 대조하고 기수 콘텐츠 선언을 학적·회원 자동 연결이나 실제 운영 baseline으로 취급하지 않는다.","선언 데이터 보존은 현재 운영 콘텐츠의 정확성·누락 행 판단·삽입 가능성·승인을 증명하지 않는다."],
       "unresolved": [],
       "requiredForFresh": false
     },
