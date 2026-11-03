@@ -24,7 +24,10 @@ function checkHistory(base, head, { fromMergeBase = false } = {}) {
   if (fromMergeBase) {
     if (!base) throw new Error("PR 검사에는 base SHA가 필요합니다");
     // 공통 조상이 없으면 git이 실패하므로 조용히 통과시키지 않고 오류로 중단한다.
-    range = git(["merge-base", base, head]) + ".." + head;
+    const bases = git(["merge-base", "--all", base, head]).split("\n").filter(Boolean);
+    // criss-cross 병합으로 병합 기준이 여럿이면 검사 범위가 모호하므로 명확히 실패시킨다.
+    if (bases.length !== 1) throw new Error("병합 기준(merge-base)이 " + bases.length + "개라 검사 범위를 정할 수 없습니다");
+    range = bases[0] + ".." + head;
   } else if (base && !/^0{40}$/.test(base)) {
     if (spawnSync("git", ["merge-base", "--is-ancestor", base, head]).status === 0) {
       range = base + ".." + head;

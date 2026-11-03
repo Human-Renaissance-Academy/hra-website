@@ -68,7 +68,27 @@ test("push 강제 업데이트: --history는 전체 이력을 검사해 실패�
   } finally { rmSync(r.dir, { recursive: true, force: true }); }
 });
 
-test("정상 fast-forward: --history와 --pr-history 모두 base..head만 검사한다", () => {
+test("criss-cross 병합으로 merge-base가 여럿이면 --pr-history가 명확히 실패한다", () => {
+  const r = makeRepo();
+  try {
+    r.commit("feat: 시작");
+    r.git("checkout", "-q", "-b", "a");
+    r.commit("feat: a1");
+    r.git("checkout", "-q", "-b", "b", "main");
+    r.commit("feat: b1");
+    const b1 = r.git("rev-parse", "HEAD");
+    r.git("checkout", "-q", "a");
+    const a1 = r.git("rev-parse", "HEAD");
+    r.git("merge", "-q", "--no-edit", b1);
+    r.git("checkout", "-q", "b");
+    r.git("merge", "-q", "--no-edit", a1);
+    const result = r.run("--pr-history", r.git("rev-parse", "a"), r.git("rev-parse", "b"));
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /병합 기준\(merge-base\)이 2개/);
+  } finally { rmSync(r.dir, { recursive: true, force: true }); }
+});
+
+test("정상 fast-forward:--history와 --pr-history 모두 base..head만 검사한다", () => {
   const r = makeRepo();
   try {
     r.commit("legacy bad subject");

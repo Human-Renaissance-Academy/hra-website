@@ -94,11 +94,12 @@ jobs:
       - name: 새 커밋 메시지 검사
         if: github.event_name == 'push' || github.event_name == 'pull_request'
         # PR은 base가 뒤처진 브랜치에서도 merge-base 이후 커밋만 검사하고, push는 강제 업데이트 시 전체 이력을 검사한다.
-        run: >-
-          node scripts/check-commit-messages.mjs
-          ${{ github.event_name == 'pull_request' && '--pr-history' || '--history' }}
-          "${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}"
-          "${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}"
+        env:
+          # SHA와 모드를 셸 본문에 보간하지 않고 환경변수로 전달합니다.
+          HISTORY_MODE: ${{ github.event_name == 'pull_request' && '--pr-history' || '--history' }}
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: node scripts/check-commit-messages.mjs "$HISTORY_MODE" "$BASE_SHA" "$HEAD_SHA"
 
   audit:
     name: 열린 이슈·PR 일괄 검사
