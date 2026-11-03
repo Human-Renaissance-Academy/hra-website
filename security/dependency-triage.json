@@ -577,7 +577,7 @@
     {
       "name": "minimatch",
       "severity": "moderate",
-      "range": "*",
+      "range": "<11.0.1",
       "nodes": [
         {
           "path": "node_modules/@ts-morph/common/node_modules/minimatch",

@@ -181,6 +181,7 @@ test('minimatch 신규 권고는 사용면을 분리하고 기존 검토일·기
     'ts-morph:@ts-morph/common',
   ]);
   const minimatchPkg = policy.packages.find(item => item.name === 'minimatch');
+  assert.equal(minimatchPkg?.range, '<11.0.1');
   assert.deepEqual(minimatchPkg?.via.map(item => `${item.id}:${item.source}`), ['GHSA-g3hv-75wg-m249:1244012']);
 });
 
