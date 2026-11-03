@@ -16,10 +16,16 @@ function git(args) {
   return execFileSync("git", args, { encoding: "utf8" }).trimEnd();
 }
 
-function checkHistory(base, head) {
+// fromMergeBase가 true이면 PR 이벤트로 보고, base가 head의 조상이 아니어도(브랜치가 뒤처진 경우)
+// 전체 이력 대신 merge-base(base, head)..head, 즉 PR이 추가한 커밋만 검사한다.
+function checkHistory(base, head, { fromMergeBase = false } = {}) {
   if (!shaPattern.test(head) || (base && !shaPattern.test(base))) throw new Error("잘못된 SHA");
   let range = head;
-  if (base && !/^0{40}$/.test(base)) {
+  if (fromMergeBase) {
+    if (!base) throw new Error("PR 검사에는 base SHA가 필요합니다");
+    // 공통 조상이 없으면 git이 실패하므로 조용히 통과시키지 않고 오류로 중단한다.
+    range = git(["merge-base", base, head]) + ".." + head;
+  } else if (base && !/^0{40}$/.test(base)) {
     if (spawnSync("git", ["merge-base", "--is-ancestor", base, head]).status === 0) {
       range = base + ".." + head;
     } else {
@@ -48,8 +54,10 @@ function main() {
     if (problem) { console.error(problem); process.exitCode = 1; }
   } else if (mode === "--history") {
     checkHistory(file ?? "", head ?? "");
+  } else if (mode === "--pr-history") {
+    checkHistory(file ?? "", head ?? "", { fromMergeBase: true });
   } else {
-    throw new Error("사용법: --message-file <path> 또는 --history <base-sha> <head-sha>");
+    throw new Error("사용법: --message-file <path> 또는 --history|--pr-history <base-sha> <head-sha>");
   }
 }
 
