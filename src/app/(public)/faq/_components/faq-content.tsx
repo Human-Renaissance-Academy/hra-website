@@ -109,6 +109,7 @@ export function FaqContent({ contactText, items }: FaqContentProps) {
                 type="button"
                 onClick={() => setOpenIndex(isOpen ? null : index)}
                 className="flex w-full items-center justify-between gap-4 py-5 text-left"
+                id={`faq-trigger-${index}`}
                 aria-expanded={isOpen}
                 aria-controls={`faq-panel-${index}`}
               >
@@ -119,8 +120,19 @@ export function FaqContent({ contactText, items }: FaqContentProps) {
                 />
               </button>
 
+              {/*
+                답변 패널.
+                grid-rows-[0fr] 로 접기만 하면 높이만 0 이 될 뿐 DOM 에 그대로 남아,
+                스크린리더가 접힌 답변을 읽고 답변 속 링크가 Tab 순서에 들어간다 (#411).
+                inert 는 접힌 동안 하위 요소를 접근성 트리·포커스·클릭에서 모두 제외하면서
+                grid 높이 전환 애니메이션은 그대로 유지한다.
+                role="region" + aria-labelledby 로 열린 답변이 질문과 연결된 영역으로 읽히게 한다.
+              */}
               <div
                 id={`faq-panel-${index}`}
+                role="region"
+                aria-labelledby={`faq-trigger-${index}`}
+                inert={!isOpen}
                 className={`grid transition-all duration-300 ease-out ${isOpen ? "grid-rows-[1fr] pb-5" : "grid-rows-[0fr]"}`}
               >
                 <div className="overflow-hidden">
