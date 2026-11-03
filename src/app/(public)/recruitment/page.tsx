@@ -27,6 +27,8 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "모집안내",
   description: "HRA 신규 기수 모집 일정과 지원 절차를 안내합니다. 인간 르네상스를 함께 꿈꿀 청년들을 기다립니다.",
+  // 사이트 기준 주소(metadataBase)와 합쳐 이 페이지의 대표 주소(canonical)가 됩니다.
+  alternates: { canonical: "/recruitment" },
 };
 
 // 모집 상태 배지 스타일 맵

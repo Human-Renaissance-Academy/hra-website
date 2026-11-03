@@ -27,6 +27,7 @@ export async function generateMetadata({ params }: NoticePageProps): Promise<Met
   const parsedId = z.uuid().safeParse(id);
   const notice = parsedId.success ? await getPublishedNoticeById(parsedId.data) : null;
 
+  // 없거나 게시되지 않은 공지는 404가 되므로 canonical을 선언하지 않습니다.
   if (!notice) {
     return { title: "공지사항" };
   }
@@ -36,6 +37,8 @@ export async function generateMetadata({ params }: NoticePageProps): Promise<Met
   return {
     title: notice.title,
     description,
+    // 게시된 공지만 자기 상세 경로를 대표 주소로 선언합니다.
+    alternates: { canonical: `/notices/${notice.id}` },
     openGraph: {
       title: notice.title,
       description,

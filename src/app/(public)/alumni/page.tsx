@@ -13,6 +13,8 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "수료생 이야기",
   description: "HRA를 수료한 동문들의 성장 이야기와 사회 진출 이후의 발걸음을 만나보세요.",
+  // 검색·페이지 쿼리가 붙은 주소도 기본 목록을 대표 주소(canonical)로 사용합니다.
+  alternates: { canonical: "/alumni" },
 };
 
 type AlumniStoryViewModel = {

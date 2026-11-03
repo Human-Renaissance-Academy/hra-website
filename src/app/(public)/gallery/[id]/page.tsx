@@ -26,6 +26,7 @@ export async function generateMetadata({ params }: GalleryDetailPageProps): Prom
   const { id } = await params;
   const gallery = await getPublicGalleryDetail(id);
 
+  // 없는 앨범은 404가 되므로 canonical을 선언하지 않습니다.
   if (!gallery) {
     return { title: "갤러리" };
   }
@@ -36,6 +37,8 @@ export async function generateMetadata({ params }: GalleryDetailPageProps): Prom
   return {
     title: gallery.title,
     description,
+    // 실제로 존재하는 앨범만 자기 상세 경로를 대표 주소로 선언합니다.
+    alternates: { canonical: `/gallery/${gallery.id}` },
     openGraph: {
       title: gallery.title,
       description,

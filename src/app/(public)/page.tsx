@@ -12,6 +12,8 @@ export const metadata: Metadata = {
   openGraph: {
     url: "/",
   },
+  // 사이트 기준 주소(metadataBase)와 합쳐 이 페이지의 대표 주소(canonical)가 됩니다.
+  alternates: { canonical: "/" },
 };
 
 type HomeProps = {
