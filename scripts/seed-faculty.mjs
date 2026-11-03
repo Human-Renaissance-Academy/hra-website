@@ -1,29 +1,13 @@
 /**
- * 교수진 시드 스크립트
- *
- * 교수진 명단.md 파일의 21명 교수진 데이터를 DB에 입력합니다.
- * 이미 동일한 이름+카테고리 조합이 존재하면 건너뜁니다.
- *
- * 사용법:
- *   node scripts/seed-faculty.mjs
- *
- * 환경변수:
- *   DATABASE_URL - Neon Postgres 연결 문자열 (필수)
+ * 과거 교수진 선언 데이터를 보존하고 변경 계획만 안내하는 차단형 CLI입니다.
+ * 신뢰된 대상·복구·승인 경계가 마련되기 전에는 DB·자격정보·파일을 읽거나 연결하지 않습니다.
+ * 기존 이름+카테고리별 조회·건너뛰기·순차 INSERT 적용은 비활성이며 기존 행·계정·역할을 연결하지 않습니다.
+ * 교수진 선언은 수업 내용 담당 정보일 뿐 출결·학사 운영 권한이나 승인 계정 부여의 근거가 아닙니다.
+ * 선언 건수는 실제 DB 건수가 아니며 선언의 보존이 현재 운영 내용이나 적용 승인을 증명하지는 않습니다.
  */
 
-import { neon } from "@neondatabase/serverless";
-
-const DATABASE_URL = process.env.DATABASE_URL;
-
-if (!DATABASE_URL) {
-  console.error("❌ DATABASE_URL 환경변수가 설정되지 않았습니다.");
-  process.exit(1);
-}
-
-const sql = neon(DATABASE_URL);
-
-// 교수진 명단.md 기반 데이터
-const facultyData = [
+// 원본 배열 literal을 그대로 보존하는 순수 선언이며 화면·서비스의 콘텐츠 기본본으로 연결하지 않습니다.
+export const facultyData = [
   // ── 고전 명작 (CLASSICS) ──
   { name: "김경희", category: "CLASSICS", currentPosition: null, formerPosition: "유니세프한국위원회 사무차장, 중앙일보·동아일보 기자, 스웨덴 스톡홀름대학교 국제대학원 수료", order: 1 },
   { name: "김수종", category: "CLASSICS", currentPosition: "칼럼니스트", formerPosition: "한국일보 기자·뉴욕특파원·논설위원·주필", order: 2 },
@@ -52,46 +36,19 @@ const facultyData = [
   { name: "양혜연", category: "LECTURE", currentPosition: "제주대학교 외래교수", formerPosition: null, order: 6 },
 ];
 
-async function main() {
-  console.log("🎓 교수진 시드 데이터 입력을 시작합니다...\n");
-
-  let inserted = 0;
-  let skipped = 0;
-
-  for (const member of facultyData) {
-    // 동일한 이름+카테고리 조합이 이미 존재하는지 확인
-    const existing = await sql`
-      SELECT id FROM faculty WHERE name = ${member.name} AND category = ${member.category}
-    `;
-
-    if (existing.length > 0) {
-      console.log(`  ⏭️  ${member.name} (${member.category}) - 이미 존재, 건너뜀`);
-      skipped++;
-      continue;
-    }
-
-    await sql`
-      INSERT INTO faculty (id, name, category, current_position, former_position, "order", created_at, updated_at)
-      VALUES (
-        gen_random_uuid(),
-        ${member.name},
-        ${member.category},
-        ${member.currentPosition},
-        ${member.formerPosition},
-        ${member.order},
-        NOW(),
-        NOW()
-      )
-    `;
-
-    console.log(`  ✅ ${member.name} (${member.category}) 입력 완료`);
-    inserted++;
+/** 이름·내용·URL·인자 원문을 출력하지 않고 선언 건수와 고정 계획 또는 오류만 제공합니다. */
+function run(args) {
+  if (args.length === 0) {
+    console.log(`교수진 데이터 계획: 선언 항목 ${facultyData.length}개. 실제 DB 건수는 조회하지 않았으며 직접 적용은 비활성입니다. 접속·변경하지 않습니다. [FACULTY_SEED_PLAN]`);
+    return 0;
   }
-
-  console.log(`\n🎉 완료! 입력: ${inserted}명, 건너뜀: ${skipped}명`);
+  if (args.length === 1 && args[0] === "--confirm-apply") {
+    console.error("적용 의도만으로 대상·복구·승인을 확인할 수 없어 직접 적용을 차단합니다. [FACULTY_SEED_TARGET_UNTRUSTED]");
+    return 1;
+  }
+  console.error("지원하지 않는 인자입니다. 인자 없이 변경 계획을 확인하세요. [FACULTY_SEED_ARGUMENTS]");
+  return 1;
 }
 
-main().catch((err) => {
-  console.error("❌ 시드 실행 중 오류 발생:", err);
-  process.exit(1);
-});
+// 프로젝트 기준인 Node 24의 직접 실행 표식으로 모듈 import 시 출력·종료 부작용을 막습니다.
+if (import.meta.main) process.exitCode = run(process.argv.slice(2));
