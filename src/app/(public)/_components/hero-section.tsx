@@ -5,17 +5,43 @@
 
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
 const fullHeadingText = "정답보다 중요한 것,\nHRA는 본질을 묻는 법을 배웁니다.";
 
+const reducedMotionQuery = "(prefers-reduced-motion: reduce)";
+
+/** 모션 감소 설정 변경을 구독한다. 구독 해제 함수를 돌려주어 언마운트 시 리스너가 정리된다. */
+function subscribeReducedMotion(onChange: () => void) {
+  const query = window.matchMedia(reducedMotionQuery);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
 export function HeroSection() {
   const [typedHeading, setTypedHeading] = useState("");
   const [isTypingComplete, setIsTypingComplete] = useState(false);
 
+  // OS 의 "동작 줄이기" 설정 여부. 서버 스냅샷은 false 이며,
+  // 서버 HTML 에는 sr-only 전체 제목이 이미 있으므로 접근성에는 영향이 없다.
+  // 사용 중 설정이 바뀌면 자동으로 다시 렌더링된다.
+  const reduceMotion = useSyncExternalStore(
+    subscribeReducedMotion,
+    () => window.matchMedia(reducedMotionQuery).matches,
+    () => false,
+  );
+
+  // 모션 감소면 타이머를 만들지 않고 전체 제목을 즉시 표시한다. (상태 대신 파생값 사용)
+  const displayedHeading = reduceMotion ? fullHeadingText : typedHeading;
+  const isComplete = reduceMotion || isTypingComplete;
+
+  // 일반 모션일 때만 타이핑 연출을 실행한다.
+  // 설정이 바뀌거나 언마운트되면 cleanup 에서 타이머를 정리하고 상태를 초기화한다.
   useEffect(() => {
+    if (reduceMotion) return;
+
     let currentIndex = 0;
     const intervalId = setInterval(() => {
       if (currentIndex <= fullHeadingText.length) {
@@ -27,11 +53,15 @@ export function HeroSection() {
       }
     }, 70);
 
-    return () => clearInterval(intervalId);
-  }, []);
+    return () => {
+      clearInterval(intervalId);
+      setTypedHeading("");
+      setIsTypingComplete(false);
+    };
+  }, [reduceMotion]);
 
   const renderHeading = () => {
-    const parts = typedHeading.split("\n");
+    const parts = displayedHeading.split("\n");
 
     return (
       <>
@@ -80,9 +110,16 @@ export function HeroSection() {
           제목 한 문장이 3줄로 쪼개지고 화면 대부분을 제목이 차지해 버린다.
           30px 로 낮추면 한 줄에 11자가 들어가 2줄로 정리된다.
         */}
+        {/*
+          CLS 완화 — 타이핑 중에는 큰 글자(2줄)로 시작해 완료 시 작아지므로 그대로 두면 아래 문단/버튼이 위로 밀린다.
+          일반 모션에서는 가장 큰 크기 기준 2줄 높이(글자 크기 × 줄 높이 × 2)를 min-h 로 예약하고 세로 중앙 정렬해
+          완료 후에도 h1 높이가 줄지 않게 한다. 모션 감소에서는 처음부터 최종 크기이므로 예약이 필요 없다.
+        */}
         <h1
-          className={`font-extrabold tracking-tight text-white transition-all duration-1000 whitespace-pre-line leading-[1.15] sm:leading-[1.1]
-            ${isTypingComplete ? "text-[30px] sm:text-[42px] md:text-[56px] lg:text-[66px]" : "text-[30px] sm:text-[42px] md:text-[66px] lg:text-[80px]"}
+          data-testid="hero-heading"
+          className={`font-extrabold tracking-tight text-white whitespace-pre-line leading-[1.15] sm:leading-[1.1]
+            ${reduceMotion ? "" : "transition-all duration-1000 flex flex-col justify-center min-h-[69px] sm:min-h-[93px] md:min-h-[146px] lg:min-h-[176px]"}
+            ${isComplete ? "text-[30px] sm:text-[42px] md:text-[56px] lg:text-[66px]" : "text-[30px] sm:text-[42px] md:text-[66px] lg:text-[80px]"}
           `}
         >
           {/* 서버 HTML과 스크린 리더에는 제목 전체를 제공하고, 타이핑 표현만 시각적으로 표시합니다. */}
