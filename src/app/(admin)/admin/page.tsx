@@ -8,7 +8,6 @@
  */
 
 import Link from "next/link";
-import { count, eq } from "drizzle-orm";
 import {
   Bell,
   CircleHelp,
@@ -23,18 +22,9 @@ import {
   Users,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { db } from "@/lib/db";
+import { getDashboardCounts } from "@/features/admin-dashboard/service";
 import { requireAdmin } from "@/lib/admin";
 import { logServerError } from "@/lib/errors";
-import {
-  alumniStories,
-  applicationSubmissions,
-  cohorts,
-  galleries,
-  notices,
-  pressArticles,
-  users,
-} from "@/lib/db/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -54,7 +44,7 @@ const quickLinks = [
 ];
 
 export default async function AdminDashboardPage() {
-  await requireAdmin();
+  const session = await requireAdmin();
   let pendingSubmissions = 0;
   let totalSubmissions = 0;
   let pendingUsers = 0;
@@ -66,37 +56,18 @@ export default async function AdminDashboardPage() {
   let totalAlumni = 0;
 
   try {
-    const [
-      pendingSubmissionRows,
-      totalSubmissionRows,
-      pendingUserRows,
-      memberRows,
-      cohortRows,
-      noticeRows,
-      pressRows,
-      galleryRows,
-      alumniRows,
-    ] = await Promise.all([
-      db.select({ total: count() }).from(applicationSubmissions).where(eq(applicationSubmissions.status, "PENDING")),
-      db.select({ total: count() }).from(applicationSubmissions),
-      db.select({ total: count() }).from(users).where(eq(users.role, "PENDING")),
-      db.select({ total: count() }).from(users),
-      db.select({ total: count() }).from(cohorts),
-      db.select({ total: count() }).from(notices),
-      db.select({ total: count() }).from(pressArticles),
-      db.select({ total: count() }).from(galleries),
-      db.select({ total: count() }).from(alumniStories),
-    ]);
-
-    pendingSubmissions  = Number(pendingSubmissionRows[0]?.total ?? 0);
-    totalSubmissions    = Number(totalSubmissionRows[0]?.total ?? 0);
-    pendingUsers        = Number(pendingUserRows[0]?.total ?? 0);
-    totalMembers        = Number(memberRows[0]?.total ?? 0);
-    totalCohorts        = Number(cohortRows[0]?.total ?? 0);
-    totalNotices        = Number(noticeRows[0]?.total ?? 0);
-    totalPress          = Number(pressRows[0]?.total ?? 0);
-    totalGalleries      = Number(galleryRows[0]?.total ?? 0);
-    totalAlumni         = Number(alumniRows[0]?.total ?? 0);
+    // 웹 세션을 서비스 주체로 전달하며 재인가·집계 오류는 기존 catch에서 처리합니다.
+    ({
+      pendingSubmissions,
+      totalSubmissions,
+      pendingUsers,
+      totalMembers,
+      totalCohorts,
+      totalNotices,
+      totalPress,
+      totalGalleries,
+      totalAlumni,
+    } = await getDashboardCounts({ userId: session.user.id, role: session.user.role }));
   } catch (error) {
     logServerError("admin/dashboard", error);
     return (

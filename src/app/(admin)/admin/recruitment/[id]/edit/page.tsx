@@ -8,15 +8,13 @@
  */
 
 import Link from "next/link";
-import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent } from "@/components/ui/card";
 import { CohortForm } from "@/app/(admin)/admin/recruitment/_components/cohort-form";
 import { updateCohort } from "@/features/recruitment/actions";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { cohorts } from "@/lib/db/schema";
+import { getAdminCohort, type CohortEditItem } from "@/features/recruitment/admin/service";
 import { logServerError } from "@/lib/errors";
 import { toKstDateInput } from "@/lib/date-time";
 
@@ -28,7 +26,7 @@ type EditCohortPageProps = {
 
 export default async function EditCohortPage({ params }: EditCohortPageProps) {
   // 🔒 관리자 권한 확인
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const { id } = await params;
 
@@ -59,15 +57,11 @@ export default async function EditCohortPage({ params }: EditCohortPageProps) {
   }
   const validId = parsedId.data;
 
-  let cohort: typeof cohorts.$inferSelect | undefined;
+  let cohort: CohortEditItem | undefined;
 
   try {
     // 📊 DB에서 특정 기수 조회 - 수정할 데이터
-    [cohort] = await db
-      .select()
-      .from(cohorts)
-      .where(eq(cohorts.id, validId))
-      .limit(1);
+    cohort = await getAdminCohort({ userId: session.user.id, role: session.user.role }, validId);
   } catch (error) {
     logServerError("admin/recruitment/edit", error, { id: validId });
 

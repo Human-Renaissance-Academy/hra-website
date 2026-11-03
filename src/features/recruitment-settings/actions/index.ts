@@ -1,14 +1,15 @@
 /** 모집 설정 서버 액션: 모집 정보와 포스터를 저장하고 이미지 변환 실패를 폼 오류로 반환합니다. */
 "use server";
 
-import { desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import sharp from "sharp";
 import { z } from "zod/v4";
 import { requireAdmin } from "@/lib/admin";
 import { uploadWithOwnedIntent } from "@/lib/server-upload-intent";
-import { db } from "@/lib/db";
-import { cohorts, recruitmentSettings } from "@/lib/db/schema";
+import {
+  getSettings, getPosterImageUrl, getCohortOptions,
+  saveSettings, saveInfo, savePoster, saveDetails,
+} from "@/features/recruitment-settings/admin/service";
 import { logServerError } from "@/lib/errors";
 import { validateAdminImage } from "@/lib/admin-image-validation";
 import { posterImageRule } from "@/lib/poster-upload-contract";
@@ -79,11 +80,6 @@ function normalizeText(value: FormDataEntryValue | null) {
   return value.trim();
 }
 
-function toDate(value: string) {
-  const [year, month, day] = value.split("-").map(Number);
-  return new Date(Date.UTC(year, month - 1, day));
-}
-
 async function validatePosterFile(fileEntry: FormDataEntryValue | null) {
   if (!(fileEntry instanceof File) || fileEntry.size === 0) {
     return {
@@ -151,11 +147,8 @@ function issuesToFieldErrors(issues: Array<{ path: PropertyKey[]; message: strin
 }
 
 export async function getRecruitmentSettings() {
-  await requireAdmin();
-
-  const [settings] = await db.select().from(recruitmentSettings).limit(1);
-
-  return settings ?? null;
+  const session = await requireAdmin();
+  return getSettings({ userId: session.user.id, role: session.user.role });
 }
 
 export async function updateRecruitmentSettings(
@@ -196,14 +189,7 @@ export async function updateRecruitmentSettings(
     };
   }
 
-  const [existingSettings] = await db
-    .select({
-      posterImageUrl: recruitmentSettings.posterImageUrl,
-    })
-    .from(recruitmentSettings)
-    .limit(1);
-
-  let nextPosterImageUrl: string | null = existingSettings?.posterImageUrl ?? null;
+  let nextPosterImageUrl: string | null = await getPosterImageUrl({ userId: session.user.id, role: session.user.role });
   // 직접·서버 업로드 모두 원장으로 추적해 응답 유실 후 현재 참조를 재확인합니다.
 
   if (removePoster) {
@@ -230,21 +216,10 @@ export async function updateRecruitmentSettings(
     nextPosterImageUrl = parsed.data.posterImageUrl ?? null;
   }
 
-  const values = {
-    // 현재 모집 기수 섹션
-    activeCohortId: parsed.data.activeCohortId || null,
-    googleFormUrl: parsed.data.googleFormUrl ?? null,
-    recruitmentStartDate: parsed.data.recruitmentStartDate ? toDate(parsed.data.recruitmentStartDate) : null,
-    // 기존 모집 안내 섹션
-    posterImageUrl: nextPosterImageUrl,
-    deadlineDate: parsed.data.deadlineDate ? toDate(parsed.data.deadlineDate) : null,
-    detailsMarkdown: parsed.data.detailsMarkdown ?? null,
-    posterLayout: parsed.data.posterLayout,
-  };
-
   // 커밋 후 응답 유실도 가능하므로 새 객체를 삭제하지 않고 원장 정리에 맡깁니다.
-  await db.insert(recruitmentSettings).values({ singletonKey: 1, ...values })
-    .onConflictDoUpdate({ target: recruitmentSettings.singletonKey, set: values });
+  await saveSettings({ userId: session.user.id, role: session.user.role }, {
+    ...parsed.data, posterImageUrl: nextPosterImageUrl,
+  });
 
   // 이전 URL은 관리자 입력값일 수 있습니다. 같은 Blob 도메인이어도 현재 설정이
   // 파일 소유자임을 증명하지 못하므로 교체·제거 시 자동 삭제하지 않습니다 (#88).
@@ -260,12 +235,8 @@ export async function updateRecruitmentSettings(
 
 // 기수 선택 드롭다운용 — 전체 기수 목록을 최신 순으로 반환
 export async function getCohorts() {
-  await requireAdmin();
-
-  return db
-    .select({ id: cohorts.id, name: cohorts.name })
-    .from(cohorts)
-    .orderBy(desc(cohorts.order), desc(cohorts.createdAt));
+  const session = await requireAdmin();
+  return getCohortOptions({ userId: session.user.id, role: session.user.role });
 }
 
 // ─── 섹션별 독립 저장 액션 ────────────────────────────────────────────────────
@@ -277,7 +248,7 @@ export async function getCohorts() {
 export async function updateRecruitmentInfo(
   formData: FormData
 ): Promise<RecruitmentSettingsActionState> {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const infoSchema = z.object({
     activeCohortId: z.union([z.uuid("올바른 기수를 선택해주세요."), z.literal("")]).optional(),
@@ -309,15 +280,7 @@ export async function updateRecruitmentInfo(
     };
   }
 
-  const values = {
-    activeCohortId: parsed.data.activeCohortId || null,
-    googleFormUrl: parsed.data.googleFormUrl ?? null,
-    recruitmentStartDate: parsed.data.recruitmentStartDate ? toDate(parsed.data.recruitmentStartDate) : null,
-    deadlineDate: parsed.data.deadlineDate ? toDate(parsed.data.deadlineDate) : null,
-  };
-
-  await db.insert(recruitmentSettings).values({ singletonKey: 1, ...values })
-    .onConflictDoUpdate({ target: recruitmentSettings.singletonKey, set: values });
+  await saveInfo({ userId: session.user.id, role: session.user.role }, parsed.data);
 
   revalidatePath("/recruitment");
   revalidatePath("/admin/recruitment-settings");
@@ -367,12 +330,7 @@ export async function updateRecruitmentPoster(
     return { success: false, message: validatedPosterFile.message, fieldErrors: validatedPosterFile.fieldErrors };
   }
 
-  const [existing] = await db
-    .select({ posterImageUrl: recruitmentSettings.posterImageUrl })
-    .from(recruitmentSettings)
-    .limit(1);
-
-  let nextPosterImageUrl: string | null = existing?.posterImageUrl ?? null;
+  let nextPosterImageUrl: string | null = await getPosterImageUrl({ userId: session.user.id, role: session.user.role });
   // 직접·서버 업로드 모두 원장으로 추적해 응답 유실 후 현재 참조를 재확인합니다.
 
   if (removePoster) {
@@ -399,11 +357,10 @@ export async function updateRecruitmentPoster(
     nextPosterImageUrl = parsed.data.posterImageUrl ?? null;
   }
 
-  const values = { posterImageUrl: nextPosterImageUrl, posterLayout: parsed.data.posterLayout };
-
   // 커밋 후 응답 유실도 가능하므로 새 객체를 삭제하지 않고 원장 정리에 맡깁니다.
-  await db.insert(recruitmentSettings).values({ singletonKey: 1, ...values })
-    .onConflictDoUpdate({ target: recruitmentSettings.singletonKey, set: values });
+  await savePoster({ userId: session.user.id, role: session.user.role }, {
+    posterImageUrl: nextPosterImageUrl, posterLayout: parsed.data.posterLayout,
+  });
 
   // 이전 URL은 파일 소유권을 확인할 수 없으므로 자동 삭제하지 않습니다 (#88).
 
@@ -420,7 +377,7 @@ export async function updateRecruitmentPoster(
 export async function updateRecruitmentDetails(
   formData: FormData
 ): Promise<RecruitmentSettingsActionState> {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const detailsSchema = z.object({
     detailsMarkdown: z.string().trim().max(20000, "세부 안내는 20000자 이하여야 합니다.").optional(),
@@ -438,10 +395,7 @@ export async function updateRecruitmentDetails(
     };
   }
 
-  const values = { detailsMarkdown: parsed.data.detailsMarkdown ?? null };
-
-  await db.insert(recruitmentSettings).values({ singletonKey: 1, ...values })
-    .onConflictDoUpdate({ target: recruitmentSettings.singletonKey, set: values });
+  await saveDetails({ userId: session.user.id, role: session.user.role }, parsed.data);
 
   revalidatePath("/recruitment");
   revalidatePath("/admin/recruitment-settings");
