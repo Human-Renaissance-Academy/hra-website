@@ -38,27 +38,31 @@ const files = {
 } as const;
 const failures = { "400": "InvalidInputError", "401": "UnauthenticatedError", "403": "ForbiddenError", "503": "UnavailableError" };
 
-/** 모든 응답이 비공개 무저장·쿠키 구분·요청 ID 헤더를 선언하는지 확인합니다. */
+/** 모든 응답이 비공개 무저장·쿠키/Bearer 구분·요청 ID 헤더를 선언하는지 확인합니다. */
 function expectPrivateHeaders(responses: Record<string, { headers: Record<string, { schema: Record<string, string> }> }>) {
   for (const response of Object.values(responses)) {
     expect(response.headers["Cache-Control"].schema.const).toBe("private, no-store");
-    expect(response.headers.Vary.schema.const).toBe("Cookie");
+    expect(response.headers.Vary.schema.const).toBe("Cookie, Authorization");
     expect(response.headers["X-Request-Id"].schema.format).toBe("uuid");
   }
 }
 
 describe("#272 공동 자료 OpenAPI 3.1 계약", () => {
-  it("새 경로는 GET 하나씩이며 Web 쿠키 인증·PENDING 403·Bearer 미지원을 기록하고 보안 스킴은 선언하지 않는다", () => {
+  it("새 경로는 GET 하나씩이며 Bearer 우선·쿠키 대안·PENDING 403을 기록하고 bearerAuth만 선언한다", () => {
     for (const path of [...Object.keys(lists), ...Object.keys(details), ...Object.keys(files)]) {
       expect(Object.keys(openapi.paths[path])).toEqual(["get"]);
       const operation = openapi.paths[path].get;
-      expect(operation.description).toContain("Auth.js Web 세션 쿠키");
+      expect(operation.description).toContain("모바일 Bearer access token 또는 현재 Auth.js Web 세션 쿠키");
+      expect(operation.description).toContain("Authorization 헤더가 있으면 쿠키보다 우선");
+      expect(operation.description).toContain("유효한 쿠키가 함께 있어도 401");
       expect(operation.description).toContain("PENDING은 403");
-      expect(operation.description).toContain("모바일 Bearer 인증은 아직 지원하지 않습니다");
-      expect(operation).not.toHaveProperty("security");
+      expect(operation.description).not.toContain("아직 지원하지 않습니다");
+      expect(operation.description).not.toContain("session-token");
+      // OpenAPI의 `{}` 대안은 익명 허용이므로 쿠키 대안은 설명으로만 기록합니다.
+      expect(operation.security).toEqual([{ bearerAuth: [] }]);
       expect(operation).not.toHaveProperty("requestBody");
     }
-    expect(openapi.components.securitySchemes).toBeUndefined();
+    expect(openapi.components.securitySchemes.bearerAuth).toMatchObject({ type: "http", scheme: "bearer" });
   });
 
   it("목록은 page/pageSize만 받고 400/401/403/503 공통 오류를 고정한다", () => {

@@ -72,7 +72,7 @@ describe.each(routes)("$name 파일 API", ({ path, handler, repository }) => {
     expect(response.status).toBe(200);
     expect(await response.text()).toBe("PDF");
     expect(response.headers.get("cache-control")).toBe("private, no-store");
-    expect(response.headers.get("vary")).toBe("Cookie");
+    expect(response.headers.get("vary")).toBe("Cookie, Authorization");
     expect(response.headers.get("content-type")).toBe("application/pdf");
     expect(response.headers.get("content-disposition")).toMatch(/^attachment; filename="[^\r\n/]*"; filename\*=UTF-8''/);
     expect(response.headers.get("content-security-policy")).toBe("sandbox; default-src 'none'");
@@ -128,7 +128,7 @@ describe.each(routes)("$name 파일 API", ({ path, handler, repository }) => {
     const serialized = JSON.stringify(body) + JSON.stringify([...response.headers]);
     expect(serialized).not.toContain(url);
     expect(serialized).not.toContain(token);
-    expect(response.headers.get("vary")).toBe("Cookie");
+    expect(response.headers.get("vary")).toBe("Cookie, Authorization");
     expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(response.headers.get("content-security-policy")).toBe("sandbox; default-src 'none'");
     // 입력·인증·역할 실패는 파일 행 조회와 Blob 읽기 전에 끝납니다.

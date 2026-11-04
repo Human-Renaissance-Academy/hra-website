@@ -79,7 +79,7 @@ describe("강의자료 목록·상세 DTO", () => {
     const response = await listClassMaterials(listRequest("class-materials"));
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
-    expect(response.headers.get("vary")).toBe("Cookie");
+    expect(response.headers.get("vary")).toBe("Cookie, Authorization");
     expect(mocks.materialCount).toHaveBeenCalledWith({ id: userId, role: "MEMBER" });
     expect(mocks.materialList).toHaveBeenCalledWith({ id: userId, role: "MEMBER" }, 10, 0);
     const body = await response.json();
@@ -225,7 +225,7 @@ describe.each(details)("$name 상세 공통 경계", ({ path, handler, find }) =
     expect(body.error.code).toBe(code);
     expect(body.error.requestId).toBe(response.headers.get("x-request-id"));
     expect(JSON.stringify(body)).not.toContain("secret");
-    expect(response.headers.get("vary")).toBe("Cookie");
+    expect(response.headers.get("vary")).toBe("Cookie, Authorization");
     if (status !== 503) expect(find).not.toHaveBeenCalled();
   });
 });

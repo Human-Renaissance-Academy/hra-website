@@ -3,7 +3,7 @@
  *
  * 역할:
  * - query·경로 UUID 입력을 인증·DB 접근 전에 검증합니다.
- * - Web 세션을 Application Service 주체로 변환합니다. 모바일 Bearer(#273)가 병합되면 이 한 곳에서 연결합니다.
+ * - Web 쿠키·모바일 Bearer 주체 해석은 Route 전용 `src/app/api/v1/resources/_lib/principal.ts`가 담당하고 여기에는 함수로 전달됩니다.
  * - 오류 원문 대신 공통 한국어 오류 봉투와 요청 ID, 비공개 무저장 캐시 헤더만 반환합니다.
  *
  * DB·Blob 접근과 역할 판단은 하지 않으며 Route는 이 모듈과 서비스만 호출합니다.
@@ -20,11 +20,13 @@ import {
 } from "@hra/contracts/api-v1";
 import { RESOURCE_FILE_SECURITY_HEADERS, ResourceFileError } from "@/features/resources/file-download/service";
 import type { MePrincipal } from "@/features/users/me/service";
-import { auth } from "@/lib/auth";
 import { logServerError } from "@/lib/errors";
 
-/** JSON 응답 공통 헤더입니다. 현재는 Web 쿠키 세션만 인증 수단이므로 Cookie로 캐시를 구분합니다. */
-export const RESOURCE_API_HEADERS = { "Cache-Control": "private, no-store", Vary: "Cookie" } as const;
+/** JSON 응답 공통 헤더입니다. Web 쿠키와 모바일 Bearer를 모두 받으므로 두 헤더로 캐시를 구분합니다. */
+export const RESOURCE_API_HEADERS = { "Cache-Control": "private, no-store", Vary: "Cookie, Authorization" } as const;
+
+/** Route가 주입하는 현재 요청 주체 해석 함수입니다. 무인증이면 null입니다. */
+export type ResourcePrincipalResolver = () => Promise<MePrincipal | null>;
 
 const allowedListKeys = new Set(["page", "pageSize"]);
 
@@ -46,13 +48,6 @@ export async function parseResourceId(request: Request, params: Promise<{ id: st
   if (new URL(request.url).searchParams.size > 0) return null;
   const parsed = apiV1UuidSchema.safeParse((await params).id);
   return parsed.success ? parsed.data : null;
-}
-
-/** 현재 Web 세션의 사용자 ID·역할만 서비스 주체로 넘깁니다. 현재 계정 대조는 서비스가 수행합니다. */
-export async function currentResourcePrincipal(): Promise<MePrincipal | null> {
-  const session = await auth();
-  if (!session?.user) return null;
-  return { userId: session.user.id, role: session.user.role };
 }
 
 /** 오류 원문 대신 공통 한국어 문구와 추적 ID만 반환합니다. 파일 경로도 같은 sandbox 헤더를 붙입니다. */
@@ -80,13 +75,14 @@ export async function handleResourceFileRequest(
   request: Request,
   params: Promise<{ id: string }>,
   logScope: string,
+  resolvePrincipal: ResourcePrincipalResolver,
   download: (principal: MePrincipal, id: string, signal: AbortSignal) => Promise<Response>,
 ): Promise<Response> {
   const requestId = crypto.randomUUID();
   try {
     const id = await parseResourceId(request, params);
     if (!id) return resourceErrorResponse("INVALID_INPUT", requestId, true);
-    const principal = await currentResourcePrincipal();
+    const principal = await resolvePrincipal();
     if (!principal) return resourceErrorResponse("UNAUTHENTICATED", requestId, true);
     const response = await download(principal, id, request.signal);
     response.headers.set("Vary", RESOURCE_API_HEADERS.Vary);

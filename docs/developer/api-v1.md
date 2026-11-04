@@ -93,12 +93,12 @@ OpenAPI의 JSON 표현은 [OpenAPI 3.1.1 명세](https://spec.openapis.org/oas/v
 | `GET /api/v1/resources/weekly-texts/{id}` | 주차별 텍스트 Markdown 본문과 첨부 파일명 |
 | `GET /api/v1/resources/weekly-texts/{id}/file` | 주차별 텍스트 첨부 원본 스트림 |
 
-인증·인가는 가이드북 목록과 같습니다. Route가 Web 세션을 확인하고 Application Service(`src/features/{class-materials,weekly-texts}/member`, `src/features/guidebooks/file-download`)가 현재 계정 행과 역할을 다시 대조합니다. 익명·삭제·역할 변경은 401 `UNAUTHENTICATED`, 승인 대기 `PENDING`은 현재 계정 조회 전에 403 `FORBIDDEN`입니다. 모바일 Bearer 인증은 아직 지원하지 않으며(#273), 연결 지점은 `src/features/resources/api-v1/http.ts`의 주체 변환 한 곳입니다. Route는 Drizzle을 직접 호출하지 않습니다.
+인증은 위 「모바일 인증」의 보호 경로와 같습니다. **모바일 Bearer 또는 Web 쿠키**를 받으며 `Authorization` 헤더가 있으면 쿠키보다 우선하고, 잘못된 토큰·형식·지원하지 않는 방식·회수된 모바일 세션은 유효한 쿠키가 있어도 401입니다. 모바일 세션은 매 요청 현재 상태를 다시 확인하고 세션 저장소 장애는 503입니다. Route 전용 `src/app/api/v1/resources/_lib/principal.ts`가 `withApiV1Principal`로 주체를 해석하고, Application Service(`src/features/{class-materials,weekly-texts}/member`, `src/features/guidebooks/file-download`)가 현재 계정 행과 역할을 다시 대조합니다. 익명·삭제·역할 변경은 401 `UNAUTHENTICATED`, 승인 대기 `PENDING`은 현재 계정 조회 전에 403 `FORBIDDEN`입니다. OpenAPI에는 `security: [{ bearerAuth: [] }]`를 선언하고 쿠키 대안은 설명에 기록합니다(`{}`는 익명 허용이라 사용하지 않습니다). Route는 Drizzle을 직접 호출하지 않습니다.
 
 권한 범위는 기존 Web 자료실과 같습니다.
 
 - **강의자료**: `MEMBER`는 학생용(`STUDENT`)만, `ADMIN`·`FACULTY`는 학생용·교수용(`FACULTY`)을 받습니다. 기존 `classMaterialReadFilter`를 목록·상세·파일 SQL WHERE에 적용하므로 MEMBER가 교수용 자료를 요청하면 없는 자료와 같은 404 `NOT_FOUND`입니다.
-- **주차별 텍스트**: 공동 자료 정책(#100)에 따라 승인 회원은 **기수와 무관하게** 열람합니다. Web 통합 목록·상세·기존 다운로드 경로와 같은 범위이며, 본인 기수만 보여 주는 `/resources/weekly-texts` 업로드 화면의 목록 필터는 표시용으로 API에 적용하지 않습니다.
+- **주차별 텍스트**: 공동 자료 정책(#100)에 따라 승인 회원은 **기수와 무관하게** 열람합니다(허용 범위 정책 확인은 #441). Web 통합 목록·상세·기존 다운로드 경로와 같은 범위이며, 본인 기수만 보여 주는 `/resources/weekly-texts` 업로드 화면의 목록 필터는 표시용으로 API에 적용하지 않습니다.
 - **가이드북 파일**: 승인 회원은 모든 가이드북 원본을 받습니다.
 
 목록은 `page`(기본 1)·`pageSize`(기본 10, 최대 50)만 받고 가이드북 목록과 같은 400·범위 밖 빈 배열 규칙을 따릅니다. 정렬은 Web 통합 목록과 같은 수업일 역순(없으면 마지막)·작성 시각 역순이며 ID 역순으로 안정화합니다. 수업일 `classDate`는 Web 화면과 같은 KST 변환의 `YYYY-MM-DD` 달력 날짜이고, 시간대 없는 `createdAt`은 보내지 않습니다.
@@ -108,7 +108,7 @@ OpenAPI의 JSON 표현은 [OpenAPI 3.1.1 명세](https://spec.openapis.org/oas/v
 
 상세·파일 경로는 query를 받지 않으며 잘못된 UUID와 함께 400 `INVALID_INPUT`입니다. 파일 경로는 기존 Web 다운로드(`/api/resources/[kind]/[id]/download`)와 같은 `resourceBlobAccess`·`resourceBlobToken` 규칙으로 프로젝트 공개 저장소 또는 지정 비공개 저장소의 원본만 **서버가 읽어 첨부 스트림으로** 전달합니다. 원본 URL로 리다이렉트하거나 서명 URL을 발급하지 않고 `inline` 미리보기도 제공하지 않습니다. 성공 응답은 저장된 MIME(알 수 없으면 `application/octet-stream`)·안전한 `attachment` 파일명·`nosniff`·`sandbox; default-src 'none'` CSP를 사용하며, 같은 CSP를 `next.config.ts`의 정적 헤더로도 고정합니다. 없는 자료·첨부 없는 텍스트·허용되지 않은 저장 위치·공급자 304는 404, 비공개 토큰 누락·공급자 장애·응답 헤더 대기 60초 상한 초과는 원문 없는 503 `UNAVAILABLE`입니다. 요청 취소는 공급자 SDK 요청과 본문 스트림까지 전파하고, 응답 시작 뒤의 전송 오류는 고정 문구로 스트림을 중단합니다. 기존 Web 다운로드 경로와 마찬가지로 별도 요청 한도는 두지 않습니다.
 
-모든 응답은 `Cache-Control: private, no-store`, `Vary: Cookie`, `X-Request-Id`를 포함합니다.
+모든 응답은 `Cache-Control: private, no-store`, `Vary: Cookie, Authorization`, `X-Request-Id`를 포함합니다.
 
 ## 본인 과제·제출·파일 MVP
 
