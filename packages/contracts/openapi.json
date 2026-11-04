@@ -3880,6 +3880,133 @@
             "$ref": "#/components/schemas/WeeklyTextDetail"
           }
         }
+      },
+      "ResourceRateLimitedError": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "error"
+        ],
+        "description": "자료실 파일·메타데이터 조회의 사용자별 빈도 제한(#444) 초과 응답입니다. retryAfterSeconds는 Retry-After 헤더와 같은 1~3600초입니다.",
+        "properties": {
+          "error": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code",
+              "message",
+              "requestId",
+              "retryAfterSeconds"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "const": "RATE_LIMITED"
+              },
+              "message": {
+                "type": "string",
+                "minLength": 1
+              },
+              "requestId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "retryAfterSeconds": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3600
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "ResourceRateLimited": {
+        "description": "자료실 조회 빈도 제한 초과(#444). /api/v1/resources 아래 모든 GET(목록·상세·파일)이 401·403 판단 뒤 반환할 수 있습니다. 인증 사용자별로 Web 쿠키·모바일 Bearer와 Web 다운로드 경로가 분당 300회·시간당 2000회 예산을 공유합니다. 기존 path item은 append-only 정책으로 바꾸지 않았으므로 이 응답 정의를 함께 참조합니다(#439). 제한 저장소 장애는 429가 아니라 503 UNAVAILABLE입니다.",
+        "headers": {
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "private, no-store"
+            }
+          },
+          "Vary": {
+            "schema": {
+              "type": "string",
+              "const": "Cookie, Authorization"
+            }
+          },
+          "X-Request-Id": {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "Retry-After": {
+            "description": "본문 retryAfterSeconds와 같은 대기 초 수입니다.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]*$"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ResourceRateLimitedError"
+            }
+          }
+        }
+      },
+      "ResourceFileRateLimited": {
+        "description": "자료 파일 경로(/api/v1/resources/*/{id}/file)의 조회 빈도 제한 초과(#444). ResourceRateLimited와 같은 예산·본문이며 파일 경로 공통 sandbox 헤더를 함께 보냅니다.",
+        "headers": {
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "private, no-store"
+            }
+          },
+          "Vary": {
+            "schema": {
+              "type": "string",
+              "const": "Cookie, Authorization"
+            }
+          },
+          "X-Request-Id": {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "Retry-After": {
+            "description": "본문 retryAfterSeconds와 같은 대기 초 수입니다.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]*$"
+            }
+          },
+          "X-Content-Type-Options": {
+            "schema": {
+              "type": "string",
+              "const": "nosniff"
+            }
+          },
+          "Content-Security-Policy": {
+            "schema": {
+              "type": "string",
+              "const": "sandbox; default-src 'none'"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ResourceRateLimitedError"
+            }
+          }
+        }
       }
     }
   }

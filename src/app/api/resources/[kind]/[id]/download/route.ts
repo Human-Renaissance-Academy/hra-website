@@ -1,11 +1,18 @@
 /**
  * 승인된 회원에게 자료실 파일을 같은 출처로 스트리밍합니다.
  * 응답의 Content-Disposition에 DB의 원본 파일명을 넣어 한글 이름으로 저장합니다.
+ * 승인 회원 확인 뒤 API v1 자료 경로와 같은 사용자별 조회 예산(#444)을 예약하며,
+ * 초과는 429와 `Retry-After`, 제한 저장소 장애는 자료를 제공하지 않는 503(fail-closed)입니다.
  */
 import { get } from "@vercel/blob";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import { classMaterialReadFilter } from "@/features/class-materials/access";
+import {
+  enforceResourceReadLimit,
+  ResourceReadLimitUnavailableError,
+  ResourceReadRateLimitError,
+} from "@/features/resources/read-limit";
 import { db } from "@/lib/db";
 import { classLogImages, classMaterials, guidebooks, weeklyTextImages, weeklyTexts } from "@/lib/db/schema";
 import { logServerError } from "@/lib/errors";
@@ -76,6 +83,24 @@ export async function GET(request: Request, { params }: Context): Promise<Respon
   const { kind, id } = await params;
   const parsedId = z.uuid().safeParse(id);
   if (!parsedId.success) return new Response("자료를 찾을 수 없습니다.", { status: 404 });
+
+  // 인증·승인 역할 확인(미로그인·승인 대기는 위에서 이동) 뒤에만 사용자 id로 조회 예산을 예약합니다.
+  // 브라우저가 직접 여는 링크·<img> 경로라 기존 응답처럼 한국어 평문 본문을 유지합니다.
+  try {
+    await enforceResourceReadLimit(session.user.id);
+  } catch (error) {
+    if (error instanceof ResourceReadRateLimitError) {
+      return new Response("요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.", {
+        status: 429,
+        headers: { "Retry-After": String(error.retryAfterSeconds), "Cache-Control": "private, no-store" },
+      });
+    }
+    // 제한 저장소 장애는 예약 어댑터가 이미 기록했으므로 고정 문구의 503만 반환합니다.
+    if (error instanceof ResourceReadLimitUnavailableError) {
+      return new Response("잠시 후 다시 시도해 주세요.", { status: 503, headers: { "Cache-Control": "private, no-store" } });
+    }
+    throw error;
+  }
 
   let file: { fileUrl: string; fileName: string | null } | undefined;
   let image = false;

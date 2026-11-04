@@ -5,6 +5,7 @@
  * - query·경로 UUID 입력을 인증·DB 접근 전에 검증합니다.
  * - Web 쿠키·모바일 Bearer 주체 해석은 Route 전용 `src/app/api/v1/resources/_lib/principal.ts`가 담당하고 여기에는 함수로 전달됩니다.
  * - 오류 원문 대신 공통 한국어 오류 봉투와 요청 ID, 비공개 무저장 캐시 헤더만 반환합니다.
+ * - 사용자별 조회 빈도 제한(#444) 초과는 공통 봉투의 429 RATE_LIMITED 와 `Retry-After` 로 응답합니다.
  *
  * DB·Blob 접근과 역할 판단은 하지 않으며 Route는 이 모듈과 서비스만 호출합니다.
  */
@@ -19,6 +20,7 @@ import {
   type ApiV1ResourceListQuery,
 } from "@hra/contracts/api-v1";
 import { RESOURCE_FILE_SECURITY_HEADERS, ResourceFileError } from "@/features/resources/file-download/service";
+import { ResourceReadRateLimitError } from "@/features/resources/read-limit";
 import type { MePrincipal } from "@/features/users/me/service";
 import { logServerError } from "@/lib/errors";
 
@@ -62,14 +64,33 @@ export function resourceErrorResponse(code: ApiV1ErrorCode, requestId: string, f
   });
 }
 
+/**
+ * 사용자별 조회 예산 초과를 공통 오류 봉투의 429 로 바꿉니다.
+ * 본문 retryAfterSeconds 와 `Retry-After` 헤더에 같은 초 수를 넣고 기존 캐시·Vary·sandbox 헤더를 유지합니다.
+ */
+export function resourceRateLimitedResponse(error: ResourceReadRateLimitError, requestId: string, file = false): Response {
+  return Response.json(
+    toApiV1ErrorResponse({ code: "RATE_LIMITED", requestId, retryAfterSeconds: error.retryAfterSeconds }),
+    {
+      status: getApiV1ErrorHttpStatus("RATE_LIMITED"),
+      headers: {
+        ...RESOURCE_API_HEADERS,
+        "X-Request-Id": requestId,
+        "Retry-After": String(error.retryAfterSeconds),
+        ...(file ? RESOURCE_FILE_SECURITY_HEADERS : {}),
+      },
+    },
+  );
+}
+
 /** 성공 JSON 응답에 공통 캐시·추적 헤더를 붙입니다. */
 export function resourceJsonResponse(body: unknown, requestId: string): Response {
   return Response.json(body, { headers: { ...RESOURCE_API_HEADERS, "X-Request-Id": requestId } });
 }
 
 /**
- * 세 파일 Route가 공유하는 처리 순서입니다: 입력 400 → 무세션 401 → 서비스(현재 역할 401/403·대상 404) → 첨부 스트림.
- * 서비스의 고정 실패 외 공급자·설정 오류는 원문·저장 위치 없이 503 UNAVAILABLE로 바꿉니다.
+ * 세 파일 Route가 공유하는 처리 순서입니다: 입력 400 → 무세션 401 → 서비스(현재 역할 401/403 → 조회 빈도 429·대상 404) → 첨부 스트림.
+ * 서비스의 고정 실패 외 공급자·설정·제한 저장소 오류는 원문·저장 위치 없이 503 UNAVAILABLE로 바꿉니다.
  */
 export async function handleResourceFileRequest(
   request: Request,
@@ -90,6 +111,7 @@ export async function handleResourceFileRequest(
     return response;
   } catch (error) {
     if (error instanceof ResourceFileError) return resourceErrorResponse(error.code, requestId, true);
+    if (error instanceof ResourceReadRateLimitError) return resourceRateLimitedResponse(error, requestId, true);
     // 공급자 오류에는 저장 위치·토큰이 담길 수 있으므로 원문 대신 고정 오류만 기록합니다.
     logServerError(logScope, new Error("RESOURCE_FILE_UNAVAILABLE"), { requestId });
     return resourceErrorResponse("UNAVAILABLE", requestId, true);

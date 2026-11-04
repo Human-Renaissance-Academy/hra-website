@@ -10,6 +10,10 @@ const mocks = vi.hoisted(() => ({
   guidebook: vi.fn(), material: vi.fn(), weekly: vi.fn(),
 }));
 vi.mock("server-only", () => ({}));
+// 사용자별 자료 조회 빈도 제한(#444)은 이 파일의 관심사가 아니므로 항상 허용합니다. 제한 동작은 resource-read-limit 테스트가 검증합니다.
+vi.mock("@/lib/rate-limit", () => ({
+  reserveResourceRead: async () => ({ blocked: false, retryAfterSec: 0, reservationId: null }),
+}));
 vi.mock("@/lib/auth", () => ({ auth: mocks.auth }));
 vi.mock("@/features/users/me/repository", () => ({ findUserProfileById: mocks.profile }));
 vi.mock("@/features/guidebooks/file-download/repository", () => ({ findGuidebookFile: mocks.guidebook }));

@@ -6,6 +6,7 @@ import "server-only";
 
 import { API_V1_MAX_PAGE_SIZE } from "@hra/contracts/api-v1";
 import { canReadSharedResource } from "@/features/resources/access";
+import { enforceResourceReadLimit } from "@/features/resources/read-limit";
 import { getCurrentProfile, type MePrincipal } from "@/features/users/me/service";
 import { countGuidebooks, listGuidebooks } from "./repository";
 
@@ -51,6 +52,8 @@ export async function listGuidebooksForMember(input: {
   const profile = await getCurrentProfile(input.principal);
   if (!profile) return { kind: "unauthenticated" };
   if (!canReadSharedResource(profile.role)) return { kind: "forbidden" };
+  // 401/403 판단 뒤 승인 회원만 자료 조회 예산에 기록합니다(#444). 초과·장애는 오류로 전파되어 Route 가 429/503 으로 바꿉니다.
+  await enforceResourceReadLimit(profile.id);
 
   const totalCount = await countGuidebooks();
   if (offset >= totalCount) return { kind: "ok", items: [], totalCount };

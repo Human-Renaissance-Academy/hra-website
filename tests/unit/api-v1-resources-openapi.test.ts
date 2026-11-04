@@ -9,6 +9,7 @@ import {
   apiV1ClassMaterialDetailResponseSchema,
   apiV1ClassMaterialListResponseSchema,
   apiV1ResourceListQuerySchema,
+  apiV1ResourceRateLimitedErrorSchema,
   apiV1WeeklyTextDetailResponseSchema,
   apiV1WeeklyTextListResponseSchema,
   toApiV1ClassMaterialDetailResponse,
@@ -158,5 +159,30 @@ describe("#272 공동 자료 공용 DTO", () => {
     const base = { id, title: "자료", weekNumber: null, lectureTitle: null, classDate: null };
     expect(() => toApiV1ClassMaterialSummary({ ...base, audience: "PUBLIC" })).toThrow();
     expect(() => toApiV1ClassMaterialSummary({ ...base, audience: "STUDENT", classDate: "2026-10-05T00:00:00Z" })).toThrow();
+  });
+});
+
+describe("#444 자료 조회 빈도 제한 OpenAPI 추가 계약", () => {
+  it("기존 path item 대신 신규 공용 응답 정의로 429·Retry-After·Vary를 기록한다", () => {
+    const responses = openapi.components.responses;
+    for (const name of ["ResourceRateLimited", "ResourceFileRateLimited"]) {
+      const response = responses[name];
+      expect(response.content["application/json"].schema.$ref).toBe("#/components/schemas/ResourceRateLimitedError");
+      expect(response.headers["Retry-After"].schema.pattern).toBe("^[1-9][0-9]*$");
+      expect(response.description).toContain("#444");
+    }
+    expectPrivateHeaders(responses);
+    expect(responses.ResourceFileRateLimited.headers["Content-Security-Policy"].schema.const).toBe("sandbox; default-src 'none'");
+    expect(responses.ResourceRateLimited.description).toContain("503 UNAVAILABLE");
+  });
+
+  it("OpenAPI 스키마와 공용 zod 스키마가 같은 1~3600초 범위와 필수 재시도 값을 사용한다", () => {
+    const error = schemas.ResourceRateLimitedError.properties.error;
+    expect(error.required).toEqual(["code", "message", "requestId", "retryAfterSeconds"]);
+    expect(error.properties.retryAfterSeconds).toMatchObject({ type: "integer", minimum: 1, maximum: 3600 });
+    const body = { error: { code: "RATE_LIMITED", message: "요청이 너무 많습니다.", requestId: id, retryAfterSeconds: 3600 } };
+    expect(apiV1ResourceRateLimitedErrorSchema.safeParse(body).success).toBe(true);
+    expect(apiV1ResourceRateLimitedErrorSchema.safeParse({ error: { ...body.error, retryAfterSeconds: 3601 } }).success).toBe(false);
+    expect(apiV1ResourceRateLimitedErrorSchema.safeParse({ error: { ...body.error, retryAfterSeconds: undefined } }).success).toBe(false);
   });
 });

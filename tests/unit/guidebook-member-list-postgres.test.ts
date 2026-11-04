@@ -5,7 +5,7 @@
  */
 import { neon, neonConfig } from "@neondatabase/serverless";
 import { drizzle, type NeonHttpDatabase } from "drizzle-orm/neon-http";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import * as schema from "@/lib/db/schema";
 import { createQaPostgres } from "../support/resource-qa-postgres.mjs";
@@ -66,6 +66,10 @@ describe.skipIf(!bin)("가이드북 목록 실제 PostgreSQL 회원 경계", () 
         ('${books.tiedHigh}','같은 시각 높은 ID','private://high','high-secret.pdf','2026-10-02 09:00:00');
     `);
 
+    // 사용자별 자료 조회 빈도 제한(#444)도 운영과 같은 원자 예약 함수로 실제 기록합니다.
+    cluster.sql("CREATE TABLE application_submissions (id uuid PRIMARY KEY);");
+    cluster.sql(readFileSync("scripts/sql/rate-limit-reservations.sql", "utf8"));
+
     const transport = createPsqlTransport(cluster.environment);
     neonConfig.fetchEndpoint = qaNeonEndpoint;
     neonConfig.fetchFunction = async (input: unknown, options: RequestInit) => {
@@ -106,7 +110,8 @@ describe.skipIf(!bin)("가이드북 목록 실제 PostgreSQL 회원 경계", () 
       { id: books.tiedHigh, title: "같은 시각 높은 ID" },
       { id: books.tiedLow, title: "같은 시각 낮은 ID" },
     ] });
-    expect(postCount).toBe(3); // 현재 프로필·전체 건수·목록 각각 한 번
+    expect(postCount).toBe(4); // 현재 프로필·조회 빈도 예약(#444)·전체 건수·목록 각각 한 번
+    expect(cluster?.sql(`SELECT count(*) FROM rate_limit_events WHERE scope LIKE 'resource-read-user-%'`)).toBe("2");
 
     const second = await listGuidebooksForMember({
       principal: { userId: users.faculty, role: "FACULTY" }, page: 2, pageSize: 2,
@@ -124,7 +129,7 @@ describe.skipIf(!bin)("가이드북 목록 실제 PostgreSQL 회원 경계", () 
     expect(await listGuidebooksForMember({
       principal: { userId: users.pending, role: "PENDING" }, page: 1, pageSize: 10,
     })).toEqual({ kind: "forbidden" });
-    expect(postCount).toBe(1); // 현재 역할 조회만 허용
+    expect(postCount).toBe(1); // 현재 역할 조회만 허용하며 조회 빈도 예산에도 기록하지 않음
   });
 
   it("역할 변경·계정 삭제는 기존 세션 주체를 401 경계로 무효화한다", async () => {
@@ -152,6 +157,6 @@ describe.skipIf(!bin)("가이드북 목록 실제 PostgreSQL 회원 경계", () 
       principal: { userId: users.member, role: "MEMBER" }, page: 99, pageSize: 10,
     });
     expect(beyond).toEqual({ kind: "ok", items: [], totalCount: 3 });
-    expect(postCount).toBe(2); // 현재 프로필·전체 건수만 조회
+    expect(postCount).toBe(3); // 현재 프로필·조회 빈도 예약·전체 건수만 조회
   });
 });
