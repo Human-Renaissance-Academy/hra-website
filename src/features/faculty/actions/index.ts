@@ -1,15 +1,12 @@
 /** 교수진 관리 서버 액션: 관리자 권한과 입력값을 확인하고 프로필 이미지를 검증해 저장합니다. */
 "use server";
 
-import { and, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod/v4";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { faculty } from "@/lib/db/schema";
-import { uploadWithOwnedIntent } from "@/lib/server-upload-intent";
-import { validateAdminImage, type ValidatedAdminImage } from "@/lib/admin-image-validation";
+import { createAdminFaculty, updateAdminFaculty, deleteAdminFaculty } from "@/features/faculty/admin/service";
+import { validateAdminImage } from "@/lib/admin-image-validation";
 import { facultyImageRule } from "@/lib/faculty-upload-contract";
 import { validateFacultyImageReference } from "@/lib/faculty-upload-server";
 
@@ -120,17 +117,6 @@ async function getUploadedFacultyImage(formData: FormData, targetId: string, use
   return { url: value };
 }
 
-/** 검증된 형식만 UUID 경로로 원장에 선예약하고 원래 파일명은 공개 경로에 넣지 않습니다 (#302). */
-async function uploadFacultyImage(image: ValidatedAdminImage, uploadedById: string) {
-  return uploadWithOwnedIntent({
-    namespace: "faculty",
-    extension: image.extension,
-    body: image.file,
-    contentType: image.contentType,
-    uploadedById,
-  });
-}
-
 export async function createFaculty(formData: FormData): Promise<FacultyActionState> {
   const session = await requireAdmin();
 
@@ -163,15 +149,10 @@ export async function createFaculty(formData: FormData): Promise<FacultyActionSt
     : { url: null };
   if ("error" in directImage) return { success: false, message: directImage.error, fieldErrors: { image: directImage.error } };
 
-  const imageUrl = directImage.url ?? (validatedImage.file ? await uploadFacultyImage(validatedImage.file, session.user.id) : null);
-
-  await db.insert(faculty).values({
-    name: parsed.data.name,
-    category: parsed.data.category,
-    currentPosition: parsed.data.currentPosition ?? null,
-    formerPosition: parsed.data.formerPosition ?? null,
-    imageUrl,
-    order: parsed.data.order,
+  await createAdminFaculty({ userId: session.user.id, role: session.user.role }, {
+    ...parsed.data,
+    directImageUrl: directImage.url,
+    image: validatedImage.file,
   });
 
   revalidatePath("/admin/faculty");
@@ -213,52 +194,12 @@ export async function updateFaculty(id: string, formData: FormData): Promise<Fac
   const directImage = await getUploadedFacultyImage(formData, parsedId.data, session.user.id);
   if ("error" in directImage) return { success: false, message: directImage.error, fieldErrors: { image: directImage.error } };
 
-  const [existingFaculty] = await db
-    .select({ imageUrl: faculty.imageUrl })
-    .from(faculty)
-    .where(eq(faculty.id, parsedId.data));
-
-  if (!existingFaculty) {
-    return { success: false, message: "교수진을 찾을 수 없습니다." };
-  }
-
-  const updateValues: {
-    name: string;
-    category: z.infer<typeof facultyCategorySchema>;
-    currentPosition: string | null;
-    formerPosition: string | null;
-    order: number;
-    imageUrl?: string | null;
-  } = {
-    name: parsed.data.name,
-    category: parsed.data.category,
-    currentPosition: parsed.data.currentPosition ?? null,
-    formerPosition: parsed.data.formerPosition ?? null,
-    order: parsed.data.order,
-  };
-
-  if (directImage.url) {
-    updateValues.imageUrl = directImage.url;
-  } else if (validatedImage.file) {
-    updateValues.imageUrl = await uploadFacultyImage(validatedImage.file, session.user.id);
-  }
-
-  // 이전 사진 URL을 조건에 포함해 다른 관리자가 먼저 교체한 내용을 덮어쓰지 않습니다.
-  // 기존 파일은 업로드 소유권이 확인되지 않아 여기서 즉시 삭제하지 않습니다.
-  const [updated] = await db
-    .update(faculty)
-    .set(updateValues)
-    .where(and(
-      eq(faculty.id, parsedId.data),
-      existingFaculty.imageUrl
-        ? eq(faculty.imageUrl, existingFaculty.imageUrl)
-        : isNull(faculty.imageUrl),
-    ))
-    .returning({ id: faculty.id });
-
-  if (!updated) {
-    return { success: false, message: "교수진 정보가 변경됐습니다. 새로고침 후 다시 시도해주세요." };
-  }
+  const result = await updateAdminFaculty({ userId: session.user.id, role: session.user.role }, parsedId.data, {
+    ...parsed.data,
+    directImageUrl: directImage.url,
+    image: validatedImage.file,
+  });
+  if (!result.success) return result;
 
   revalidatePath("/admin/faculty");
   revalidatePath("/faculty");
@@ -266,7 +207,7 @@ export async function updateFaculty(id: string, formData: FormData): Promise<Fac
 }
 
 export async function deleteFaculty(id: string): Promise<void> {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const parsedId = z.uuid().safeParse(id);
   if (!parsedId.success) {
@@ -274,7 +215,7 @@ export async function deleteFaculty(id: string): Promise<void> {
   }
 
   // 삭제할 파일의 소유권이 기록되지 않은 기존 행은 DB만 제거해 파일 유실을 막습니다.
-  await db.delete(faculty).where(eq(faculty.id, parsedId.data));
+  await deleteAdminFaculty({ userId: session.user.id, role: session.user.role }, parsedId.data);
   revalidatePath("/admin/faculty");
   revalidatePath("/faculty");
 }

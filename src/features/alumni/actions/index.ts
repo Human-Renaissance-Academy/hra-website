@@ -1,16 +1,13 @@
 /** 수료생 이야기 서버 액션: 글과 사진을 관리하고 직접·서버 업로드의 형식을 검증합니다. */
 "use server";
 
-import { and, eq, isNull, max, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod/v4";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { reorderByCase } from "@/lib/db/reorder";
-import { alumniStories, alumniStoryImages } from "@/lib/db/schema";
+import { createStory, updateStory, togglePin, reorderStories, deleteStory } from "@/features/alumni/admin/service";
 import { logServerError } from "@/lib/errors";
-import { cleanupCreatedBlobs, uploadBlobsForCreate } from "@/lib/create-with-blobs";
+import { uploadBlobsForCreate } from "@/lib/create-with-blobs";
 import { uploadWithOwnedIntent } from "@/lib/server-upload-intent";
 import { validateAdminImage, type ValidatedAdminImage } from "@/lib/admin-image-validation";
 import { alumniImageRule } from "@/lib/alumni-upload-contract";
@@ -167,60 +164,19 @@ export async function createAlumniStory(formData: FormData): Promise<AlumniStory
   if ("error" in directImages) return { success: false, message: directImages.error, fieldErrors: { images: directImages.error } };
 
   try {
-    const id = requestId.data;
-    const [alreadyCreated] = await db.select({ id: alumniStories.id }).from(alumniStories).where(eq(alumniStories.id, id)).limit(1);
-    if (!alreadyCreated) {
-      // 새 항목은 목록 맨 아래에 추가합니다.
-      const [{ maxOrder }] = await db.select({ maxOrder: max(alumniStories.order) }).from(alumniStories);
-      const nextOrder = (maxOrder ?? 0) + 1;
-      const legacyUrls = await uploadBlobsForCreate(
+    await createStory({ userId: session.user.id, role: session.user.role }, {
+      id: requestId.data,
+      story: parsed.data,
+      directUrls: directImages.urls,
+      upload: () => uploadBlobsForCreate(
         validatedImages.files.map((image) => ({
           pathname: `alumni/${crypto.randomUUID()}.${image.extension}`,
           file: image.file,
           contentType: image.contentType,
         })),
         session.user.id,
-      );
-      const uploadedUrls = [...legacyUrls, ...directImages.urls];
-
-      try {
-        // 글과 이미지 메타를 한 배치에 넣어 후반부 실패 시 글도 롤백합니다.
-        const insertStory = db.insert(alumniStories).values({
-          id,
-          name: parsed.data.name,
-          title: parsed.data.title ?? null,
-          quote: parsed.data.quote,
-          content: parsed.data.content,
-          imageUrl: parsed.data.imageUrl || uploadedUrls[0] || null,
-          isFeatured: parsed.data.isFeatured,
-          order: nextOrder,
-        });
-        if (uploadedUrls.length > 0) {
-          await db.batch([
-            insertStory,
-            db.insert(alumniStoryImages).values(uploadedUrls.map((url, index) => ({
-              alumniStoryId: id,
-              url,
-              order: index,
-            }))),
-          ]);
-        } else {
-          await insertStory;
-        }
-      } catch (error) {
-        // 커밋 후 응답 유실 가능성을 확인한 뒤 미참조 Blob만 정리합니다.
-        const [existing] = await db.select({ id: alumniStories.id }).from(alumniStories).where(eq(alumniStories.id, id)).limit(1);
-        if (!existing) {
-          await cleanupCreatedBlobs(legacyUrls);
-          throw error;
-        }
-        const referenced = uploadedUrls.length > 0
-          ? await db.select({ url: alumniStoryImages.url }).from(alumniStoryImages).where(eq(alumniStoryImages.alumniStoryId, id))
-          : [];
-        const referencedUrls = new Set(referenced.map((row) => row.url));
-        await cleanupCreatedBlobs(legacyUrls.filter((url) => !referencedUrls.has(url)));
-      }
-    }
+      ),
+    });
   } catch (error) {
     logServerError("alumni/create", error);
     return {
@@ -267,53 +223,20 @@ export async function updateAlumniStory(id: string, formData: FormData): Promise
   if ("error" in directImages) return { success: false, message: directImages.error, fieldErrors: { images: directImages.error } };
 
   try {
-    const [existing] = await db
-      .select({ imageUrl: alumniStories.imageUrl })
-      .from(alumniStories)
-      .where(eq(alumniStories.id, parsedId.data));
-    if (!existing) {
-      return { success: false, message: "수료생 이야기를 찾을 수 없습니다." };
-    }
-
-    const uploadedUrls: string[] = [...directImages.urls];
-    for (const file of validatedImages.files) {
-      const url = await uploadAlumniImage(file, session.user.id);
-      uploadedUrls.push(url);
-    }
-
-    // 대표 이미지가 먼저 바뀌었다면 최신 값을 덮어쓰지 않습니다.
-    // 이 요청에서 새로 올린 미참조 파일은 소유권 원장이 나중에 정리합니다.
-    const [updated] = await db
-      .update(alumniStories)
-      .set({
-        name: parsed.data.name,
-        title: parsed.data.title ?? null,
-        quote: parsed.data.quote,
-        content: parsed.data.content,
-        // 새 이미지의 첫 파일을 대표 사진으로 지정하고, 업로드가 없으면 기존 사진을 유지합니다.
-        imageUrl: uploadedUrls[0] || parsed.data.imageUrl || existing.imageUrl,
-        isFeatured: parsed.data.isFeatured,
-      })
-      .where(and(
-        eq(alumniStories.id, parsedId.data),
-        existing.imageUrl
-          ? eq(alumniStories.imageUrl, existing.imageUrl)
-          : isNull(alumniStories.imageUrl),
-      ))
-      .returning({ id: alumniStories.id });
-    if (!updated) {
-      return { success: false, message: "수료생 이야기 정보가 변경됐습니다. 새로고침 후 다시 시도해주세요." };
-    }
-
-    if (uploadedUrls.length > 0) {
-      await db.insert(alumniStoryImages).values(
-        uploadedUrls.map((url, index) => ({
-          alumniStoryId: parsedId.data,
-          url,
-          order: index,
-        }))
-      );
-    }
+    const result = await updateStory({ userId: session.user.id, role: session.user.role }, {
+      id: parsedId.data,
+      story: parsed.data,
+      directUrls: directImages.urls,
+      upload: async () => {
+        const uploadedUrls: string[] = [];
+        for (const file of validatedImages.files) {
+          const url = await uploadAlumniImage(file, session.user.id);
+          uploadedUrls.push(url);
+        }
+        return uploadedUrls;
+      },
+    });
+    if (!result.success) return result;
   } catch (error) {
     logServerError("alumni/update", error, { id: parsedId.data });
     return {
@@ -331,17 +254,14 @@ export async function updateAlumniStory(id: string, formData: FormData): Promise
  * 응답은 해당 명령의 저장값이며, 후속 명령까지 같은 상태로 유지됨을 보장하지 않는다.
  */
 export async function toggleAlumniPin(id: string): Promise<{ success: boolean; message: string }> {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const parsedId = z.uuid().safeParse(id);
   if (!parsedId.success) {
     return { success: false, message: "잘못된 ID입니다." };
   }
 
-  const [updated] = await db.update(alumniStories)
-    .set({ pinned: sql`NOT ${alumniStories.pinned}` })
-    .where(eq(alumniStories.id, parsedId.data))
-    .returning({ pinned: alumniStories.pinned });
+  const updated = await togglePin({ userId: session.user.id, role: session.user.role }, parsedId.data);
 
   if (!updated) {
     return { success: false, message: "수료생 이야기를 찾을 수 없습니다." };
@@ -358,7 +278,7 @@ export async function toggleAlumniPin(id: string): Promise<{ success: boolean; m
 export async function reorderAlumniStories(
   orderedIds: string[]
 ): Promise<{ success: boolean; message: string }> {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   // Oracle Phase D 5라운드 BLOCK 수정 — orderedIds 각 원소를 UUID 로 사전 검증한다.
   // 이 배열은 reorderByCase 헬퍼의 `${a.id}::uuid` raw SQL 캐스트로 흘러가는데
@@ -371,16 +291,10 @@ export async function reorderAlumniStories(
   const validIds = parsedIds.data;
 
   try {
-    const { affected } = await reorderByCase({
-      table: alumniStories,
-      idColumn: alumniStories.id,
-      targetColumn: alumniStories.order,
-      // 기존 로직 유지: order 는 1-based (1, 2, 3, ...)
-      assignments: validIds.map((id, index) => ({ id, value: index + 1 })),
-    });
+    const { affected, matched } = await reorderStories({ userId: session.user.id, role: session.user.role }, validIds);
 
     // 존재하지 않는 ID 또는 중복 ID 로 인해 일부만 갱신된 경우 방어
-    if (affected !== validIds.length) {
+    if (!matched) {
       logServerError("alumni/reorder", new Error("update count mismatch"), {
         expected: validIds.length,
         actual: affected,
@@ -397,7 +311,7 @@ export async function reorderAlumniStories(
 }
 
 export async function deleteAlumniStory(id: string): Promise<void> {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const parsedId = z.uuid().safeParse(id);
   if (!parsedId.success) {
@@ -407,7 +321,7 @@ export async function deleteAlumniStory(id: string): Promise<void> {
   try {
     // 기존 이미지 URL만으로 파일 소유권을 증명할 수 없으므로 DB 삭제 전에
     // Blob을 지우지 않습니다. 미확인 파일은 보존합니다 (#93).
-    await db.delete(alumniStories).where(eq(alumniStories.id, parsedId.data));
+    await deleteStory({ userId: session.user.id, role: session.user.role }, parsedId.data);
   } catch (error) {
     logServerError("alumni/delete", error, { id: parsedId.data });
     // 서버 액션 void 반환형이라 에러 발생 시 redirect 등으로 처리하거나 에러를 던질 수 있음
