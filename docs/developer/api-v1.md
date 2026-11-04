@@ -33,7 +33,7 @@
 
 모바일 Google·Kakao OAuth는 이번 계약 범위가 아닙니다.
 
-**알려진 후속 작업:** 기존 OpenAPI path item의 쿠키 전용·Bearer 미지원 설명과 Origin 필수 표기는 append-only gate 때문에 의도적으로 바꾸지 않았습니다. 기존 operation에는 `security` 항목을 추가하지 않았고 기존 `Vary: Cookie` 표기도 보존합니다. 최신 인증 적용 범위는 이 문서와 신규 `components.securitySchemes.bearerAuth`를 함께 참조하며, 기존 operation 설명·보안 표기의 정리는 별도 버전/전환 정책이 필요하며 [#439](https://github.com/yeongseon/hra-website/issues/439)에서 추적합니다. 쿠키 이름은 환경마다 달라 고정하지 않습니다. 향후 Bearer 보호 operation을 새로 추가할 때 OpenAPI의 `{}` 대안은 익명 허용이므로 쿠키 인증 표현에 사용하지 않습니다.
+**OpenAPI 인증 표기 정정 정책(#439):** 추가 전용 gate(`scripts/check-openapi-compat.mjs`)는 기존 path item을 그대로 보존하는 것이 원칙입니다. Bearer 이중 전송(#438)으로 어긋난 표기만 바로잡기 위해 `scripts/_lib/openapi-append-only.mjs`의 `authWordingRevisions`에 **고정된 11개 operation**(`GET /me`, `GET /resources/guidebooks`, 본인 과제 3개 조회, `POST /submissions`, 업로드 4개 경로, 제출 파일 `GET`)만 예외로 등록했습니다. 이 operation에서는 `description`, `security`, `Origin` 헤더 매개변수의 `required`·`description`, 응답 `Vary` 헤더만 바뀔 수 있고 나머지(경로·상태 코드·스키마·operationId)가 달라지면 기존처럼 `OPENAPI_PATH_CHANGED`로 실패합니다. 정정 후 값은 `security: [{ bearerAuth: [] }]`(쿠키 대안은 설명에 기록), `Vary: Cookie, Authorization`, 선택(`required: false`) `Origin`이어야 합니다. 목록은 확장하지 않으며 새 operation은 처음부터 정확한 표기로 추가합니다. `info.version`은 계약 구조가 바뀌지 않으므로 올리지 않습니다. 쿠키 이름은 환경마다 달라 고정하지 않습니다. 향후 Bearer 보호 operation을 새로 추가할 때 OpenAPI의 `{}` 대안은 익명 허용이므로 쿠키 인증 표현에 사용하지 않습니다.
 
 ## 본인 프로필
 
@@ -112,7 +112,7 @@ OpenAPI의 JSON 표현은 [OpenAPI 3.1.1 명세](https://spec.openapis.org/oas/v
 
 ## 본인 과제·제출·파일 MVP
 
-아래 기존 Origin·`Vary: Cookie` 설명은 쿠키 전송에 대한 규칙입니다. 서버의 Bearer 도입 후에는 Origin 검사만 생략하고 인증별 응답 구분은 `Cookie, Authorization`을 사용합니다. JSON 크기·서명 callback·소유권·파일 감사 등 나머지 보호는 전송 방식과 무관하게 유지합니다.
+OpenAPI의 `Origin` 헤더는 쿠키 요청에서만 필수이며(`required: false`로 표기) 검증된 Bearer 요청은 Origin 검사를 생략합니다. 인증별 응답 구분은 `Vary: Cookie, Authorization`입니다. JSON 크기·서명 callback·소유권·파일 감사 등 나머지 보호는 전송 방식과 무관하게 유지합니다.
 
 모든 학사 경로는 서버 작업 반영 후 Auth.js **Web 세션 쿠키 또는 모바일 Bearer**를 사용합니다. 이 계약 추가가 모바일 인증 배포나 학사 운영 활성화를 뜻하지 않습니다. 기존 `ACADEMIC_ENABLED`·쓰기/업로드 gate와 현재 학적·과제 대상·개인 파일 인가를 그대로 적용합니다. 일반 `ADMIN`·`FACULTY` 역할에 학생 과제 권한을 추가하지 않습니다.
 

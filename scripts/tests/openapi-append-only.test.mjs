@@ -3,6 +3,7 @@
  * 실제 DB·네트워크·Git을 열지 않고 진단 코드만 비교합니다.
  */
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { routePathFromFile, validateOpenApiAppendOnly } from "../_lib/openapi-append-only.mjs";
 
@@ -151,4 +152,56 @@ test("동적 ID 뒤 정적 하위 자원 Route와 같은 접두어의 목록·�
   const missing = structuredClone(current);
   delete missing.paths["/api/v1/resources/weekly-texts/{id}/file"];
   assert.deepEqual(validate(missing, prior, [...routes, ...added]), ["OPENAPI_ROUTE_MISMATCH"]);
+});
+
+/** #439: 고정 목록 operation의 인증 표기만 정정되는 합성 계약 쌍을 만듭니다. */
+function authRevisionPair(path = "/api/v1/me") {
+  const operation = (revised) => ({
+    operationId: "getMe",
+    description: revised ? "모바일 Bearer 또는 Web 쿠키가 필요합니다." : "Web 쿠키만 지원합니다.",
+    ...(revised ? { security: [{ bearerAuth: [] }] } : {}),
+    parameters: [{ name: "Origin", in: "header", required: !revised, schema: { type: "string" }, description: revised ? "쿠키만 필수" : "필수" }],
+    responses: { "200": { description: "성공", headers: { Vary: { schema: { type: "string", const: revised ? "Cookie, Authorization" : "Cookie" } } } } },
+  });
+  const make = (revised) => ({
+    openapi: "3.1.1", info: { title: "합성 API", version: "0.1.0" },
+    paths: { [path]: { get: operation(revised) } },
+    components: { schemas: {} },
+  });
+  return { prior: make(false), current: make(true) };
+}
+
+test("고정 목록 operation의 설명·security·Origin·Vary 정정만 허용한다", () => {
+  const { prior, current } = authRevisionPair();
+  assert.deepEqual(validate(current, prior, ["/api/v1/me"]), []);
+});
+
+test("고정 목록 밖 operation의 같은 인증 표기 변경은 계속 차단한다", () => {
+  const { prior, current } = authRevisionPair("/api/v1/notices");
+  assert.deepEqual(validate(current, prior, ["/api/v1/notices"]), ["OPENAPI_PATH_CHANGED"]);
+});
+
+test("고정 목록 operation이라도 허용 필드 밖 변경이나 잘못된 정정 값은 차단한다", () => {
+  const extra = authRevisionPair(); extra.current.paths["/api/v1/me"].get.responses["200"].description = "바뀜";
+  const noSecurity = authRevisionPair(); delete noSecurity.current.paths["/api/v1/me"].get.security;
+  const anonymous = authRevisionPair(); anonymous.current.paths["/api/v1/me"].get.security = [{}];
+  const vary = authRevisionPair(); vary.current.paths["/api/v1/me"].get.responses["200"].headers.Vary.schema.const = "Cookie";
+  const origin = authRevisionPair(); origin.current.paths["/api/v1/me"].get.parameters[0].required = true;
+  const method = authRevisionPair(); method.current.paths["/api/v1/me"].post = { operationId: "postMe", responses: { "200": { description: "x" } } };
+  for (const { prior, current } of [extra, noSecurity, anonymous, vary, origin, method]) {
+    assert.deepEqual(validate(current, prior, ["/api/v1/me"]), ["OPENAPI_PATH_CHANGED"]);
+  }
+});
+
+test("실제 정본의 Bearer 수용 operation에는 쿠키 전용 문구가 남지 않는다", () => {
+  const spec = JSON.parse(readFileSync(new URL("../../packages/contracts/openapi.json", import.meta.url), "utf8"));
+  for (const [path, item] of Object.entries(spec.paths)) {
+    for (const [method, operation] of Object.entries(item)) {
+      if (!operation.security?.some((entry) => "bearerAuth" in entry)) continue;
+      assert.doesNotMatch(operation.description, /Bearer 인증은 아직 지원하지 않|^현재는 Auth\.js Web 세션 쿠키가 필요/, `${method} ${path}`);
+      for (const response of Object.values(operation.responses)) {
+        if (response.headers?.Vary) assert.equal(response.headers.Vary.schema.const, "Cookie, Authorization", `${method} ${path}`);
+      }
+    }
+  }
 });

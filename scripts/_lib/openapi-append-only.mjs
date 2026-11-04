@@ -10,6 +10,60 @@ const componentCategories = new Set(["schemas", "responses", "parameters", "exam
 const referencePrefix = "#/components/schemas/";
 const componentName = /^[A-Za-z][A-Za-z0-9_-]*$/;
 
+/**
+ * #439: 모바일 Bearer 이중 전송(#438) 반영으로 기존 operation의 인증 표기만 실제 동작에 맞춰
+ * 한 번 정정할 수 있는 고정 목록입니다. 새 operation은 이 목록에 추가하지 않습니다.
+ * 허용 필드는 description·security·Origin 헤더 매개변수의 required/description·Vary 응답 헤더뿐입니다.
+ */
+const authWordingRevisions = new Set([
+  "get /api/v1/me", "get /api/v1/resources/guidebooks",
+  "get /api/v1/assignments", "get /api/v1/assignments/{id}", "get /api/v1/assignments/{id}/submission",
+  "post /api/v1/submissions", "post /api/v1/uploads/intents", "delete /api/v1/uploads/intents/{id}",
+  "post /api/v1/uploads/{id}/verify", "post /api/v1/uploads", "get /api/v1/submissions/{id}/files/{fileId}",
+]);
+
+/** 정정 허용 필드를 제거한 사본입니다. 이 사본이 이전·현재에서 같아야 정정으로 인정합니다. */
+function withoutAuthWording(operation) {
+  const copy = structuredClone(operation);
+  delete copy.description;
+  delete copy.security;
+  if (Array.isArray(copy.parameters)) {
+    for (const parameter of copy.parameters) {
+      if (plain(parameter) && parameter.name === "Origin" && parameter.in === "header") {
+        delete parameter.required;
+        delete parameter.description;
+      }
+    }
+  }
+  for (const response of Object.values(copy.responses ?? {})) {
+    if (plain(response) && plain(response.headers)) delete response.headers.Vary;
+  }
+  return copy;
+}
+
+/** 정정 후 값은 쿠키 또는 Bearer 이중 전송 표기만 허용합니다(Bearer 요청은 Origin을 생략할 수 있음). */
+function authWordingValid(operation) {
+  if (typeof operation.description !== "string" || operation.description.length === 0 ||
+      canonical(operation.security) !== canonical([{ bearerAuth: [] }])) return false;
+  const origins = (operation.parameters ?? []).filter(item => plain(item) && item.name === "Origin" && item.in === "header");
+  if (!origins.every(item => item.required === false && typeof item.description === "string")) return false;
+  return Object.values(operation.responses).every(response => !plain(response) || !plain(response.headers) ||
+    !Object.hasOwn(response.headers, "Vary") ||
+    canonical(response.headers.Vary) === canonical({ schema: { type: "string", const: "Cookie, Authorization" } }));
+}
+
+/** 경로 항목이 같거나, 허용 목록 operation의 인증 표기만 정정되었는지 확인합니다. */
+function pathPreserved(path, before, after) {
+  if (canonical(before) === canonical(after)) return true;
+  if (!plain(after) || canonical(Object.keys(before).sort()) !== canonical(Object.keys(after).sort())) return false;
+  return Object.entries(before).every(([method, operation]) => {
+    const next = after[method];
+    if (canonical(operation) === canonical(next)) return true;
+    return authWordingRevisions.has(`${method} ${path}`) && plain(operation) && plain(next) &&
+      canonical(withoutAuthWording(operation)) === canonical(withoutAuthWording(next)) && authWordingValid(next);
+  });
+}
+
 /** JSON 객체만 허용하며 배열과 사용자 정의 prototype은 제외합니다. */
 function plain(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value) &&
@@ -147,7 +201,7 @@ export function validateOpenApiAppendOnly({ previous = null, current, routePaths
         if (canonical(previous[key]) !== canonical(current[key])) diagnostics.add("OPENAPI_ROOT_CHANGED");
       }
       for (const [path, item] of Object.entries(previous.paths)) {
-        if (!Object.hasOwn(current.paths, path) || canonical(item) !== canonical(current.paths[path])) {
+        if (!Object.hasOwn(current.paths, path) || !pathPreserved(path, item, current.paths[path])) {
           diagnostics.add("OPENAPI_PATH_CHANGED");
         }
       }
