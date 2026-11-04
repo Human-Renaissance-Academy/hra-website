@@ -205,3 +205,20 @@ test("실제 정본의 Bearer 수용 operation에는 쿠키 전용 문구가 남
     }
   }
 });
+
+test("이미 정정된 operation은 설명을 다시 바꿀 수 없다(예외는 한 번만 열림)", () => {
+  const { current } = authRevisionPair();
+  const again = structuredClone(current);
+  again.paths["/api/v1/me"].get.description = "인증 불필요";
+  assert.deepEqual(validate(again, current, ["/api/v1/me"]), ["OPENAPI_PATH_CHANGED"]);
+  assert.deepEqual(validate(structuredClone(current), current, ["/api/v1/me"]), []);
+});
+
+test("정정 중 Vary 헤더의 삭제와 추가를 차단한다", () => {
+  const removed = authRevisionPair(); delete removed.current.paths["/api/v1/me"].get.responses["200"].headers.Vary;
+  const added = authRevisionPair();
+  delete added.prior.paths["/api/v1/me"].get.responses["200"].headers.Vary;
+  for (const { prior, current } of [removed, added]) {
+    assert.deepEqual(validate(current, prior, ["/api/v1/me"]), ["OPENAPI_PATH_CHANGED"]);
+  }
+});

@@ -47,9 +47,31 @@ function authWordingValid(operation) {
       canonical(operation.security) !== canonical([{ bearerAuth: [] }])) return false;
   const origins = (operation.parameters ?? []).filter(item => plain(item) && item.name === "Origin" && item.in === "header");
   if (!origins.every(item => item.required === false && typeof item.description === "string")) return false;
-  return Object.values(operation.responses).every(response => !plain(response) || !plain(response.headers) ||
+  return Object.values(operation.responses ?? {}).every(response => !plain(response) || !plain(response.headers) ||
     !Object.hasOwn(response.headers, "Vary") ||
     canonical(response.headers.Vary) === canonical({ schema: { type: "string", const: "Cookie, Authorization" } }));
+}
+
+/** 응답별 Vary 헤더 존재 여부가 이전·현재에서 같아야 합니다(삭제·추가 금지). */
+function varyPresenceKept(before, after) {
+  const names = Object.keys(before.responses ?? {});
+  if (canonical([...names].sort()) !== canonical(Object.keys(after.responses ?? {}).sort())) return false;
+  const has = (response) => plain(response) && plain(response.headers) && Object.hasOwn(response.headers, "Vary");
+  return names.every(name => has(before.responses[name]) === has(after.responses[name]));
+}
+
+/**
+ * 정정은 이전 operation이 아직 옛 형태일 때만 한 번 허용합니다: security가 없고
+ * 존재하는 모든 Vary가 `Cookie`이며 Origin 매개변수의 required가 불리언입니다.
+ * 이미 정정된 operation은 이후 정확히 보존해야 합니다.
+ */
+function legacyAuthShape(operation) {
+  if (Object.hasOwn(operation, "security")) return false;
+  const origins = (operation.parameters ?? []).filter(item => plain(item) && item.name === "Origin" && item.in === "header");
+  if (!origins.every(item => typeof item.required === "boolean")) return false;
+  return Object.values(operation.responses ?? {}).every(response => !plain(response) || !plain(response.headers) ||
+    !Object.hasOwn(response.headers, "Vary") ||
+    canonical(response.headers.Vary) === canonical({ schema: { type: "string", const: "Cookie" } }));
 }
 
 /** 경로 항목이 같거나, 허용 목록 operation의 인증 표기만 정정되었는지 확인합니다. */
@@ -60,6 +82,7 @@ function pathPreserved(path, before, after) {
     const next = after[method];
     if (canonical(operation) === canonical(next)) return true;
     return authWordingRevisions.has(`${method} ${path}`) && plain(operation) && plain(next) &&
+      legacyAuthShape(operation) && varyPresenceKept(operation, next) &&
       canonical(withoutAuthWording(operation)) === canonical(withoutAuthWording(next)) && authWordingValid(next);
   });
 }
