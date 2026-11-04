@@ -19,6 +19,8 @@ const workflowPermissions = {
   "repository-security.yml": [{ contents: "read" }],
   "expanded-e2e.yml": [{ contents: "read" }],
   "production-smoke.yml": [{ contents: "read" }],
+  "mobile.yml": [{ contents: "read" }],
+  "mobile-server-e2e.yml": [{ contents: "read" }],
   "process-format.yml": [
     { contents: "read" },
     { contents: "read", issues: "write" },

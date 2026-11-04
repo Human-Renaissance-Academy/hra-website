@@ -93,6 +93,7 @@ G1은 첫 학사 기능 묶음으로, 학생·수강 이력, 과제 대상, 개�
 | [플랫폼 아키텍처](developer/platform-architecture.md) | 웹·모바일이 같은 기능과 권한 정책을 사용하는 구조 |
 | [플랫폼 전환 로드맵](PLATFORM-ROADMAP.md) | 현재 안전장치를 유지하며 구조를 바꾸는 순서 |
 | [공용 API v1 계약과 범위](developer/api-v1.md) | OpenAPI 계약 기반 공용 HTTP 엔드포인트와 제공 범위 |
+| [모바일 앱 개발 안내](developer/mobile-app.md) | React Native, Expo 모바일 앱 구조, 인증, 파일 전송, 빌드 및 검증 |
 | [모바일 인증 HTTP 경계](developer/mobile-auth-routes.md) | 모바일 로그인, 갱신, 로그아웃 엔드포인트 및 요청 제한 정책 |
 | [모바일 요청 주체 어댑터](developer/mobile-principal-adapter.md) | API v1 Bearer 토큰 검증, 주체 변환 및 비공개 파일 스트림 |
 | [모바일 세션 DB 검토](developer/mobile-session-migration.md) | 모바일 세션 및 리프레시 토큰 이력 스키마, 잠금 및 카탈로그 검토 |

@@ -1,0 +1,47 @@
+/** 모바일 표시 문구의 단일 진입점입니다. 후속 기능도 화면에 문자열을 직접 넣지 않습니다. */
+export const ko = {
+  dates: { weekdays: ['일', '월', '화', '수', '목', '금', '토'], dueToday: '오늘 마감', closed: '마감됨' },
+  files: { fallbackName: '자료', open: 'PDF 열기' },
+  submission: { invalidFile: '비어 있지 않은 PDF 파일 한 개를 50MiB 이하로 선택해 주세요.' },
+  tabs: { home: '홈', notices: '공지', schedule: '일정', resources: '자료실', profile: '내 정보' },
+  login: '로그인',
+  auth: {
+    email: '이메일', password: '비밀번호', showPassword: '비밀번호 표시', hidePassword: '비밀번호 숨기기',
+    submitting: '로그인 중입니다', loading: '로그인 정보를 확인하고 있습니다',
+    invalid: '이메일 형식과 비밀번호를 확인해 주세요.', logout: '로그아웃',
+    pending: '승인 대기 중입니다', pendingDescription: '관리자 승인 후 자료실과 학사 서비스를 이용할 수 있습니다.',
+    retry: '다시 확인', logoutAll: '모든 모바일 기기에서 로그아웃',
+  },
+  errors: {
+    INVALID_INPUT: '입력 내용을 확인해 주세요.', UNAUTHENTICATED: '다시 로그인해 주세요.',
+    credentials: '이메일 또는 비밀번호가 올바르지 않습니다', FORBIDDEN: '이용 권한이 없습니다.',
+    NOT_FOUND: '요청한 내용을 찾을 수 없습니다.', CONFLICT: '내용이 변경되었습니다. 새로 확인해 주세요.',
+    TOO_LARGE: '파일 또는 요청 크기가 너무 큽니다.', RATE_LIMITED: '요청이 많습니다. 잠시 후 다시 시도해 주세요.',
+    DISABLED: '현재 이용할 수 없는 기능입니다.', STORAGE_UNAVAILABLE: '저장소를 이용할 수 없습니다. 잠시 후 다시 시도해 주세요.',
+    UNAVAILABLE: '서비스를 이용할 수 없습니다. 잠시 후 다시 시도해 주세요.',
+    NETWORK: '연결을 확인한 후 다시 시도해 주세요.', TIMEOUT: '응답 시간이 초과되었습니다. 다시 시도해 주세요.',
+  },
+  waitSeconds: (seconds: number) => `${seconds}초 후 다시 시도해 주세요.`,
+  waitMinutes: (minutes: number) => `${minutes}분 후 다시 시도해 주세요.`,
+  config: {
+    required: '운영 빌드에는 API 주소를 설정해야 합니다.',
+    invalid: 'API 주소는 인증 정보·쿼리·프래그먼트가 없는 올바른 HTTP 또는 HTTPS 주소여야 합니다.',
+    https: '운영 빌드의 API 주소는 HTTPS여야 합니다.',
+  },
+  ui: {
+    retry: '다시 시도',
+    cancel: '취소',
+    confirm: '확인',
+    loading: '불러오는 중입니다',
+    refreshing: '새로고침 중입니다',
+    emptyTitle: '표시할 내용이 없습니다.',
+    errorTitle: '문제가 발생했습니다.',
+    tabA11y: {
+      home: '홈 탭',
+      notices: '공지 탭',
+      schedule: '일정 탭',
+      resources: '자료실 탭',
+      profile: '내 정보 탭',
+    },
+  },
+} as const;

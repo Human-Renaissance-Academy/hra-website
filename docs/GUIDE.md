@@ -31,6 +31,8 @@
 | `src/components` | 여러 화면에서 쓰는 UI |
 | `src/features` | 공지·회원·지원서 등 기능별 조회와 변경 코드 |
 | `src/lib` | DB 연결, 인증, 업로드 등 공통 코드 |
+| `apps/mobile` | React Native, Expo 모바일 앱 (독립 npm 프로젝트) |
+| `packages/contracts` | 공용 HTTP 계약 (OpenAPI 3.1.1 및 타입) |
 | `scripts` | 관리자 초기 생성, DB 변경, 검사 등 관리 스크립트. 저장소 최상위에 있습니다. |
 | `public` | 코드와 함께 배포하는 정적 이미지 등의 파일 |
 | `docs` | 개발·운영·협업 문서 |
@@ -39,7 +41,7 @@
 
 현재 공지·갤러리·회원·지원서 등의 데이터는 **PostgreSQL 데이터베이스**를 사용하고, 업로드한 파일은 **Vercel Blob**에 저장합니다. `content/`의 과거 파일이 남아 있어도 새 공지나 갤러리를 그 폴더에 추가하는 절차로 안내하지 않습니다. 개발 문서 파일과 운영 콘텐츠의 저장 위치를 혼동하지 않는 것이 중요합니다.
 
-Web·Android·iOS와 공통 업무 코드를 **한 저장소 안에서** 앱·모듈별로 관리하는 **모노레포(monorepo)** 전환은 [플랫폼 아키텍처](developer/platform-architecture.md)의 목표입니다. `apps/web`, `apps/mobile`, `server/modules`는 목표 경로이며 현재 모든 기능이 그곳으로 옮겨진 상태는 아닙니다.
+Web, Android, iOS와 공통 업무 코드를 **한 저장소 안에서** 앱과 모듈별로 관리하는 **모노레포(monorepo)** 전환은 [플랫폼 아키텍처](developer/platform-architecture.md)의 목표입니다. `apps/mobile`은 독립 프로젝트로 구성되어 모바일 앱을 개발 중이며, `apps/web`과 `server/modules`는 목표 경로로서 단계적 전환 대상입니다.
 
 ## 3. 코드를 바꾸는 기본 순서
 
