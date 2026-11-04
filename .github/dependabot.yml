@@ -32,3 +32,22 @@ updates:
       - dependency-name: typescript
         update-types:
           - version-update:semver-major
+  # 모바일 앱은 루트와 별도로 설치하는 독립 lockfile을 갖는다(#446). 같은 주간 검토·수동 병합 절차를 적용한다.
+  # Expo SDK가 버전을 함께 고정하는 패키지는 한 PR로 묶어 SDK 호환성(expo-doctor)을 함께 검증한다.
+  - package-ecosystem: npm
+    directory: /apps/mobile
+    schedule:
+      interval: weekly
+    groups:
+      expo-sdk:
+        patterns:
+          - expo
+          - "expo-*"
+          - "@expo/*"
+          - jest-expo
+          - eslint-config-expo
+          - react-native
+          - react
+          - react-dom
+          - "@types/react"
+    # 무시 규칙을 두지 않는다. Expo SDK major 제안도 SDK 업그레이드 절차(expo-doctor·Android 빌드)로 검토한다.

@@ -255,3 +255,53 @@ test('외부 피드 resolved는 주소 없이 설치 경로만 진단하고 차�
   assert.match(output, /node_modules\/dotenv/);
   assert.doesNotMatch(output, /visualstudio|evil/);
 });
+
+// #446: 모바일 앱 lockfile도 같은 정확 일치·기한·공식 registry 정책을 별도 원장으로 적용한다.
+const mobilePolicy = JSON.parse(readFileSync(new URL('../../security/mobile-dependency-triage.json', import.meta.url)));
+const mobileLock = JSON.parse(readFileSync(new URL('../../apps/mobile/package-lock.json', import.meta.url)));
+const mobileAudit = { auditReportVersion: 2, vulnerabilities: Object.fromEntries(mobilePolicy.packages.map(pkg => [pkg.name, { name: pkg.name, severity: pkg.severity, range: pkg.range, nodes: pkg.nodes.map(node => node.path), via: pkg.via.map(v => v.source ? { ...v, url: 'https://github.com/advisories/' + v.id } : v.dependency) }])) };
+const mobileResult = { affectedPackages: 44, advisoryEntries: 4, p1: 0 };
+
+test('모바일 원장은 lock 스냅샷과 정확히 일치하고 모든 resolved가 공식 registry다', () => {
+  assert.deepEqual(dependencySnapshot(mobileAudit, mobileLock), mobilePolicy.packages);
+  assert.deepEqual(lockRegistryViolations(mobileLock), []);
+  assert.deepEqual(verifyDependencyPolicy(mobileAudit, mobileLock, mobilePolicy, '2026-11-04'), mobileResult);
+});
+
+test('모바일 sharp는 수정본으로 해소해 원장에 남지 않는다', () => {
+  assert.equal(mobileLock.packages['node_modules/sharp'].version, '0.35.5');
+  assert.equal(mobilePolicy.packages.some(item => item.name === 'sharp'), false);
+  assert.deepEqual(mobilePolicy.assessments.filter(item => item.key.startsWith('sharp:')), []);
+});
+
+// high zod(Expo CLI 전이)는 2주, dev=false CLI·테스트 DoS는 3주, 개발 도구 전용은 4주로 사용면별 기한을 둔다.
+test('모바일 평가는 사용면 위험별 기한을 두고 가장 이른 기한 다음 날 차단한다', () => {
+  const deadlines = { 'expo-cli-devtools-zod': '2026-11-18', 'expo-cli-config-glob': '2026-11-25', 'jest-test-runner': '2026-11-25', 'eslint-lint-tooling': '2026-12-02', 'openapi-codegen-redocly': '2026-12-02' };
+  assert.deepEqual(mobilePolicy.contexts.map(item => item.id).sort(), Object.keys(deadlines).sort());
+  assert.ok(mobilePolicy.assessments.every(item => item.reviewedOn === '2026-11-04' && item.reviewBy === deadlines[item.contextId]));
+  assert.deepEqual(mobilePolicy.assessments.filter(item => item.contextId === 'expo-cli-devtools-zod').map(item => item.key).sort(), ['@expo/cli:zod', 'zod:1243066']);
+  assert.deepEqual(verifyDependencyPolicy(mobileAudit, mobileLock, mobilePolicy, '2026-11-18'), mobileResult);
+  assert.throws(() => verifyDependencyPolicy(mobileAudit, mobileLock, mobilePolicy, '2026-11-19'), /DEPENDENCY_TRIAGE_INVALID/);
+});
+
+// test-exclude처럼 같은 이름의 전이 패키지를 여러 버전으로 두면 npm이 같은 링크를 중복 보고한다.
+test('중복 전이 링크는 평가 하나로 받되 링크 수 변경과 중복 평가는 계속 차단한다', () => {
+  const duplicated = mobilePolicy.packages.find(item => item.name === 'test-exclude');
+  assert.equal(duplicated.via.filter(via => via.dependency === 'glob').length, 2);
+  assert.equal(mobilePolicy.assessments.filter(item => item.key === 'test-exclude:glob').length, 1);
+  const input = structuredClone(mobileAudit);
+  input.vulnerabilities['test-exclude'].via = input.vulnerabilities['test-exclude'].via.filter((via, index, all) => all.indexOf(via) === index);
+  assert.throws(() => verifyDependencyPolicy(input, mobileLock, mobilePolicy, '2026-11-04'), /DEPENDENCY_TRIAGE_CHANGED/);
+  const extra = structuredClone(mobilePolicy);
+  extra.assessments.push({ ...extra.assessments.find(item => item.key === 'test-exclude:glob') });
+  assert.throws(() => verifyDependencyPolicy(mobileAudit, mobileLock, extra, '2026-11-04'), /DEPENDENCY_TRIAGE_MISSING/);
+});
+
+test('모바일 lock의 새 권고·외부 피드 resolved는 차단한다', () => {
+  const input = structuredClone(mobileAudit);
+  input.vulnerabilities.zod.via.push({ source: 999999, url: 'https://github.com/advisories/GHSA-test-1234', severity: 'critical', range: '<99', title: 'SENSITIVE_SENTINEL' });
+  assert.throws(() => verifyDependencyPolicy(input, mobileLock, mobilePolicy, '2026-11-04'), /DEPENDENCY_TRIAGE_CHANGED/);
+  const lockInput = structuredClone(mobileLock);
+  lockInput.packages['node_modules/expo'].resolved = 'https://registry.npmjs.org.evil.example/expo/-/expo-58.0.21.tgz';
+  assert.throws(() => verifyDependencyPolicy(mobileAudit, lockInput, mobilePolicy, '2026-11-04'), /DEPENDENCY_LOCK_REGISTRY_INVALID/);
+});

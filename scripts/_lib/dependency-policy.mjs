@@ -112,7 +112,10 @@ export function verifyDependencyPolicy(audit, lock, policy, today = new Date().t
     contextTexts.add(text);
     contexts.set(item.id, item);
   }
-  const required = snapshot.flatMap(pkg => pkg.via.map(via => `${pkg.name}:${via.source ?? via.dependency}`));
+  // 한 패키지가 버전이 다른 같은 이름의 전이 패키지를 여러 경로에 두면 npm은 같은 `dependency` 링크를 중복해 보고한다.
+  // 링크 자체는 위의 snapshot 정확 일치로 이미 고정했으므로, 평가 키는 중복을 합쳐 한 번만 요구한다(#446 모바일 lock).
+  // advisory 키는 source 번호를 포함하므로 서로 다른 권고가 합쳐지지 않는다.
+  const required = [...new Set(snapshot.flatMap(pkg => pkg.via.map(via => `${pkg.name}:${via.source ?? via.dependency}`)))];
   if (policy.assessments.some(item => !item || typeof item.key !== 'string')) throw new Error('DEPENDENCY_TRIAGE_MISSING');
   if (policy.assessments.length !== required.length || new Set(policy.assessments.map(item => item.key)).size !== required.length) throw new Error('DEPENDENCY_TRIAGE_MISSING');
   const usedContexts = new Set();

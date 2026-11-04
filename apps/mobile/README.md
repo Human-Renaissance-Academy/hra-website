@@ -45,7 +45,7 @@ Android 우선, iOS 공통 Expo 앱입니다. 이메일 로그인·승인 대기
 | @types/jest / @types/react | 30.0.0 / 19.3.0 | 위 런타임 타입 |
 | eslint / eslint-config-expo | 9.39.1 / 58.0.4 | 저장소 ESLint와 SDK flat config |
 | expo-doctor | 1.21.5 | 건강 검사도 재현 가능한 버전 사용 |
-| sharp | 0.34.5 | 임시 아이콘 PNG 재생성 개발 도구 |
+| sharp | 0.35.5 | 임시 아이콘 PNG 재생성 개발 도구(libvips·libheif·librsvg 권고 수정본, #446) |
 
 OpenAPI 생성기 7.13.0의 TypeScript peer는 아직 `^5.x`입니다. 5.9.3으로 설치해 보았으나 doctor가 SDK 요구 `~6.0.3`과의 불일치를 검출했습니다. 따라서 **생성기에 한정한 npm override**로 TypeScript 6.0.3을 사용합니다. `--force`/`--legacy-peer-deps`, doctor 제외나 검사 비활성화는 사용하지 않습니다. 실제 타입 생성·최신성 비교·타입 검사를 검증합니다. 생성기의 공식 TypeScript 6 peer 지원은 후속 갱신 대상입니다.
 

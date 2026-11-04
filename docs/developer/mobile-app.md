@@ -295,7 +295,8 @@ React Native와 Expo의 기본 fetch 런타임 및 `File.upload`는 네이티브
 10. **비밀번호 변경 시 세션 버전 증가 규칙 준수**:
     - `scripts/seed-admin.mjs`의 안내에 반영된 것과 같이, DB에서 관리자 비밀번호를 수동으로 변경하거나 비밀번호 재설정 기능을 구현할 때는 `password_hash` 변경과 함께 반드시 `session_version = session_version + 1`을 동일한 문장에서 실행해야 기존 모바일 세션이 정상 무효화됩니다.
 11. **모바일 의존성 감시 범위**:
-    - 저장소의 Dependabot 설정(`.github/dependabot.yml`)과 `npm run verify:dependencies`는 루트 `package-lock.json`만 대상으로 합니다. 독립 프로젝트인 `apps/mobile/package-lock.json`과 Android 네이티브(Gradle/Maven) 라이브러리는 자동 감시 범위에 없습니다.
+    - (#446 반영) 저장소의 Dependabot 설정(`.github/dependabot.yml`)과 `npm run verify:dependencies`는 루트 `package-lock.json`과 함께 `apps/mobile/package-lock.json`도 대상으로 합니다. 모바일 권고는 별도 원장 `security/mobile-dependency-triage.json`에서 검토하며 처리 내역은 [저장소 보안 게이트](repository-security-gates.md)의 "모바일 앱 lockfile" 절에 있습니다. `sharp`는 0.35.5로 갱신했습니다. Android 네이티브(Gradle/Maven) 라이브러리는 여전히 자동 감시 범위에 없습니다.
+    - 아래 두 항목은 #446 이전 시점의 점검 기록입니다.
     - 2026-10-31에 `apps/mobile`에서 `npm audit`을 실행한 결과 전체 의존성에서 취약점이 보고된 패키지가 49개(높음 3, 보통 45, 낮음 1)입니다. 높음 항목은 `sharp`(아이콘 생성용 직접 devDependency), `zod`(`@expo/cli` 빌드 도구의 전이 의존성), `@expo/cli`입니다. release JS 번들의 소스 맵(1,348개 모듈, npm 패키지 50개)에는 보고된 패키지와 빌드·테스트 도구(`sharp`, `zod`, `glob`, `minimatch`, `deepmerge`, `@expo/cli`, `@expo/config`, `@expo/config-plugins`, `@expo/prebuild-config`, `@expo/metro-config`, `@expo/fingerprint`, `jest`, `eslint`)가 하나도 들어 있지 않습니다.
     - 이 결과는 특정 시점의 점검이며 취약점이 앱에 영향을 주지 않는다는 보증이 아닙니다. 네이티브 라이브러리(AAR)는 `npm audit`의 대상이 아닙니다. 출시 전에 모바일 lock을 Dependabot 대상에 추가할지, 별도 점검을 CI에 둘지 소유자가 정해야 합니다. `sharp`는 앱 번들에 포함되지 않는 개발 도구이며 더 새 버전(0.35.5)이 나와 있습니다. 0.x 마이너 상승이므로 올릴 때는 아이콘 생성 스크립트(`apps/mobile/scripts/generate-icons.mjs`)로 결과를 확인해야 합니다.
 
