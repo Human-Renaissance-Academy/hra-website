@@ -4,7 +4,6 @@
  * 전체 회원 목록을 표시하고 그룹(관리자/교수/기수/승인대기)을 변경하거나 삭제할 수 있습니다.
  * 기수 목록을 함께 조회하여 드롭다운에 동적으로 표시합니다.
  */
-import { desc } from "drizzle-orm";
 import { formatKstDate as formatDate } from "@/lib/date-time";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -18,9 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { cohortNumberDesc } from "@/lib/db/cohort-order";
-import { cohorts, users } from "@/lib/db/schema";
+import { listAdminUsers, listAdminCohorts } from "@/features/users/admin/service";
 import { logServerError } from "@/lib/errors";
 import { UserGroupButton } from "./_components/user-role-button";
 
@@ -53,34 +50,20 @@ const roleBadgeMap = {
 
 export default async function AdminUsersPage() {
   const session = await requireAdmin();
+  const actor = { userId: session.user.id, role: session.user.role };
 
   // 회원 목록과 기수 목록을 병렬로 조회
   const [{ rows, hasDbError }, cohortList] = await Promise.all([
     (async () => {
       try {
-        const rows = await db
-          .select({
-            id: users.id,
-            name: users.name,
-            email: users.email,
-            role: users.role,
-            cohortId: users.cohortId,
-            image: users.image,
-            createdAt: users.createdAt,
-          })
-          .from(users)
-          .orderBy(desc(users.createdAt));
+        const rows = await listAdminUsers(actor);
         return { rows, hasDbError: false };
       } catch (error) {
         logServerError("admin/users", error);
         return { rows: [], hasDbError: true };
       }
     })(),
-    db
-      .select({ id: cohorts.id, name: cohorts.name })
-      .from(cohorts)
-      // 기수명에서 숫자만 추출해 내림차순 정렬 (20기 → 19기 → ... → 1기)
-      .orderBy(cohortNumberDesc(cohorts.name)),
+    listAdminCohorts(actor),
   ]);
 
   // cohortId → cohort name 빠른 조회를 위한 맵

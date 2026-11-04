@@ -1,23 +1,16 @@
 /**
- * 회원 그룹 변경 서버 액션
- *
- * 관리자가 회원의 그룹(관리자/교수/기수 멤버/승인대기)을 변경할 때 사용합니다.
- * 드롭다운 값은 "ADMIN" | "FACULTY" | "PENDING" | "<cohort-uuid>" 형태입니다.
- * - ADMIN/FACULTY/PENDING: role만 업데이트, cohortId는 null로 초기화
- * - cohort UUID: role을 MEMBER로, cohortId를 해당 UUID로 업데이트
+ * 회원 관리자 Web 서버 액션입니다.
+ * 입력·세션을 검증하고 서비스의 업무 결과에 기존 웹 캐시·고정 로그 처리를 적용합니다.
  */
 "use server";
 
-import { eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { isConstraintViolation } from "@/lib/db/constraint-errors";
 import { logServerError } from "@/lib/errors";
-import { cohorts, users } from "@/lib/db/schema";
+import { changeAdminUserGroup, deleteAdminUser } from "@/features/users/admin/service";
 
-// "ADMIN" | "FACULTY" | "PENDING" | "<uuid>" 형태의 드롭다운 값
+// 기존 드롭다운 값·검증 메시지·첫 오류 우선순위를 그대로 유지합니다.
 const groupValueSchema = z.union([
   z.enum(["ADMIN", "FACULTY", "PENDING"]),
   z.uuid("올바른 기수 ID가 아닙니다."),
@@ -33,10 +26,7 @@ export type ActionResult = {
   message: string;
 };
 
-/**
- * 회원 그룹을 변경하는 서버 액션
- * groupValue에 따라 role과 cohortId를 함께 업데이트합니다.
- */
+/** 관리자 세션→입력 검증→서비스 저장 완료→목록·상세 캐시 순서를 유지합니다. */
 export async function updateUserGroup(
   userId: string,
   groupValue: string
@@ -51,107 +41,10 @@ export async function updateUserGroup(
     };
   }
 
-  if (session.user?.id === parsed.data.userId) {
-    return {
-      success: false,
-      message: "자기 자신의 그룹은 변경할 수 없습니다.",
-    };
-  }
-
-  // 대상 사용자 존재 여부만 먼저 확인 (UX: "사용자 없음" 을 마지막 ADMIN 에러와 구분)
-  const [existing] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.id, parsed.data.userId))
-    .limit(1);
-
-  if (!existing) {
-    return { success: false, message: "해당 사용자를 찾을 수 없습니다." };
-  }
-
-  // groupValue가 고정 역할인지, 기수 UUID인지 분기
-  const isFixedRole =
-    parsed.data.groupValue === "ADMIN" ||
-    parsed.data.groupValue === "FACULTY" ||
-    parsed.data.groupValue === "PENDING";
-
-  // 기수 UUID 인 경우, 실제로 존재하는 기수인지 사전 검증
-  if (!isFixedRole) {
-    const cohort = await db
-      .select({ id: cohorts.id })
-      .from(cohorts)
-      .where(eq(cohorts.id, parsed.data.groupValue))
-      .limit(1);
-
-    if (cohort.length === 0) {
-      return { success: false, message: "해당 기수를 찾을 수 없습니다." };
-    }
-  }
-
-  const newRole = isFixedRole ? parsed.data.groupValue : "MEMBER";
-  const newCohortId = isFixedRole ? null : parsed.data.groupValue;
-
-  /*
-   * 마지막 ADMIN 소실 방지 + 세션 무효화 (#68) 를 단일 SQL 로 원자 처리.
-   *
-   * 1. write-skew 방지:
-   *    check-then-act (app 레벨 count + 별도 update) 는 두 관리자가 동시에 서로를 강등시키면
-   *    둘 다 count>=2 를 보고 통과해 결국 ADMIN 이 0명이 되는 race 가 있다.
-   *    CTE 의 `SELECT ... FOR UPDATE` 는 statement 실행 동안 모든 ADMIN row 를 잠근다.
-   *    (neon-http 는 트랜잭션 미지원이지만 단일 statement 는 원자적)
-   *
-   * SET 좌변은 PostgreSQL 문법상 테이블명을 붙일 수 없어 컬럼 식별자만 사용한다.
-   * CASE 우변·WHERE의 컬럼 참조는 기존 테이블 수식을 유지한다.
-   *
-   * 2. session_version bump (#68):
-   *    role 또는 cohort_id 가 실제로 변경된 경우에만 session_version + 1.
-   *    IS DISTINCT FROM 은 NULL-safe 비교로, NULL <-> UUID 전환도 정확히 감지한다.
-   *    no-op 업데이트 (같은 값 재저장) 는 sessionVersion 을 증가시키지 않아
-   *    다른 디바이스가 불필요하게 강제 로그아웃되는 일을 방지한다.
-   *
-   * WHERE 절 3개 OR (마지막 ADMIN 소실 방지 부분):
-   *  - role <> 'ADMIN'                 : 원래 ADMIN 이 아니면 무조건 통과 (승격/유지)
-   *  - newRole = 'ADMIN'               : 새 role 도 ADMIN 이면 no-op / 승격이므로 통과
-   *  - (SELECT count FROM lock) > 1    : 잠금된 ADMIN 수가 2 이상이면 강등해도 안전
-   */
-  const result = await db.execute(sql`
-    WITH admin_lock AS (
-      SELECT id FROM ${users} WHERE ${users.role} = 'ADMIN' FOR UPDATE
-    )
-    UPDATE ${users}
-    SET
-      ${sql.identifier(users.role.name)} = ${newRole}::user_role,
-      ${sql.identifier(users.cohortId.name)} = ${newCohortId}::uuid,
-      ${sql.identifier(users.sessionVersion.name)} = CASE
-        WHEN ${users.role} IS DISTINCT FROM ${newRole}::user_role
-          OR ${users.cohortId} IS DISTINCT FROM ${newCohortId}::uuid
-        THEN ${users.sessionVersion} + 1
-        ELSE ${users.sessionVersion}
-      END,
-      ${sql.identifier(users.updatedAt.name)} = now()
-    WHERE ${users.id} = ${parsed.data.userId}::uuid
-      AND (
-        ${users.role} <> 'ADMIN'
-        OR ${newRole}::user_role = 'ADMIN'
-        OR (SELECT count(*) FROM admin_lock) > 1
-      )
-    RETURNING ${users.id};
-  `);
-
-  if ((result.rowCount ?? 0) === 0) {
-    // 사전 확인 이후 대상이 삭제되었을 수 있으므로 마지막 관리자 오류와 구분합니다.
-    const [stillExists] = await db.select({ id: users.id })
-      .from(users)
-      .where(eq(users.id, parsed.data.userId))
-      .limit(1);
-    if (!stillExists) {
-      return { success: false, message: "해당 사용자를 찾을 수 없습니다." };
-    }
-    return {
-      success: false,
-      message: "마지막 관리자입니다. 다른 관리자를 먼저 지정한 뒤 역할을 변경하세요.",
-    };
-  }
+  const result = await changeAdminUserGroup(
+    { userId: session.user.id, role: session.user.role }, parsed.data,
+  );
+  if (!result.success) return result;
 
   revalidatePath("/admin/users");
   revalidatePath(`/admin/users/${parsed.data.userId}`);
@@ -163,6 +56,7 @@ const deleteUserSchema = z.object({
   userId: z.uuid("올바른 사용자 ID가 필요합니다."),
 });
 
+/** 서비스가 삭제 SQL만 분류하며 웹 캐시 오류는 원본처럼 catch 밖에서 전파합니다. */
 export async function deleteUser(userId: string): Promise<ActionResult> {
   const session = await requireAdmin();
 
@@ -174,78 +68,24 @@ export async function deleteUser(userId: string): Promise<ActionResult> {
     };
   }
 
-  if (session.user?.id === parsed.data.userId) {
-    return { success: false, message: "자기 자신은 삭제할 수 없습니다." };
-  }
-
-  // 대상 사용자 존재 여부만 먼저 확인 (UX: "사용자 없음" 을 마지막 ADMIN 에러와 구분)
-  const [existing] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.id, parsed.data.userId))
-    .limit(1);
-
-  if (!existing) {
-    return { success: false, message: "해당 사용자를 찾을 수 없습니다." };
-  }
-
-  /*
-   * write-skew 방지: ADMIN row 를 FOR UPDATE 로 잠근 뒤 count 검사와 DELETE 를
-   *   단일 statement 로 원자 실행 (updateUserGroup 과 대칭 구조).
-   *
-   * 세션 종료 (#68): 삭제 사용자의 JWT 는 sessionVersion bump 없이도 무효화된다.
-   *   auth.ts 의 `resolveJwtSession` 이 dbUser === undefined 인 경우 null 을 반환하여
-   *   next-auth 가 세션 쿠키를 폐기하기 때문.
-   */
-  let affected = 0;
-  try {
-    const result = await db.execute(sql`
-      WITH admin_lock AS (
-        SELECT id FROM ${users} WHERE ${users.role} = 'ADMIN' FOR UPDATE
-      )
-      DELETE FROM ${users}
-      WHERE ${users.id} = ${parsed.data.userId}::uuid
-        AND (
-          ${users.role} <> 'ADMIN'
-          OR (SELECT count(*) FROM admin_lock) > 1
-        )
-      RETURNING ${users.id};
-    `);
-    affected = result.rowCount ?? 0;
-  } catch (error) {
-    // 학적 연결·등록 작성자·계정 연결 이력은 DB의 RESTRICT 정책으로 보존한다.
-    // PostgreSQL 버전에 따라 23001 또는 23503으로 전달되며 원문은 사용자에게 돌려주지 않는다.
-    const protectedReferences = [
-      "academic_students_user_id_users_id_fk",
-      "cohort_enrollments_created_by_user_id_users_id_fk",
-      "academic_enrollment_link_batches_actor_user_id_users_id_fk",
-    ];
-    if (protectedReferences.some(constraint =>
-      ["23001", "23503"].some(code => isConstraintViolation(error, code, constraint)))) {
-      return { success: false, message: "학적 정보나 학사 운영 이력이 연결된 회원은 삭제할 수 없습니다." };
+  const outcome = await deleteAdminUser(
+    { userId: session.user.id, role: session.user.role }, parsed.data.userId,
+  );
+  switch (outcome.kind) {
+    case "delete-error":
+      // Drizzle 오류의 쿼리·매개변수·cause를 로거에 전달하지 않는다.
+      logServerError("users/delete", new Error("회원 삭제 처리 실패"), { userId: parsed.data.userId });
+      return { success: false, message: "회원 삭제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요." };
+    case "result":
+      if (!outcome.result.success) return outcome.result;
+      break;
+    default: {
+      const unreachable: never = outcome;
+      return unreachable;
     }
-    // Drizzle 오류의 쿼리·매개변수·cause를 로거에 전달하지 않는다.
-    logServerError("users/delete", new Error("회원 삭제 처리 실패"), { userId: parsed.data.userId });
-    return { success: false, message: "회원 삭제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요." };
-  }
-
-  if (affected === 0) {
-    // 삭제 경합으로 행이 사라졌다면 마지막 관리자 오류를 표시하지 않습니다.
-    const [stillExists] = await db.select({ id: users.id })
-      .from(users)
-      .where(eq(users.id, parsed.data.userId))
-      .limit(1);
-    if (!stillExists) {
-      return { success: false, message: "해당 사용자를 찾을 수 없습니다." };
-    }
-    return {
-      success: false,
-      message: "마지막 관리자는 삭제할 수 없습니다. 다른 관리자를 먼저 지정하세요.",
-    };
   }
 
   revalidatePath("/admin/users");
 
   return { success: true, message: "회원이 삭제되었습니다." };
 }
-
