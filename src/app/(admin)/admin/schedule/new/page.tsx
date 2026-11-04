@@ -5,25 +5,19 @@
  * 사용 위치: /admin/schedule/new
  */
 
-import { asc } from "drizzle-orm";
 import { ScheduleForm } from "@/app/(admin)/admin/schedule/_components/schedule-form";
 import { createScheduleEvent } from "@/features/schedule/actions";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { cohorts, faculty } from "@/lib/db/schema";
+import { getAdminChoices } from "@/features/schedule/admin/service";
 
 export const metadata = { title: "일정 등록" };
 export const dynamic = "force-dynamic";
 
 export default async function NewSchedulePage() {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   // 세션 슬롯 선택에 필요한 식별자·이름·분류만 조회합니다.
-  const faculties = await db.select({ id: faculty.id, name: faculty.name, category: faculty.category })
-    .from(faculty).orderBy(asc(faculty.name));
-  // 관련 기수 선택 목록 (최신 기수 먼저)
-  const cohortsData = await db.select({ id: cohorts.id, name: cohorts.name })
-    .from(cohorts).orderBy(asc(cohorts.order));
+  const { faculties, cohorts: cohortsData } = await getAdminChoices({ userId: session.user.id, role: session.user.role });
 
   return (
     <ScheduleForm

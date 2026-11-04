@@ -6,13 +6,11 @@
  */
 
 import { notFound } from "next/navigation";
-import { asc } from "drizzle-orm";
 import { z } from "zod/v4";
 import { ScheduleForm } from "@/app/(admin)/admin/schedule/_components/schedule-form";
 import { getScheduleEvent, updateScheduleEvent } from "@/features/schedule/actions";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { cohorts, faculty } from "@/lib/db/schema";
+import { getAdminChoices } from "@/features/schedule/admin/service";
 
 export const metadata = { title: "일정 수정" };
 export const dynamic = "force-dynamic";
@@ -22,7 +20,7 @@ type Props = {
 };
 
 export default async function EditSchedulePage({ params }: Props) {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const { id } = await params;
 
@@ -39,10 +37,7 @@ export default async function EditSchedulePage({ params }: Props) {
   if (!event) notFound();
 
   // 선택 목록에는 교수·기수의 내부 메타 대신 화면에 필요한 필드만 전달합니다.
-  const faculties = await db.select({ id: faculty.id, name: faculty.name, category: faculty.category })
-    .from(faculty).orderBy(asc(faculty.name));
-  const cohortsData = await db.select({ id: cohorts.id, name: cohorts.name })
-    .from(cohorts).orderBy(asc(cohorts.order));
+  const { faculties, cohorts: cohortsData } = await getAdminChoices({ userId: session.user.id, role: session.user.role });
 
   // eventDate timestamp → 날짜("YYYY-MM-DD")와 시작 시간("HH:MM") 분리
   const isoStr = event.eventDate.toISOString();
