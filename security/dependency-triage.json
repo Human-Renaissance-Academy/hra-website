@@ -94,7 +94,7 @@
       "nodes": [
         {
           "path": "node_modules/@next/eslint-plugin-next",
-          "version": "16.4.2",
+          "version": "16.4.3",
           "development": true
         }
       ],
@@ -356,7 +356,7 @@
       "nodes": [
         {
           "path": "node_modules/eslint-config-next",
-          "version": "16.4.2",
+          "version": "16.4.3",
           "development": true
         }
       ],
@@ -738,7 +738,7 @@
       "owner": "repo-maintainers",
       "reviewedOn": "2026-11-03",
       "reviewBy": "2026-12-03",
-      "attackCondition": "@next/eslint-plugin-next 16.4.2이 @eslint-community/eslint-utils을 통해 minimatch(<11.0.1, GHSA-g3hv-75wg-m249)의 고정 저장소 린트 glob 매칭으로 이어지는 개발 도구 전이 경로다. 해당 패키지 항목의 공격 조건과 2026-12-03 기한을 함께 검토한다. 2026-11-04(KST) registry 재확인에서 경로와 무패치 상태가 그대로임을 확인했다."
+      "attackCondition": "@next/eslint-plugin-next 16.4.3이 @eslint-community/eslint-utils을 통해 minimatch(<11.0.1, GHSA-g3hv-75wg-m249)의 고정 저장소 린트 glob 매칭으로 이어지는 개발 도구 전이 경로다. 해당 패키지 항목의 공격 조건과 2026-12-03 기한을 함께 검토한다. 2026-11-04(KST) registry 재확인에서 경로와 무패치 상태가 그대로임을 확인했다."
     },
     {
       "key": "@ts-morph/common:minimatch",
@@ -909,7 +909,7 @@
       "owner": "repo-maintainers",
       "reviewedOn": "2026-11-03",
       "reviewBy": "2026-12-03",
-      "attackCondition": "eslint-config-next 16.4.2이 @next/eslint-plugin-next을 통해 minimatch(<11.0.1, GHSA-g3hv-75wg-m249)의 고정 저장소 린트 glob 매칭으로 이어지는 개발 도구 전이 경로다. 해당 패키지 항목의 공격 조건과 2026-12-03 기한을 함께 검토한다. 2026-11-04(KST) registry 재확인에서 경로와 무패치 상태가 그대로임을 확인했다."
+      "attackCondition": "eslint-config-next 16.4.3이 @next/eslint-plugin-next을 통해 minimatch(<11.0.1, GHSA-g3hv-75wg-m249)의 고정 저장소 린트 glob 매칭으로 이어지는 개발 도구 전이 경로다. 해당 패키지 항목의 공격 조건과 2026-12-03 기한을 함께 검토한다. 2026-11-04(KST) registry 재확인에서 경로와 무패치 상태가 그대로임을 확인했다."
     },
     {
       "key": "eslint-config-next:eslint-plugin-import",
@@ -918,7 +918,7 @@
       "owner": "repo-maintainers",
       "reviewedOn": "2026-11-03",
       "reviewBy": "2026-12-03",
-      "attackCondition": "eslint-config-next 16.4.2이 eslint-plugin-import을 통해 minimatch(<11.0.1, GHSA-g3hv-75wg-m249)의 고정 저장소 린트 glob 매칭으로 이어지는 개발 도구 전이 경로다. 해당 패키지 항목의 공격 조건과 2026-12-03 기한을 함께 검토한다. 2026-11-04(KST) registry 재확인에서 경로와 무패치 상태가 그대로임을 확인했다."
+      "attackCondition": "eslint-config-next 16.4.3이 eslint-plugin-import을 통해 minimatch(<11.0.1, GHSA-g3hv-75wg-m249)의 고정 저장소 린트 glob 매칭으로 이어지는 개발 도구 전이 경로다. 해당 패키지 항목의 공격 조건과 2026-12-03 기한을 함께 검토한다. 2026-11-04(KST) registry 재확인에서 경로와 무패치 상태가 그대로임을 확인했다."
     },
     {
       "key": "eslint-config-next:eslint-plugin-jsx-a11y",
@@ -927,7 +927,7 @@
       "owner": "repo-maintainers",
       "reviewedOn": "2026-11-03",
       "reviewBy": "2026-12-03",
-      "attackCondition": "eslint-config-next 16.4.2이 eslint-plugin-jsx-a11y을 통해 minimatch(<11.0.1, GHSA-g3hv-75wg-m249)의 고정 저장소 린트 glob 매칭으로 이어지는 개발 도구 전이 경로다. 해당 패키지 항목의 공격 조건과 2026-12-03 기한을 함께 검토한다. 2026-11-04(KST) registry 재확인에서 경로와 무패치 상태가 그대로임을 확인했다."
+      "attackCondition": "eslint-config-next 16.4.3이 eslint-plugin-jsx-a11y을 통해 minimatch(<11.0.1, GHSA-g3hv-75wg-m249)의 고정 저장소 린트 glob 매칭으로 이어지는 개발 도구 전이 경로다. 해당 패키지 항목의 공격 조건과 2026-12-03 기한을 함께 검토한다. 2026-11-04(KST) registry 재확인에서 경로와 무패치 상태가 그대로임을 확인했다."
     },
     {
       "key": "eslint-config-next:eslint-plugin-react",
@@ -936,7 +936,7 @@
       "owner": "repo-maintainers",
       "reviewedOn": "2026-11-03",
       "reviewBy": "2026-12-03",
-      "attackCondition": "eslint-config-next 16.4.2이 eslint-plugin-react을 통해 minimatch(<11.0.1, GHSA-g3hv-75wg-m249)의 고정 저장소 린트 glob 매칭으로 이어지는 개발 도구 전이 경로다. 해당 패키지 항목의 공격 조건과 2026-12-03 기한을 함께 검토한다. 2026-11-04(KST) registry 재확인에서 경로와 무패치 상태가 그대로임을 확인했다."
+      "attackCondition": "eslint-config-next 16.4.3이 eslint-plugin-react을 통해 minimatch(<11.0.1, GHSA-g3hv-75wg-m249)의 고정 저장소 린트 glob 매칭으로 이어지는 개발 도구 전이 경로다. 해당 패키지 항목의 공격 조건과 2026-12-03 기한을 함께 검토한다. 2026-11-04(KST) registry 재확인에서 경로와 무패치 상태가 그대로임을 확인했다."
     },
     {
       "key": "eslint-config-next:eslint",
@@ -945,7 +945,7 @@
       "owner": "repo-maintainers",
       "reviewedOn": "2026-11-03",
       "reviewBy": "2026-12-03",
-      "attackCondition": "eslint-config-next 16.4.2이 eslint을 통해 minimatch(<11.0.1, GHSA-g3hv-75wg-m249)의 고정 저장소 린트 glob 매칭으로 이어지는 개발 도구 전이 경로다. 해당 패키지 항목의 공격 조건과 2026-12-03 기한을 함께 검토한다. 2026-11-04(KST) registry 재확인에서 경로와 무패치 상태가 그대로임을 확인했다."
+      "attackCondition": "eslint-config-next 16.4.3이 eslint을 통해 minimatch(<11.0.1, GHSA-g3hv-75wg-m249)의 고정 저장소 린트 glob 매칭으로 이어지는 개발 도구 전이 경로다. 해당 패키지 항목의 공격 조건과 2026-12-03 기한을 함께 검토한다. 2026-11-04(KST) registry 재확인에서 경로와 무패치 상태가 그대로임을 확인했다."
     },
     {
       "key": "eslint-config-next:typescript-eslint",
@@ -954,7 +954,7 @@
       "owner": "repo-maintainers",
       "reviewedOn": "2026-11-03",
       "reviewBy": "2026-12-03",
-      "attackCondition": "eslint-config-next 16.4.2이 typescript-eslint을 통해 minimatch(<11.0.1, GHSA-g3hv-75wg-m249)의 고정 저장소 린트 glob 매칭으로 이어지는 개발 도구 전이 경로다. 해당 패키지 항목의 공격 조건과 2026-12-03 기한을 함께 검토한다. 2026-11-04(KST) registry 재확인에서 경로와 무패치 상태가 그대로임을 확인했다."
+      "attackCondition": "eslint-config-next 16.4.3이 typescript-eslint을 통해 minimatch(<11.0.1, GHSA-g3hv-75wg-m249)의 고정 저장소 린트 glob 매칭으로 이어지는 개발 도구 전이 경로다. 해당 패키지 항목의 공격 조건과 2026-12-03 기한을 함께 검토한다. 2026-11-04(KST) registry 재확인에서 경로와 무패치 상태가 그대로임을 확인했다."
     },
     {
       "key": "eslint-plugin-import:minimatch",
