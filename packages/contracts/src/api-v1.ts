@@ -668,3 +668,164 @@ export const apiV1MobileRateLimitedErrorSchema = z.object({
   }).strict(),
 }).strict();
 export type ApiV1MobileRateLimitedError = z.infer<typeof apiV1MobileRateLimitedErrorSchema>;
+
+/**
+ * 승인 회원 자료 목록(강의자료·주차별 텍스트)은 page와 pageSize만 허용합니다.
+ * 가이드북 목록과 같은 기본값·상한이며 안전한 OFFSET 범위는 Route와 서비스에서 추가 검증합니다.
+ */
+export const apiV1ResourceListQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(API_V1_MAX_PAGE_SIZE).default(API_V1_DEFAULT_PAGE_SIZE),
+  })
+  .strict();
+export type ApiV1ResourceListQuery = z.infer<typeof apiV1ResourceListQuerySchema>;
+
+/** 강의자료 대상은 학생용·교수용 두 값뿐이며 MEMBER에게는 학생용만 조회됩니다. */
+export const API_V1_CLASS_MATERIAL_AUDIENCES = ["STUDENT", "FACULTY"] as const;
+
+/**
+ * 강의자료 목록 항목입니다. 수업일은 한국 달력 날짜이며 시간대 없는 작성 시각은 보내지 않습니다.
+ * 원본 파일 URL·파일명·업로더 계정과 이름·Blob 토큰은 포함하지 않습니다.
+ */
+export const apiV1ClassMaterialSummarySchema = z
+  .object({
+    id: apiV1UuidSchema,
+    title: z.string().min(1),
+    audience: z.enum(API_V1_CLASS_MATERIAL_AUDIENCES),
+    weekNumber: z.number().int().nullable(),
+    lectureTitle: z.string().nullable(),
+    classDate: apiV1CalendarDateSchema.nullable(),
+  })
+  .strict();
+export type ApiV1ClassMaterialSummary = z.infer<typeof apiV1ClassMaterialSummarySchema>;
+
+/** 강의자료 상세는 목록 필드에 다운로드 표시용 원본 파일명만 추가합니다. */
+export const apiV1ClassMaterialDetailSchema = apiV1ClassMaterialSummarySchema
+  .extend({ fileName: z.string().min(1) })
+  .strict();
+export type ApiV1ClassMaterialDetail = z.infer<typeof apiV1ClassMaterialDetailSchema>;
+
+type ClassMaterialSummaryInput = {
+  id: string;
+  title: string;
+  audience: string;
+  weekNumber: number | null;
+  lectureTitle: string | null;
+  classDate: string | null;
+};
+
+/** 저장소 결과에서 강의자료 목록 DTO의 허용 필드만 선택합니다. */
+export function toApiV1ClassMaterialSummary(input: ClassMaterialSummaryInput): ApiV1ClassMaterialSummary {
+  return apiV1ClassMaterialSummarySchema.parse({
+    id: input.id,
+    title: input.title,
+    audience: input.audience,
+    weekNumber: input.weekNumber,
+    lectureTitle: input.lectureTitle,
+    classDate: input.classDate,
+  });
+}
+
+/** 강의자료 목록 GET 응답은 최대 50건과 공통 페이지 정보만 포함합니다. */
+export const apiV1ClassMaterialListResponseSchema = z
+  .object({
+    classMaterials: z.array(apiV1ClassMaterialSummarySchema).max(API_V1_MAX_PAGE_SIZE),
+    page: apiV1PageMetaSchema,
+  })
+  .strict();
+export type ApiV1ClassMaterialListResponse = z.infer<typeof apiV1ClassMaterialListResponseSchema>;
+
+/** 강의자료 상세 GET 응답은 허용된 DTO 하나로 고정합니다. */
+export const apiV1ClassMaterialDetailResponseSchema = z
+  .object({ classMaterial: apiV1ClassMaterialDetailSchema })
+  .strict();
+export type ApiV1ClassMaterialDetailResponse = z.infer<typeof apiV1ClassMaterialDetailResponseSchema>;
+
+/** 저장소 결과에서 강의자료 상세 DTO의 허용 필드만 선택합니다. */
+export function toApiV1ClassMaterialDetailResponse(
+  input: ClassMaterialSummaryInput & { fileName: string },
+): ApiV1ClassMaterialDetailResponse {
+  return apiV1ClassMaterialDetailResponseSchema.parse({
+    classMaterial: { ...toApiV1ClassMaterialSummary(input), fileName: input.fileName },
+  });
+}
+
+/** 주차별 텍스트의 기수는 표시용 ID·이름만 전달합니다. */
+const apiV1WeeklyTextCohortSchema = z
+  .object({ id: apiV1UuidSchema, name: z.string().min(1) })
+  .strict();
+
+/**
+ * 주차별 텍스트 목록 항목입니다. 본문·첨부 존재 여부만 알리고 본문·원본 파일 URL·파일명은 제외합니다.
+ * 수업일은 한국 달력 날짜이며 시간대 없는 작성 시각은 보내지 않습니다.
+ */
+export const apiV1WeeklyTextSummarySchema = z
+  .object({
+    id: apiV1UuidSchema,
+    title: z.string().min(1),
+    textType: z.string().min(1).nullable(),
+    cohort: apiV1WeeklyTextCohortSchema.nullable(),
+    classDate: apiV1CalendarDateSchema.nullable(),
+    hasBody: z.boolean(),
+    hasFile: z.boolean(),
+  })
+  .strict();
+export type ApiV1WeeklyTextSummary = z.infer<typeof apiV1WeeklyTextSummarySchema>;
+
+/** 주차별 텍스트 상세는 Markdown 본문과 첨부 표시용 파일명만 추가합니다. 첨부 사진은 제공하지 않습니다. */
+export const apiV1WeeklyTextDetailSchema = apiV1WeeklyTextSummarySchema
+  .extend({ body: z.string().min(1).nullable(), fileName: z.string().min(1).nullable() })
+  .strict();
+export type ApiV1WeeklyTextDetail = z.infer<typeof apiV1WeeklyTextDetailSchema>;
+
+type WeeklyTextSummaryInput = {
+  id: string;
+  title: string;
+  textType: string | null;
+  cohort: { id: string; name: string } | null;
+  classDate: string | null;
+  hasBody: boolean;
+  hasFile: boolean;
+};
+
+/** 저장소 결과에서 주차별 텍스트 목록 DTO의 허용 필드만 선택합니다. 빈 분류는 null로 정규화합니다. */
+export function toApiV1WeeklyTextSummary(input: WeeklyTextSummaryInput): ApiV1WeeklyTextSummary {
+  return apiV1WeeklyTextSummarySchema.parse({
+    id: input.id,
+    title: input.title,
+    textType: typeof input.textType === "string" && input.textType.trim().length > 0 ? input.textType : null,
+    cohort: input.cohort ? { id: input.cohort.id, name: input.cohort.name } : null,
+    classDate: input.classDate,
+    hasBody: input.hasBody,
+    hasFile: input.hasFile,
+  });
+}
+
+/** 주차별 텍스트 목록 GET 응답은 최대 50건과 공통 페이지 정보만 포함합니다. */
+export const apiV1WeeklyTextListResponseSchema = z
+  .object({
+    weeklyTexts: z.array(apiV1WeeklyTextSummarySchema).max(API_V1_MAX_PAGE_SIZE),
+    page: apiV1PageMetaSchema,
+  })
+  .strict();
+export type ApiV1WeeklyTextListResponse = z.infer<typeof apiV1WeeklyTextListResponseSchema>;
+
+/** 주차별 텍스트 상세 GET 응답은 허용된 DTO 하나로 고정합니다. */
+export const apiV1WeeklyTextDetailResponseSchema = z
+  .object({ weeklyText: apiV1WeeklyTextDetailSchema })
+  .strict();
+export type ApiV1WeeklyTextDetailResponse = z.infer<typeof apiV1WeeklyTextDetailResponseSchema>;
+
+/** 저장소 결과에서 주차별 텍스트 상세 DTO의 허용 필드만 선택합니다. 빈 본문·파일명은 null로 정규화합니다. */
+export function toApiV1WeeklyTextDetailResponse(
+  input: WeeklyTextSummaryInput & { body: string | null; fileName: string | null },
+): ApiV1WeeklyTextDetailResponse {
+  return apiV1WeeklyTextDetailResponseSchema.parse({
+    weeklyText: {
+      ...toApiV1WeeklyTextSummary(input),
+      body: typeof input.body === "string" && input.body.length > 0 ? input.body : null,
+      fileName: typeof input.fileName === "string" && input.fileName.length > 0 ? input.fileName : null,
+    },
+  });
+}
