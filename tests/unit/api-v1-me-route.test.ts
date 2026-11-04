@@ -30,7 +30,7 @@ it("PENDING의 본인 프로필만 허용하고 내부 필드·placeholder 이�
   const response = await GET(request());
   expect(response.status).toBe(200);
   expect(response.headers.get("cache-control")).toBe("private, no-store");
-  expect(response.headers.get("vary")).toBe("Cookie");
+  expect(response.headers.get("vary")?.split(",").map((token) => token.trim().toLowerCase())).toEqual(expect.arrayContaining(["cookie", "authorization"]));
   expect(mocks.auth).toHaveBeenCalledOnce();
   expect(mocks.profile).toHaveBeenCalledWith({ userId: id, role: "PENDING" });
 

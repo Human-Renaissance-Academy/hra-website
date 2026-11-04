@@ -58,7 +58,7 @@ async function seedAdmin() {
   if (existing.length > 0) {
     if (existing[0].role === "ADMIN") {
       console.log(`\n⚠️  이미 관리자 계정이 존재합니다 (${ADMIN_EMAIL}).`);
-      console.log("   비밀번호를 변경하려면 DB에서 직접 수정하세요.");
+      console.log("   비밀번호 변경 시 DB의 같은 UPDATE 문장에서 password_hash 수정과 session_version = session_version + 1을 함께 적용하세요.");
       process.exit(0);
     }
 

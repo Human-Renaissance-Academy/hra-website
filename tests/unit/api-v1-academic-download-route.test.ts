@@ -59,7 +59,7 @@ describe("v1 개인 제출 파일 다운로드", () => {
     expect(body.error.requestId).toMatch(/^[0-9a-f-]{36}$/);
     expect(response.headers.get("content-type")).toContain("application/json");
     expect(response.headers.get("cache-control")).toBe("private, no-store");
-    expect(response.headers.get("vary")).toBe("Cookie");
+    expect(response.headers.get("vary")?.split(",").map((token) => token.trim().toLowerCase())).toEqual(expect.arrayContaining(["cookie", "authorization"]));
     expect(mocks.execute).not.toHaveBeenCalled();
     expect(mocks.get).not.toHaveBeenCalled();
   });
@@ -118,7 +118,7 @@ describe("v1 개인 제출 파일 다운로드", () => {
     expect(response.headers.get("x-content-type-options")).toBe("nosniff");
     expect(response.headers.get("content-security-policy")).toBe("sandbox; default-src 'none'");
     expect(response.headers.get("cache-control")).toBe("private, no-store");
-    expect(response.headers.get("vary")).toBe("Cookie");
+    expect(response.headers.get("vary")?.split(",").map((token) => token.trim().toLowerCase())).toEqual(expect.arrayContaining(["cookie", "authorization"]));
     expect(JSON.stringify([...response.headers])).not.toContain(key);
     expect(JSON.stringify([...response.headers])).not.toContain("qa-only-sensitive-token");
     expect(console.info).toHaveBeenLastCalledWith("[academic/events]", expect.objectContaining({

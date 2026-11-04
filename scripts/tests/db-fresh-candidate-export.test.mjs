@@ -12,12 +12,12 @@ import { exportQaSchemaSql } from "../../tests/support/qa-schema-export.mjs";
 
 const root = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const candidatePath = join(root, "scripts/db/candidates/db-fresh/schema-export.sql");
-const rawDigest = "24688481f7454df960537b5aebfd65d3818449c2839f4a1dcea8863e30a6d1f3";
-const candidateDigest = "0ed45733612ec170785c51975ecb3c9ed5c790e6d54027684fe7df1d90d3a107";
-const schemaDigest = "6873861242b429974f917f6a60d51f6b585daa357a1d63dd7e5448c464d51e77";
+const rawDigest = "e6da7f90332505af92a6656ea624c0ad14f6695d0b8ec190e0f784b364d04b84";
+const candidateDigest = "1852207b0ca8cbf9d984724d91a7fae5a0fe264f2322b9069da35844e8231a8c";
+const schemaDigest = "db0cf6ce1111455a2726b25aa23b1f349d271e665b9be6d68f84ded0beb65eb5";
 const sha256 = value => createHash("sha256").update(value).digest("hex");
 
-test("생성 export 후보는 검토한 CREATE TABLE 대상 45개만 public으로 한정한다", () => {
+test("생성 export 후보는 검토한 CREATE TABLE 대상 47개만 public으로 한정한다", () => {
   // 설치된 Drizzle 도구의 현재 export를 다시 얻어 schema/tool 변경을 먼저 감지합니다.
   const raw = exportQaSchemaSql(root);
   assert.equal(sha256(raw), rawDigest);
@@ -42,8 +42,10 @@ test("생성 export 후보는 검토한 CREATE TABLE 대상 45개만 public으�
     assert.ok(!qualified.has(match[1]));
     qualified.add(match[1]);
   }
-  assert.equal(qualified.size, 45);
+  assert.equal(qualified.size, 47);
   assert.ok(qualified.has("users"));
   assert.ok(qualified.has("academic_students"));
   assert.ok(qualified.has("recruitment_settings"));
+  assert.ok(qualified.has("mobile_sessions"));
+  assert.ok(qualified.has("mobile_session_refresh_history"));
 });

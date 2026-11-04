@@ -4,7 +4,7 @@
 
 버전 SQL 등록 디렉터리(`scripts/db/versioned/`)는 있으나 실제 SQL은 없고 manifest도 미설정입니다. 공통 DB 적용 이력은 아직 없으며 범위별 legacy SQL·스크립트는 `scripts/migrate-*`에 있습니다. 자동 적용 이력과 Production migration gate는 [#280](https://github.com/yeongseon/hra-website/issues/280)의 후속 작업입니다. 아래 수동 절차가 이미 Production 배포 차단 장치로 구현됐다는 뜻은 아닙니다.
 
-`scripts/db/source-inventory.json`은 **현재 소스 스냅샷**입니다. 기존 SQL 17개(읽기 전용 학사 preflight 포함), 신규 설치 검증 전용 후보 SQL 18개, 이름 패턴으로 관리하는 MJS 18개의 역할·원본 바이트 해시·기본 동작을 기록합니다. 후보는 `fresh_candidate` 역할과 전용 경로·ID·후보끼리의 선행 관계로 구분하며, 기존 SQL의 적용 이력으로 등록하지 않습니다. `node scripts/check-db-source-inventory.mjs`는 Git 추적 파일과 로컬의 미추적·비무시 SQL/MJS를 대조합니다. CI에서는 PR에 포함된 새 SQL이 Git 추적 파일이므로 목록 밖이면 실패합니다. 로컬의 무시된 미추적 파일은 검사하지 않으며, 임의 이름의 JS·앱 내 SQL·직접 `psql` 명령을 전수 탐지하는 장치는 아닙니다.
+`scripts/db/source-inventory.json`은 **현재 소스 스냅샷**입니다. 기존 SQL 18개(읽기 전용 학사 preflight 포함), 신규 설치 검증 전용 후보 SQL 19개, 이름 패턴으로 관리하는 MJS 18개의 역할·원본 바이트 해시·기본 동작을 기록합니다. 후보는 `fresh_candidate` 역할과 전용 경로·ID·후보끼리의 선행 관계로 구분하며, 기존 SQL의 적용 이력으로 등록하지 않습니다. `node scripts/check-db-source-inventory.mjs`는 Git 추적 파일과 로컬의 미추적·비무시 SQL/MJS를 대조합니다. CI에서는 PR에 포함된 새 SQL이 Git 추적 파일이므로 목록 밖이면 실패합니다. 로컬의 무시된 미추적 파일은 검사하지 않으며, 임의 이름의 JS·앱 내 SQL·직접 `psql` 명령을 전수 탐지하는 장치는 아닙니다.
 
 이 목록은 **DB에 적용됐다는 ledger나 전체 설치 순서가 아닙니다.** 뷰의 현행 정의처럼 정상적으로 갱신하는 파일도 새 바이트와 목록 해시를 함께 검토합니다. 같은 PR에서 SQL과 해시를 둘 다 수정하면 검사가 통과할 수 있으므로 변경 의미는 리뷰어가 확인합니다. G1의 9개 순서는 기존 테스트 배열과 정확히 대조하며 적용기는 대체하지 않습니다. #287 인덱스 SQL은 `public.rate_limit_events`와 UUID `reservation_id`가 필요하지만, 그 준비가 특정 SQL 파일의 운영 적용을 증명하지는 않습니다. 잠금 방식·대상·백업을 검토하기 전에는 운영 자동 적용 대상이 아닙니다. 새 DB 적용·재실행·catalog 확인, 운영 백업·승격 차단은 여전히 #280 후속 단계입니다.
 
@@ -18,7 +18,7 @@
 
 대응표의 `coverageComplete`는 확인된 소스를 빠짐없이 분류했는지, `freshReady`는 신규 설치에 필요한 정의·중복 관계·선행 조건이 모두 해결됐는지를 구분합니다. 분석만으로 확정할 수 없는 동적 SQL이나 schema export와 legacy SQL의 중복은 `unresolved`로 남깁니다. 필요한 객체의 정의 소스가 제외됐거나 미해결 조건이 남아 있으면 신규 설치 bundle의 승격을 차단합니다. 이 표의 성공도 실제 DB 적용·운영 baseline을 증명하지 않습니다.
 
-`scripts/db/candidates/db-fresh/`의 18개 SQL은 **소유 로컬 PostgreSQL에서만 비교하는 고정 후보**입니다. 현재 Drizzle export 후보는 원본 생성 SQL의 `CREATE TABLE` 대상 45곳만 `public`으로 한정합니다. G1·추가 정의 후보는 파일별로 검토한 최외곽 transaction과 일부 timeout 행만 제외하고, 함수 본문·권한·제약은 원본과 바이트 단위로 대조합니다. 특히 enrollment-links 원문의 잠금 한도 10초는 후보에서 제외되어 적용기의 5초 한도가 적용되므로 시간 정책은 동등하지 않습니다. 독립 원문 reference의 19개 catalog 단계와 후보 적용기의 결과·재개·실패 롤백은 `HRA_TEST_PG_BIN=/usr/lib/postgresql/14/bin node --test tests/integration/db-fresh-reference.test.mjs tests/integration/db-fresh-bundle.test.mjs`로 검사합니다. 경로는 해당 환경의 PostgreSQL 실행 파일 디렉터리로 바꿉니다. 이 시험은 합성 DB만 만들며 운영 대상·기존 DB upgrade/restore·백업·승격 승인을 확인하지 않습니다. 대응표의 미해결 항목과 `freshReady:false`, 실제 manifest의 `unset`·0개 상태를 유지합니다.
+`scripts/db/candidates/db-fresh/`의 19개 SQL은 **소유 로컬 PostgreSQL에서만 비교하는 고정 후보**입니다. 현재 Drizzle export 후보는 원본 생성 SQL의 `CREATE TABLE` 대상 47곳만 `public`으로 한정합니다. G1·추가 정의 후보는 파일별로 검토한 최외곽 transaction과 일부 timeout 행만 제외하고, 함수 본문·권한·제약은 원본과 바이트 단위로 대조합니다. 특히 enrollment-links 원문의 잠금 한도 10초는 후보에서 제외되어 적용기의 5초 한도가 적용되므로 시간 정책은 동등하지 않습니다. 독립 원문 reference의 20개 catalog 단계와 후보 적용기의 결과·재개·실패 롤백은 `HRA_TEST_PG_BIN=/usr/lib/postgresql/14/bin node --test tests/integration/db-fresh-reference.test.mjs tests/integration/db-fresh-bundle.test.mjs`로 검사합니다. 경로는 해당 환경의 PostgreSQL 실행 파일 디렉터리로 바꿉니다. 이 시험은 합성 DB만 만들며 운영 대상·기존 DB upgrade/restore·백업·승격 승인을 확인하지 않습니다. 대응표의 미해결 항목과 `freshReady:false`, 실제 manifest의 `unset`·0개 상태를 유지합니다.
 
 G1 학생·기수 등록 테이블은 [학생 명부 스키마 적용](academic-students-migration.md)의 범위 SQL과 읽기 전용 preflight를 사용합니다.
 예약 ID 정리 인덱스는 [#287 변경 절차](rate-limit-reservation-index.md)의 범위 SQL·카탈로그 검증을 따릅니다. **이 SQL과 인덱스가 운영 DB에 적용됐다는 뜻은 아닙니다.** 운영 대상·백업·허용 잠금 시간·적용 승인은 별도로 확인합니다.
@@ -27,7 +27,7 @@ G1 학생·기수 등록 테이블은 [학생 명부 스키마 적용](academic-
 
 `node scripts/check-db-migration-manifest.mjs`는 `scripts/db/migration-manifest.json`과 `scripts/db/versioned/`의 소스 계약을 확인합니다. 원본 SQL bytes의 SHA256·순서·ID·경로를 검증하고, Git 추적 파일 누락과 해당 디렉터리의 미등록 SQL을 거부합니다. 이 범위에서는 ignore된 미추적 SQL도 검사합니다. SQL을 실행하거나 DB에 접속하지 않습니다.
 
-현재 manifest는 **`unset`·0개**입니다. 이 검사의 성공은 초기 설치·baseline·migration 적용 성공을 뜻하지 않습니다. 기존 SQL17개를 새 migration이나 이미 적용된 이력으로 자동 변환하지 않습니다. 향후 versioned SQL을 추가할 때는 저장소 전체 SQL을 확인하는 기존 source inventory와 새 manifest의 등록 책임을 함께 검토합니다.
+현재 manifest는 **`unset`·0개**입니다. 이 검사의 성공은 초기 설치·baseline·migration 적용 성공을 뜻하지 않습니다. 기존 SQL18개를 새 migration이나 이미 적용된 이력으로 자동 변환하지 않습니다. 향후 versioned SQL을 추가할 때는 저장소 전체 SQL을 확인하는 기존 source inventory와 새 manifest의 등록 책임을 함께 검토합니다.
 
 선택 인자 `--prior-manifest <상대경로.json>`과 `--ledger-snapshot <상대경로.json>`은 전달된 입력 사이의 일관성만 비교합니다. 이전 manifest의 prefix 변경, 알 수 없는 이력·순서·checksum과 native ledger 테이블 존재를 거부하지만, JSON이 실제 DB 관측이나 승인 근거임을 증명하지는 않습니다. 출력의 `observedDatabase`와 `readyToApply`는 항상 `false`입니다. 입력 schema·크기·경로 제한은 `scripts/db/versioned/README.md`에 있습니다.
 

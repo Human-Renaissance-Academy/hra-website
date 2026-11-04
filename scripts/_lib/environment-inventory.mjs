@@ -38,7 +38,7 @@ export const environmentInventory = {
     variable("RESOURCE_PRIVATE_READ_WRITE_TOKEN", "application", "보호 자료 전용 서버 token", true, "보호 자료 private 업로드·읽기·정리", "private token 누락 시 해당 작업을 거부", active()),
     variable("RESOURCE_PRIVATE_BLOB_ENABLED", "application", "새 보호 자료의 private 쓰기 전환", false, "저장소 준비와 기존 파일 이전 검토 후 true", "정확한 true가 아니면 기존 public 쓰기 저장소 선택; 기존 공개 파일 보호 완료를 뜻하지 않음", active("false")),
     variable("HEALTH_CHECK_SECRET", "application", "health 상세 응답 인증", true, "허용한 운영자가 상세 상태를 조회할 때만", "없으면 상세 정보 숨김; 기본 DB 점검과 HTTP 200/503은 수행", active()),
-    variable("CRON_SECRET", "application", "cleanup API Bearer 인증", true, "승인된 환경의 예약/수동 cleanup 호출", "두 cleanup API에서 누락 503, 인증 실패 401; 학사 cleanup 일정은 미등록", active()),
+    variable("CRON_SECRET", "application", "cleanup API Bearer 인증", true, "승인된 환경의 예약/수동 cleanup 호출", "세 cleanup API(요청 제한·학사 제출 파일·모바일 세션)에서 누락 503, 인증 실패 401; 학사·모바일 세션 cleanup 일정은 미등록", active()),
     variable("ACADEMIC_ENABLED", "application", "학사 사용자 기능 공개", false, "학사 정책·테이블·함수 준비 후 true", "정확한 true가 아니면 사용자 학사 기능 차단/준비 안내; cleanup은 독립", active("false")),
     variable("ACADEMIC_SUBMISSION_BLOB_HOST", "application", "학사 제출 전용 Private Blob 호스트", false, "학사 파일 업로드·다운로드·cleanup", "누락·잘못된 private 호스트면 UNAVAILABLE; public 대체 없음", active()),
     variable("ACADEMIC_SUBMISSION_READ_WRITE_TOKEN", "application", "학사 제출 전용 서버 token", true, "학사 파일 업로드·다운로드·cleanup", "미설정이면 저장소 작업 불가; 공개/보호 자료 token 재사용 금지", active()),

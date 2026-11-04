@@ -2,9 +2,23 @@
   "version": 1,
   "sql": [
     {
+      "path": "scripts/migrate-mobile-sessions.sql",
+      "role": "versioned_candidate",
+      "sha256": "aa64427df8d95e538eccc7ff4b382801e7ad51b3ba18df7cfcbfd0cfa35e9a23",
+      "id": "mobile-sessions",
+      "predecessors": []
+    },
+    {
+      "path": "scripts/db/candidates/db-fresh/mobile-sessions.sql",
+      "role": "fresh_candidate",
+      "sha256": "90525323572ebb2157c47a438e7e465cc93de9e683f800d84896c91ed8cfdd76",
+      "id": "fresh-mobile-sessions",
+      "predecessors": ["fresh-custom-rate-limit-reservation-index"]
+    },
+    {
       "path": "scripts/db/candidates/db-fresh/schema-export.sql",
       "role": "fresh_candidate",
-      "sha256": "0ed45733612ec170785c51975ecb3c9ed5c790e6d54027684fe7df1d90d3a107",
+      "sha256": "1852207b0ca8cbf9d984724d91a7fae5a0fe264f2322b9069da35844e8231a8c",
       "id": "fresh-schema-export",
       "predecessors": []
     },
@@ -62,7 +76,7 @@
       "role": "fresh_candidate",
       "sha256": "21b59093b44d923033564bb2462c2b642381e8cc85868c99126e2b97e45a9ac8",
       "id": "fresh-custom-recruitment-default",
-      "predecessors": ["fresh-custom-rate-limit-reservation-index"]
+      "predecessors": ["fresh-mobile-sessions"]
     },
     {
       "path": "scripts/db/candidates/db-fresh/g1-assignment-actions.sql",
@@ -400,7 +414,7 @@
     },
     {
       "path": "scripts/seed-admin.mjs",
-      "sha256": "5ec08f2f9f3e624fccfccf4be547be2a3ebf412541cf8df480736c1fabd2e729",
+      "sha256": "d5ea3e78c94a9af5fa41230abcb0a6e5f740e477142bc4cc4958602077f9028c",
       "effect": "seed_db",
       "defaultBehavior": "rejects",
       "writeOptions": [

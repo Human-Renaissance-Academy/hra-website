@@ -6,6 +6,7 @@
 import "server-only";
 import { z } from "zod/v4";
 import { auth } from "@/lib/auth";
+import { freshMobilePrincipalIdentity } from "@/lib/api-v1-principal";
 import { db } from "@/lib/db";
 import { isValidUuid, UUID_PATTERN } from "@/lib/auth-session";
 import { buildAssignmentTargetLookup } from "@/features/academics/student-assignments/data";
@@ -37,13 +38,16 @@ const targetSelector = z.union([z.object({ assignmentId: uuid }).strict(), z.obj
 
 // 호출마다 auth가 반환한 세션을 확인한다. 클라이언트의 사용자·역할 인수를 받지 않는다.
 export async function requireAcademicStudent(): Promise<{ userId: string }> {
-  let session;
-  try { session = await auth(); } catch { throw new AcademicAccessError("UNAVAILABLE"); }
-  if (!session?.user || !isValidUuid(session.user.id)) throw new AcademicAccessError("UNAUTHENTICATED");
-  if (session.user.role !== "MEMBER") throw new AcademicAccessError("FORBIDDEN");
+  let user;
+  try {
+    const mobile = await freshMobilePrincipalIdentity();
+    user = mobile === undefined ? (await auth())?.user : mobile;
+  } catch { throw new AcademicAccessError("UNAVAILABLE"); }
+  if (!user || !isValidUuid(user.id)) throw new AcademicAccessError("UNAUTHENTICATED");
+  if (user.role !== "MEMBER") throw new AcademicAccessError("FORBIDDEN");
   // 인증을 먼저 마친다. 비활성 환경에서는 신규 학사 테이블에 접속하지 않는다.
   if (process.env.ACADEMIC_ENABLED !== "true") throw new AcademicAccessError("DISABLED");
-  return { userId: session.user.id };
+  return { userId: user.id };
 }
 
 // DB 장애를 한국어 고정 오류로 변환한다. DB 원문이나 개인 식별자를 응답·로그에 복사하지 않는다.

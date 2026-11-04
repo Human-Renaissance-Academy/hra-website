@@ -29,6 +29,7 @@ const customSources = [
   "scripts/migrate-atomic-application-questions.sql", "scripts/migrate-assert-application-question-revision.sql",
   "scripts/sql/rate-limit-reservations.sql", "scripts/sql/markdown-image-references.sql",
   "scripts/migrate-287-rate-limit-reservation-index.sql",
+  "scripts/migrate-mobile-sessions.sql",
 ];
 // 원본 REVOKE를 실제로 검토한 함수만 검사한다. 모든 함수가 PUBLIC revoke라고 가정하지 않는다.
 const revokedFunctions = [

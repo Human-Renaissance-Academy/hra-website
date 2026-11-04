@@ -588,3 +588,83 @@ export type ApiV1UploadVerifiedResponse = z.infer<typeof apiV1UploadVerifiedResp
 /** 취소는 원장 종료를 나타내며 실제 객체의 즉시 삭제를 의미하지 않습니다. */
 export const apiV1UploadCancelledResponseSchema = z.object({ state: z.literal("CANCELLED") }).strict();
 export type ApiV1UploadCancelledResponse = z.infer<typeof apiV1UploadCancelledResponseSchema>;
+
+/**
+ * 모바일 로그인 시 선택적으로 보내는 기기 표시 정보입니다.
+ * Android·iOS 공용 클라이언트가 사용하며 플랫폼만 필수이고 버전·기기명은 빈 값과 추가 키를 거부합니다.
+ */
+export const apiV1MobileDeviceSchema = z.object({
+  platform: z.enum(["ANDROID", "IOS"]),
+  appVersion: z.string().min(1).max(32).optional(),
+  deviceName: z.string().min(1).max(64).optional(),
+}).strict();
+export type ApiV1MobileDevice = z.infer<typeof apiV1MobileDeviceSchema>;
+
+/**
+ * 이메일·비밀번호 모바일 로그인 요청의 유일한 입력 경계입니다.
+ * 이메일은 앞뒤 공백 제거 후 3~320자 이메일 형식, 비밀번호는 변형 없이 1~256자이며 계정·역할 주입을 거부합니다.
+ */
+export const apiV1MobileLoginInputSchema = z.object({
+  email: z.string().trim().min(3).max(320).email(),
+  password: z.string().min(1).max(256),
+  device: apiV1MobileDeviceSchema.optional(),
+}).strict();
+export type ApiV1MobileLoginInput = z.infer<typeof apiV1MobileLoginInputSchema>;
+
+/**
+ * 모바일 세션 갱신 요청은 비어 있지 않은 불투명 refresh token 하나만 받습니다.
+ * 클라이언트는 토큰 내부 구조를 해석하지 않으며 HTTP 계층의 본문 크기 제한은 별도로 적용합니다.
+ */
+export const apiV1MobileRefreshInputSchema = z.object({ refreshToken: z.string().min(1) }).strict();
+export type ApiV1MobileRefreshInput = z.infer<typeof apiV1MobileRefreshInputSchema>;
+
+/**
+ * 모바일 단일 세션 로그아웃은 갱신과 동일한 토큰 입력 제약을 사용합니다.
+ * 서버는 알 수 없거나 이미 폐기된 토큰도 204로 처리하며 사용자 ID 등 추가 키는 허용하지 않습니다.
+ */
+export const apiV1MobileLogoutInputSchema = apiV1MobileRefreshInputSchema.clone();
+export type ApiV1MobileLogoutInput = z.infer<typeof apiV1MobileLogoutInputSchema>;
+
+/**
+ * 로그인·갱신 성공 시 모바일 클라이언트가 교체 저장하는 엄격한 세션 DTO입니다.
+ * 두 토큰은 불투명한 비어 있지 않은 문자열이고 만료 시각은 기존 UTC 밀리초 계약을 재사용합니다.
+ */
+export const apiV1MobileSessionSchema = z.object({
+  tokenType: z.literal("Bearer"),
+  accessToken: z.string().min(1),
+  accessTokenExpiresAt: apiV1TimestampSchema,
+  refreshToken: z.string().min(1),
+  refreshTokenExpiresAt: apiV1TimestampSchema,
+}).strict();
+export type ApiV1MobileSession = z.infer<typeof apiV1MobileSessionSchema>;
+
+/**
+ * 모바일 로그인 성공 응답은 세션과 기존 본인 프로필의 공개 사용자 DTO만 제공합니다.
+ * PENDING도 표현하지만 비밀번호 해시·세션 버전 등 내부 인증 필드는 기존 사용자 스키마로 차단합니다.
+ */
+export const apiV1MobileLoginResponseSchema = z.object({
+  session: apiV1MobileSessionSchema,
+  user: apiV1MeResponseSchema.shape.user,
+}).strict();
+export type ApiV1MobileLoginResponse = z.infer<typeof apiV1MobileLoginResponseSchema>;
+
+/**
+ * 모바일 갱신 성공 응답은 회전된 세션만 반환합니다.
+ * 프로필이나 이전 토큰을 덧붙이지 않아 클라이언트가 두 토큰을 함께 교체하도록 경계를 고정합니다.
+ */
+export const apiV1MobileRefreshResponseSchema = z.object({ session: apiV1MobileSessionSchema }).strict();
+export type ApiV1MobileRefreshResponse = z.infer<typeof apiV1MobileRefreshResponseSchema>;
+
+/**
+ * 모바일 인증의 429 응답은 기존 RATE_LIMITED 코드와 1~900초 재시도 값을 사용합니다.
+ * 로그인 IP·이메일·조합 제한의 15분 창을 표현하며 60초 상한인 학사 오류와 분리합니다.
+ */
+export const apiV1MobileRateLimitedErrorSchema = z.object({
+  error: z.object({
+    code: z.literal("RATE_LIMITED"),
+    message: z.string().min(1),
+    requestId: apiV1UuidSchema,
+    retryAfterSeconds: z.number().int().min(1).max(900),
+  }).strict(),
+}).strict();
+export type ApiV1MobileRateLimitedError = z.infer<typeof apiV1MobileRateLimitedErrorSchema>;

@@ -29,6 +29,8 @@ type LimitAxis = {
 };
 
 export type RateLimitReservation = {
+  // 모바일 HTTP는 저장소 장애(503)와 정책 차단(429)을 구분합니다. 기존 Web 판단은 그대로입니다.
+  unavailable?: boolean;
   blocked: boolean;
   retryAfterSec: number;
   reservationId: string | null;
@@ -67,6 +69,7 @@ async function reserve(axes: LimitAxis[], errorScope: string): Promise<RateLimit
     logServerError(errorScope, error);
     return {
       blocked: true,
+      ...(errorScope === "rate-limit/reserve-login" ? { unavailable: true } : {}),
       retryAfterSec: Math.max(...axes.map((axis) => axis.windowMs / 1000)),
       reservationId: null,
     };
@@ -89,13 +92,15 @@ export function reserveLoginAttempt(ip: string, rawEmail: unknown): Promise<Rate
 }
 
 /** 로그인에 성공한 요청의 임시 예약을 삭제해 실패 시도만 상한에 남깁니다. */
-export async function releaseSuccessfulLogin(reservationId: string | null): Promise<void> {
+export async function releaseSuccessfulLogin(reservationId: string | null, requireStorage = false): Promise<void> {
   if (!reservationId) return;
   try {
     await db.delete(rateLimitEvents).where(eq(rateLimitEvents.reservationId, reservationId));
   } catch (error) {
     // 삭제 실패는 성공한 요청을 실패 카운트에 남길 뿐 제한을 우회시키지 않습니다.
     logServerError("rate-limit/release-login", error);
+    // 기존 Web 호출은 최선 노력 정책을 유지하고 모바일은 저장소 장애를 503으로 처리합니다.
+    if (requireStorage) throw new Error("LOGIN_RESERVATION_RELEASE_UNAVAILABLE");
   }
 }
 

@@ -12,13 +12,14 @@ import {
 } from "@hra/contracts/api-v1";
 import { GuidebookPaginationError, listGuidebooksForMember } from "@/features/guidebooks/member-list/service";
 import { auth } from "@/lib/auth";
+import { freshMobilePrincipalIdentity, withApiV1Principal } from "@/lib/api-v1-principal";
 import { logServerError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 const allowedQueryKeys = new Set(["page", "pageSize"]);
-const responseHeaders = { "Cache-Control": "private, no-store", Vary: "Cookie" };
+const responseHeaders = { "Cache-Control": "private, no-store", Vary: "Cookie, Authorization" };
 
 /** 중복·미지원 query와 SQL offset 범위를 저장소에 닿기 전에 거부합니다. */
 function parseQuery(request: Request) {
@@ -43,16 +44,21 @@ function errorResponse(code: "INVALID_INPUT" | "UNAUTHENTICATED" | "FORBIDDEN" |
 
 /** 로그인과 현재 역할을 확인한 뒤 가이드북 ID·제목만 페이지 단위로 제공합니다. */
 export async function GET(request: Request): Promise<Response> {
+  return withApiV1Principal(request, () => handleGet(request), (code) => errorResponse(code, crypto.randomUUID()));
+}
+
+async function handleGet(request: Request): Promise<Response> {
   const requestId = crypto.randomUUID();
   try {
     const input = parseQuery(request);
     if (!input) return errorResponse("INVALID_INPUT", requestId);
 
-    const session = await auth();
-    if (!session?.user) return errorResponse("UNAUTHENTICATED", requestId);
+    const mobile = await freshMobilePrincipalIdentity();
+    const user = mobile === undefined ? (await auth())?.user : mobile;
+    if (!user) return errorResponse("UNAUTHENTICATED", requestId);
 
     const result = await listGuidebooksForMember({
-      principal: { userId: session.user.id, role: session.user.role },
+      principal: { userId: user.id, role: user.role },
       page: input.page,
       pageSize: input.pageSize,
     });

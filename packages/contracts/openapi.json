@@ -6,6 +6,162 @@
     "description": "구현된 공용 HTTP 경로만 기록합니다. 인증 방식과 모바일 지원 상태는 각 경로의 설명에 따릅니다."
   },
   "paths": {
+    "/api/v1/auth/login": {
+      "post": {
+        "operationId": "loginMobile",
+        "summary": "이메일·비밀번호로 모바일 로그인",
+        "description": "이메일·비밀번호만 사용하며 소셜 로그인은 지원하지 않습니다. query key는 허용하지 않습니다. application/json과 실제 16KiB 본문 상한을 적용합니다. 이메일은 앞뒤 공백 제거 후 검사합니다. 잘못된 자격 증명은 계정 존재 여부를 구별하지 않는 일반 401입니다. ADMIN·PENDING도 로그인할 수 있지만 기존 API의 역할별 인가는 유지합니다. PENDING은 본인 프로필만 조회하며 자료·학사 권한을 얻지 않습니다. 토큰 수명은 응답의 만료 시각을 따릅니다. 쿠키를 읽거나 설정하지 않으며 Origin 없이 사용할 수 있습니다. 제한 초과는 계정 조회·비밀번호 비교 전에 429로 거부하고 제한 저장소 장애는 503으로 구분합니다.",
+        "security": [],
+        "parameters": [],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/MobileLoginInput"}}}},
+        "responses": {
+          "200": {
+            "description": "새 모바일 세션과 본인 공개 프로필",
+            "headers": {"Cache-Control": {"schema": {"type": "string", "const": "private, no-store"}}},
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/MobileLoginResponse"}}}
+          },
+          "400": {
+            "description": "JSON·입력·query 형식 오류",
+            "headers": {"Cache-Control": {"schema": {"type": "string", "const": "private, no-store"}}},
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/InvalidInputError"}}}
+          },
+          "401": {
+            "description": "이메일·비밀번호가 유효하지 않음. 계정 존재 여부는 구별하지 않습니다.",
+            "headers": {"Cache-Control": {"schema": {"type": "string", "const": "private, no-store"}}},
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UnauthenticatedError"}}}
+          },
+          "413": {
+            "description": "실제로 읽은 JSON 본문이 16KiB를 초과함",
+            "headers": {"Cache-Control": {"schema": {"type": "string", "const": "private, no-store"}}},
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AcademicTooLargeError"}}}
+          },
+          "429": {
+            "description": "로그인 요청 제한. 최대 15분 뒤 재시도합니다.",
+            "headers": {
+              "Cache-Control": {"schema": {"type": "string", "const": "private, no-store"}},
+              "Retry-After": {"description": "본문 retryAfterSeconds와 같은 대기 초 수입니다.", "schema": {"type": "string", "pattern": "^[1-9][0-9]*$"}}
+            },
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/MobileRateLimitedError"}}}
+          },
+          "503": {
+            "description": "인증 저장소 등 제공 불가",
+            "headers": {"Cache-Control": {"schema": {"type": "string", "const": "private, no-store"}}},
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UnavailableError"}}}
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "operationId": "refreshMobileSession",
+        "summary": "모바일 세션 갱신 및 토큰 회전",
+        "description": "application/json으로 refreshToken 하나만 받으며 query key는 허용하지 않습니다. 실제 JSON 본문은 16KiB 이하입니다. 쿠키를 읽거나 설정하지 않으며 Origin·access token 없이 사용합니다. 성공하면 두 토큰을 모두 교체합니다. 잘못됨·만료·철회·세션 버전 불일치·재사용은 모두 일반 401 UNAUTHENTICATED입니다. 정상 동시 회전 경합도 포함하며 직전 소비 토큰은 회전 후 10초 유예 안에서 401만 반환하고 세션을 폐기하지 않습니다. 그 직전 토큰을 유예 밖에서 제시하거나 더 오래전에 소비된 어느 세대의 토큰을 제시해도 토큰 계열 재사용으로 해당 세션 전체를 폐기합니다. 클라이언트는 시작·인터셉터·전경 복귀·백그라운드 작업이 하나의 single-flight 갱신 조정자를 공유하고 세션 세대로 오래된 실패를 구별합니다. 전송 결과가 불명확한 갱신은 자동 재시도하지 않으며 변경 요청도 자동 재전송하지 않습니다. IP·세션별 요청 제한은 성공한 갱신도 계산하며 429와 제한 저장소 장애 503을 구분합니다.",
+        "security": [],
+        "parameters": [],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/MobileRefreshInput"}}}},
+        "responses": {
+          "200": {
+            "description": "회전된 모바일 세션",
+            "headers": {"Cache-Control": {"schema": {"type": "string", "const": "private, no-store"}}},
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/MobileRefreshResponse"}}}
+          },
+          "400": {
+            "description": "JSON·입력·query 형식 오류",
+            "headers": {"Cache-Control": {"schema": {"type": "string", "const": "private, no-store"}}},
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/InvalidInputError"}}}
+          },
+          "401": {
+            "description": "잘못됨·만료·철회·버전 불일치·재사용 또는 정상 동시 회전 경합. 직전 토큰은 10초 유예 안에서 세션 폐기 없이 401이며 다른 소비 토큰 재사용은 세션 전체를 폐기합니다.",
+            "headers": {"Cache-Control": {"schema": {"type": "string", "const": "private, no-store"}}},
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UnauthenticatedError"}}}
+          },
+          "413": {
+            "description": "실제로 읽은 JSON 본문이 16KiB를 초과함",
+            "headers": {"Cache-Control": {"schema": {"type": "string", "const": "private, no-store"}}},
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AcademicTooLargeError"}}}
+          },
+          "429": {
+            "description": "갱신 요청 제한",
+            "headers": {
+              "Cache-Control": {"schema": {"type": "string", "const": "private, no-store"}},
+              "Retry-After": {"description": "본문 retryAfterSeconds와 같은 대기 초 수입니다.", "schema": {"type": "string", "pattern": "^[1-9][0-9]*$"}}
+            },
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/MobileRateLimitedError"}}}
+          },
+          "503": {
+            "description": "인증 저장소 등 제공 불가",
+            "headers": {"Cache-Control": {"schema": {"type": "string", "const": "private, no-store"}}},
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UnavailableError"}}}
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "operationId": "logoutMobile",
+        "summary": "모바일 단일 세션 로그아웃",
+        "description": "application/json으로 refreshToken 하나만 받으며 query key는 허용하지 않습니다. 실제 JSON 본문은 16KiB 이하입니다. 쿠키를 읽거나 설정하지 않으며 Origin·access token 없이 사용합니다. 해당 모바일 세션의 두 토큰을 폐기하며 알 수 없거나 이미 폐기된 토큰도 204인 멱등 연산입니다. 토큰 조회 전에 갱신과 같은 IP 예산(mobile-refresh-ip)을 소비하며 소진 시 429입니다.",
+        "security": [],
+        "parameters": [],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/MobileLogoutInput"}}}},
+        "responses": {
+          "204": {
+            "description": "세션 폐기 완료 또는 이미 사용할 수 없는 토큰. 본문은 없습니다.",
+            "headers": {"Cache-Control": {"schema": {"type": "string", "const": "private, no-store"}}}
+          },
+          "400": {
+            "description": "JSON·입력·query 형식 오류",
+            "headers": {"Cache-Control": {"schema": {"type": "string", "const": "private, no-store"}}},
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/InvalidInputError"}}}
+          },
+          "413": {
+            "description": "실제로 읽은 JSON 본문이 16KiB를 초과함",
+            "headers": {"Cache-Control": {"schema": {"type": "string", "const": "private, no-store"}}},
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AcademicTooLargeError"}}}
+          },
+          "429": {
+            "description": "갱신과 공유하는 IP 단위 요청 제한",
+            "headers": {"Cache-Control": {"schema": {"type": "string", "const": "private, no-store"}}, "Retry-After": {"description": "본문 retryAfterSeconds와 같은 대기 초 수입니다.", "schema": {"type": "string", "pattern": "^[1-9][0-9]*$"}}},
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/MobileRateLimitedError"}}}
+          },
+          "503": {
+            "description": "인증 저장소 등 제공 불가",
+            "headers": {"Cache-Control": {"schema": {"type": "string", "const": "private, no-store"}}},
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UnavailableError"}}}
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout-all": {
+      "post": {
+        "operationId": "logoutAllMobile",
+        "summary": "본인의 모든 모바일 세션 로그아웃",
+        "description": "유효한 모바일 Bearer access token이 필수이며 쿠키만으로 호출할 수 없습니다. Authorization 헤더가 있지만 유효하지 않거나 지원하지 않는 인증 방식이면 401이며 쿠키로 대체하지 않습니다. 어떤 본문이나 query key도 허용하지 않고 400으로 거부합니다. 현재 계정의 모든 모바일 세션만 폐기하며 Auth.js Web 쿠키 세션은 변경하지 않습니다.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "모든 모바일 세션 폐기 완료. 본문은 없습니다.",
+            "headers": {"Cache-Control": {"schema": {"type": "string", "const": "private, no-store"}}, "Vary": {"schema": {"type": "string", "const": "Cookie, Authorization"}}}
+          },
+          "400": {
+            "description": "허용되지 않은 본문 또는 query key가 있음. 빈 JSON 객체도 본문이므로 거부합니다.",
+            "headers": {"Cache-Control": {"schema": {"type": "string", "const": "private, no-store"}}, "Vary": {"schema": {"type": "string", "const": "Cookie, Authorization"}}},
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/InvalidInputError"}}}
+          },
+          "401": {
+            "description": "유효한 모바일 Bearer access token이 없음",
+            "headers": {"Cache-Control": {"schema": {"type": "string", "const": "private, no-store"}}, "Vary": {"schema": {"type": "string", "const": "Cookie, Authorization"}}},
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UnauthenticatedError"}}}
+          },
+          "503": {
+            "description": "인증 확인 또는 모바일 세션 폐기 저장소 제공 불가",
+            "headers": {"Cache-Control": {"schema": {"type": "string", "const": "private, no-store"}}, "Vary": {"schema": {"type": "string", "const": "Cookie, Authorization"}}},
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UnavailableError"}}}
+          }
+        }
+      }
+    },
     "/api/v1/notices": {
       "get": {
         "operationId": "listPublishedNotices",
@@ -1081,6 +1237,13 @@
     }
   },
   "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "모바일 access token입니다. /api/v1 보호 어댑터에서만 사용하며 Authorization 헤더가 있으면 쿠키보다 우선합니다. 유효하지 않거나 지원하지 않는 Authorization은 401이고 쿠키로 대체하지 않습니다. 기존 경로의 인증 설명은 추가 전용 정책으로 보존하므로 최신 적용 범위는 docs/developer/api-v1.md를 따릅니다."
+      }
+    },
     "schemas": {
       "MeUser": {
         "type": "object",
@@ -1644,6 +1807,83 @@
             "additionalProperties": true
           }
         ]
+      },
+      "MobileDevice": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["platform"],
+        "properties": {
+          "platform": {"type": "string", "enum": ["ANDROID", "IOS"]},
+          "appVersion": {"type": "string", "minLength": 1, "maxLength": 32},
+          "deviceName": {"type": "string", "minLength": 1, "maxLength": 64}
+        }
+      },
+      "MobileLoginInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["email", "password"],
+        "properties": {
+          "email": {"type": "string", "format": "email", "minLength": 3, "maxLength": 320, "description": "앞뒤 공백을 제거한 뒤 길이와 이메일 형식을 검사합니다."},
+          "password": {"type": "string", "minLength": 1, "maxLength": 256, "description": "공백 제거 등 변형 없이 검사합니다."},
+          "device": {"$ref": "#/components/schemas/MobileDevice"}
+        }
+      },
+      "MobileRefreshInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["refreshToken"],
+        "properties": {"refreshToken": {"type": "string", "minLength": 1}}
+      },
+      "MobileLogoutInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["refreshToken"],
+        "properties": {"refreshToken": {"type": "string", "minLength": 1}}
+      },
+      "MobileSession": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["tokenType", "accessToken", "accessTokenExpiresAt", "refreshToken", "refreshTokenExpiresAt"],
+        "properties": {
+          "tokenType": {"type": "string", "const": "Bearer"},
+          "accessToken": {"type": "string", "minLength": 1},
+          "accessTokenExpiresAt": {"$ref": "#/components/schemas/UtcTimestamp"},
+          "refreshToken": {"type": "string", "minLength": 1},
+          "refreshTokenExpiresAt": {"$ref": "#/components/schemas/UtcTimestamp"}
+        }
+      },
+      "MobileLoginResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["session", "user"],
+        "properties": {
+          "session": {"$ref": "#/components/schemas/MobileSession"},
+          "user": {"$ref": "#/components/schemas/MeUser"}
+        }
+      },
+      "MobileRefreshResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["session"],
+        "properties": {"session": {"$ref": "#/components/schemas/MobileSession"}}
+      },
+      "MobileRateLimitedError": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["code", "message", "requestId", "retryAfterSeconds"],
+            "properties": {
+              "code": {"type": "string", "const": "RATE_LIMITED"},
+              "message": {"type": "string", "minLength": 1},
+              "requestId": {"type": "string", "format": "uuid"},
+              "retryAfterSeconds": {"type": "integer", "minimum": 1, "maximum": 900}
+            }
+          }
+        }
       },
       "AcademicUploadProtocolResponse": {
         "oneOf": [
