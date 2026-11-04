@@ -26,3 +26,9 @@ updates:
           - react-dom
           - "@types/react"
           - "@types/react-dom"
+    # TypeScript 7 major는 Next.js 16·eslint 도구와의 호환성이 확인되기 전까지 자동 제안하지 않는다.
+    # minor/patch 갱신은 계속 받는다. 호환성 검증 후 이 항목을 제거한다.
+    ignore:
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
