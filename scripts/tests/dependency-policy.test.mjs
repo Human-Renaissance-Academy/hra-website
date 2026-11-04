@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { dependencyDiagnosticLines, dependencySnapshot, verifyDependencyPolicy } from '../_lib/dependency-policy.mjs';
+import { dependencyDiagnosticLines, dependencySnapshot, lockRegistryViolations, verifyDependencyPolicy } from '../_lib/dependency-policy.mjs';
 const policy = JSON.parse(readFileSync(new URL('../../security/dependency-triage.json', import.meta.url)));
 const lock = JSON.parse(readFileSync(new URL('../../package-lock.json', import.meta.url)));
 // 실제 원장의 독립 nodes/via 집합으로 npm 응답을 복원한다. 공격 조건 설명은 응답 metadata와 분리한다.
@@ -208,4 +208,18 @@ test('YAML 예외를 제거해도 다른 평가의 만료는 계속 차단한다
   input.assessments[0].reviewBy = '2026-11-03';
   assert.deepEqual(verifyDependencyPolicy(audit, lock, input, '2026-11-03'), { affectedPackages: 28, advisoryEntries: 4, p1: 0 });
   assert.throws(() => verifyDependencyPolicy(audit, lock, input, '2026-11-04'), /DEPENDENCY_TRIAGE_INVALID/);
+});
+
+test('현재 lock의 모든 resolved는 공식 npm registry를 가리킨다', () => { assert.deepEqual(lockRegistryViolations(lock), []); });
+test('외부 피드 resolved는 주소 없이 설치 경로만 진단하고 차단한다', () => {
+  const input = structuredClone(lock);
+  input.packages['node_modules/dotenv'].resolved = 'https://ms-feed-25.pkgs.visualstudio.com/x/-/dotenv-17.4.2.tgz';
+  input.packages['node_modules/turndown'].resolved = 'https://registry.npmjs.org.evil.example/turndown/-/turndown-7.2.4.tgz';
+  assert.deepEqual(lockRegistryViolations(input).map(item => item.path), ['node_modules/dotenv', 'node_modules/turndown']);
+  let thrown;
+  try { verifyDependencyPolicy(audit, input, policy, '2026-11-03'); } catch (error) { thrown = error; }
+  assert.equal(thrown?.message, 'DEPENDENCY_LOCK_REGISTRY_INVALID');
+  const output = dependencyDiagnosticLines(thrown).join('\n');
+  assert.match(output, /node_modules\/dotenv/);
+  assert.doesNotMatch(output, /visualstudio|evil/);
 });

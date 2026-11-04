@@ -29,6 +29,8 @@ node --test scripts/tests/secret-scan.test.mjs scripts/tests/dependency-policy.t
 
 `security/dependency-triage.json`은 **28 affected package**의 현재 exact metadata를 고정한다(한국 시간 2026-11-04 registry 재확인). **4 object-advisory entry**와 전이 링크를 포함한 **50 검토 항목**, **5 공유 context**는 각각 다른 수다. 동일 GHSA의 여러 영향 범위/source ID도 별도로 보존한다. package nodes+lock 버전과 advisory ID/source/range 집합은 독립적이다. 모든 nodes×advisory 조합을 실제 영향 경로라고 해석하지 않는다. npm의 `dev` 값도 실제 운영 도달성을 대신하지 않는다.
 
+`package-lock.json`의 모든 `resolved`는 `https://registry.npmjs.org/`로 시작해야 한다(워크스페이스 link 제외). 개인 `~/.npmrc`나 사내 미러가 만든 외부 피드 주소가 섞이면 `DEPENDENCY_LOCK_REGISTRY_INVALID`와 설치 경로만 출력하고 차단한다(#432). 외부 주소 자체는 로그에 남기지 않는다.
+
 한국 시간 2026-11-04에는 모든 평가의 2026-11-05 기한 도래 전에 69평가를 권고별로 재검토했다. 기존 lock 범위 안 수정본을 `npm update brace-expansion source-map-js esbuild vite`로 적용해 brace-expansion 1.1.21·5.0.12, source-map-js 1.2.2, 루트 esbuild 0.28.2, vite 8.3.5(vitest 전용 개발 의존성, rolldown 1.2.16 동반)로 갱신했고 `package.json`은 바꾸지 않았다. 실제 audit에서 사라진 brace-expansion 12건, Vite 5건, source-map-js 1건, esbuild Windows serve 권고 1건 등 평가 **19건**과 참조가 없어진 `tooling-brace-expansion`·`vitest-vite` context를 제거했다(31패키지·23 object-advisory·69평가·7context → 28·4·50·5). 남은 4개 권고는 범위 안 수정본이 없거나 정확한 pin으로 적용되지 않아 사용면을 다시 평가하고, 일괄 연장 없이 위험별 기한을 뒀다. `reviewedOn`은 게이트가 비교하는 UTC 날짜(2026-11-03)로 기록한다.
 
 | context | 평가 | 남은 권고 | 위험 판단 | 재검토 기한 |
