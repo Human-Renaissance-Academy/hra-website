@@ -26,6 +26,8 @@ const targets = [
   { name: "교수진 선언", script: "scripts/seed-faculty.mjs", prefix: "FACULTY_SEED", declaredCount: 21 },
   { name: "언론보도 선언", script: "scripts/seed-press.mjs", prefix: "PRESS_SEED", declaredCount: 26 },
   { name: "수료생 이야기 선언", script: "scripts/seed-alumni.mjs", prefix: "ALUMNI_SEED", declaredCount: 3 },
+  // 과거 HTML→Markdown 변환도 npm 별칭이 없으며 순수 변환 규칙만 export합니다.
+  { name: "HTML→Markdown 변환", script: "scripts/migrate-html-to-markdown.mjs", prefix: "HTML_MARKDOWN_CONVERSION" },
 ];
 const commands = JSON.parse(readFileSync(join(repository, "package.json"), "utf8")).scripts;
 const syntheticUrl = "postgresql://atomic-only:atomic-credential-sentinel@atomic-qa.invalid/atomic_only";
@@ -325,3 +327,61 @@ for (const target of targets) {
     assert.deepEqual(result.imported, { continued: true, exitCodeUnchanged: true });
   });
 }
+
+// HTML→Markdown 변환 CLI의 고유 경계와 보존한 순수 변환 규칙을 검사합니다.
+const htmlTarget = targets.find(item => item.script === "scripts/migrate-html-to-markdown.mjs");
+
+test("HTML→Markdown 변환: 별칭이 없고 계획은 선언 열 수만 출력하며 대상 표·열 이름을 반사하지 않는다", t => {
+  assert.deepEqual(Object.keys(commands).filter(name => commands[name].includes("migrate-html-to-markdown")), [], "HTML_MARKDOWN_NO_ALIAS");
+  const result = sandbox(t, htmlTarget).run();
+  assert.equal(result.status, 0);
+  assert.equal(result.stdout.includes("선언 대상 열 5개"), true);
+  for (const name of ["notices", "class_logs", "weekly_texts", "report_templates", "recruitment_settings", "details_markdown"]) {
+    assert.equal(result.stdout.includes(name), false, "HTML_MARKDOWN_PLAN_NO_TARGET_NAME");
+  }
+  assert.deepEqual(result.counts, emptyCounts);
+});
+
+test("HTML→Markdown 변환: 과거 실제 본문 미리보기 --dry-run은 접속 전에 별도 코드로 거부한다", t => {
+  const fixture = sandbox(t, htmlTarget);
+  const result = fixture.run(["--dry-run"]);
+  assert.equal(result.status, 1);
+  assert.equal(result.stdout.length, 0);
+  assert.equal(result.stderr.includes("[HTML_MARKDOWN_CONVERSION_DRY_RUN_UNAVAILABLE]"), true);
+  assert.deepEqual(result.counts, emptyCounts);
+  // 다른 인자와 섞이면 미리보기 안내 대신 일반 인자 오류로 거부합니다.
+  for (const args of [["--dry-run", "--confirm-apply"], ["--dry-run", "--dry-run"], ["--confirm-apply", "--dry-run"]]) {
+    const mixed = fixture.run(args);
+    assert.equal(mixed.status, 1);
+    assert.equal(mixed.stdout.length, 0);
+    assert.equal(mixed.stderr.includes("[HTML_MARKDOWN_CONVERSION_ARGUMENTS]"), true);
+    assert.deepEqual(mixed.counts, emptyCounts);
+  }
+});
+
+test("HTML→Markdown 변환: 순수 export는 기존 대상 선언·HTML 판정·Turndown 변환 규칙을 보존한다", async () => {
+  const converter = await import(pathToFileURL(join(repository, htmlTarget.script)).href);
+  assert.deepEqual(converter.htmlToMarkdownTargets.map(({ table, column }) => `${table}.${column}`), [
+    "notices.content", "class_logs.content", "weekly_texts.body", "report_templates.body", "recruitment_settings.details_markdown",
+  ]);
+  assert.equal(Object.isFrozen(converter.htmlToMarkdownTargets) && converter.htmlToMarkdownTargets.every(Object.isFrozen), true);
+  // 알려진 태그만 HTML로 보고 Markdown autolink·이메일·임의 태그·빈 값은 제외합니다.
+  for (const [value, expected] of [
+    ["<p>문단</p>", true], ["</P>", true], ["줄<br/>바꿈", true], ['<p class="x">', true], ['<span style="color: red">', true],
+    ["<https://example.invalid>", false], ["<user@example.invalid>", false], ["<custom>", false],
+    ["# 제목\n\n- 항목", false], ["", false], [null, false], [undefined, false],
+  ]) {
+    assert.equal(converter.looksLikeHtml(value), expected);
+  }
+  // 변환 함수는 호출 시에만 Turndown을 불러오며 입력 문자열만 사용합니다.
+  const convert = await converter.createHtmlToMarkdownConverter();
+  for (const [html, markdown] of [
+    ["<h2>제목</h2><p><strong>굵게</strong> <em>기울임</em></p><ul><li>하나</li><li>둘</li></ul>", "## 제목\n\n**굵게** *기울임*\n\n-   하나\n-   둘"],
+    ['<p><span style="color: red">빨강</span> 글자<script>alert(1)</script></p><style>p{}</style>', "빨강 글자"],
+    ["<table><thead><tr><th>가</th><th>나</th></tr></thead><tbody><tr><td>1</td><td>2</td></tr></tbody></table>", "| 가 | 나 |\n| --- | --- |\n| 1 | 2 |"],
+    ["<p><del>취소</del></p><hr><pre><code>x = 1</code></pre>", "~취소~\n\n---\n\n```\nx = 1\n```"],
+    ["  <p>  공백  </p>  ", "공백"],
+  ]) {
+    assert.equal(convert(html), markdown);
+  }
+});
