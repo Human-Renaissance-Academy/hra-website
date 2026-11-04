@@ -22,8 +22,8 @@ for (const [name, change] of [
   ['owner 누락', p => p.assessments[0].owner = ''], ['설명 누락', p => p.assessments[0].assessment = ''],
   ['중복 검토', p => p.assessments[0] = p.assessments[1]],
 ]) test(name + ' 원장 차단', () => { const input = structuredClone(policy); change(input); assert.throws(() => verifyDependencyPolicy(audit, lock, input, '2026-11-04'), /DEPENDENCY_/); });
-// 가장 이른 재검토 기한(2026-11-19) 다음 날부터는 실제 원장 전체가 만료로 차단된다.
-test('검토 기한 만료 차단', () => assert.throws(() => verifyDependencyPolicy(audit, lock, policy, '2026-11-20'), /DEPENDENCY_TRIAGE_INVALID/));
+// 가장 이른 재검토 기한(2026-11-26) 다음 날부터는 실제 원장 전체가 만료로 차단된다.
+test('검토 기한 만료 차단', () => assert.throws(() => verifyDependencyPolicy(audit, lock, policy, '2026-11-27'), /DEPENDENCY_TRIAGE_INVALID/));
 test('lock 설치 버전 변경 차단', () => { const input = structuredClone(lock); input.packages['node_modules/@esbuild-kit/core-utils/node_modules/esbuild'].version = '99.0.0'; assert.throws(() => verifyDependencyPolicy(audit, input, policy, '2026-11-04'), /DEPENDENCY_TRIAGE_CHANGED/); });
 test('깨진 audit는 정상 0건이 아니다', () => { for (const input of [null, {}, { auditReportVersion: 2, vulnerabilities: [] }]) assert.throws(() => dependencySnapshot(input, lock), /DEPENDENCY_REPORT_INVALID/); });
 
@@ -161,15 +161,15 @@ test('동일 GHSA의 다른 source ID는 각각 진단하고 차단한다', () =
   assert.doesNotMatch(dependencyDiagnosticLines(error).join('\n'), /title|range|version/);
 });
 
-// 수정 버전으로 대체한 YAML의 임시 예외는 다시 나타나지 않고, shadcn CLI 평가는 2026-11-04(UTC) 재검토 결과
-// 공식 패치가 여전히 없고 위험 등급도 그대로라 기존 2026-11-19 기한을 늘리지 않습니다.
+// 수정 버전으로 대체한 YAML의 임시 예외는 다시 나타나지 않습니다. shadcn CLI 평가는 2026-11-04(UTC) 재검토에서
+// 공식 패치가 여전히 없지만 shadcn을 devDependencies로 옮겨 dev=true 개발 도구 경로가 됐으므로 4주 주기(2026-12-02)를 따릅니다.
 test('패치된 YAML 설치본은 임시 평가·공유 맥락 없이 확인한다', () => {
   assert.equal(policy.packages.some(item => item.name === 'js-yaml'), false);
   assert.deepEqual(policy.assessments.filter(item => item.key.startsWith('js-yaml:')), []);
   assert.deepEqual(policy.contexts.filter(item => ['yaml-parser-cli', 'yaml-omap'].includes(item.id)), []);
   const cliAssessments = policy.assessments.filter(item => item.contextId === 'shadcn-registry-cli');
   assert.equal(cliAssessments.length, 4);
-  assert.ok(cliAssessments.every(item => item.reviewedOn === '2026-11-04' && item.reviewBy === '2026-11-19'));
+  assert.ok(cliAssessments.every(item => item.reviewedOn === '2026-11-04' && item.reviewBy === '2026-12-02'));
   assert.deepEqual(verifyDependencyPolicy(audit, lock, policy, '2026-11-04'), { affectedPackages: 26, advisoryEntries: 3, p1: 0 });
 });
 
@@ -182,13 +182,14 @@ test('수정본으로 해소한 권고는 제거하고 남은 평가는 위험�
   // 2026-11-04(UTC)에 다시 검토한 shadcn CLI 평가만 검토일이 바뀌고, 나머지는 2026-11-03 검토일을 유지한다.
   assert.ok(policy.assessments.every(item => item.reviewedOn === (item.contextId === 'shadcn-registry-cli' ? '2026-11-04' : '2026-11-03')));
   // dev=false이거나 수정본이 있는데 적용되지 못한 사용면은 2주, dev=false CLI DoS는 3주, 개발 도구 전용은 4주다.
-  const deadlines = { 'shadcn-registry-cli': '2026-11-19', 'shadcn-ts-morph-glob': '2026-11-26', 'build-esbuild': '2026-12-03', 'tooling-minimatch-glob': '2026-12-03' };
+  // shadcn-registry-cli는 dev=true가 되어 검토일(2026-11-04)부터 4주를 넘지 않는 2026-12-02다.
+  const deadlines = { 'shadcn-registry-cli': '2026-12-02', 'shadcn-ts-morph-glob': '2026-11-26', 'build-esbuild': '2026-12-03', 'tooling-minimatch-glob': '2026-12-03' };
   assert.deepEqual(Object.keys(deadlines).sort(), policy.contexts.map(item => item.id).sort());
   assert.ok(policy.assessments.every(item => item.reviewBy === deadlines[item.contextId]));
   // 기존 기한 다음 날(2026-11-06)에도 통과하고, 가장 이른 기한 다음 날부터는 다시 차단한다.
   assert.deepEqual(verifyDependencyPolicy(audit, lock, policy, '2026-11-06'), { affectedPackages: 26, advisoryEntries: 3, p1: 0 });
-  assert.deepEqual(verifyDependencyPolicy(audit, lock, policy, '2026-11-19'), { affectedPackages: 26, advisoryEntries: 3, p1: 0 });
-  assert.throws(() => verifyDependencyPolicy(audit, lock, policy, '2026-11-20'), /DEPENDENCY_TRIAGE_INVALID/);
+  assert.deepEqual(verifyDependencyPolicy(audit, lock, policy, '2026-11-26'), { affectedPackages: 26, advisoryEntries: 3, p1: 0 });
+  assert.throws(() => verifyDependencyPolicy(audit, lock, policy, '2026-11-27'), /DEPENDENCY_TRIAGE_INVALID/);
 });
 
 // 2026-11-04(UTC) 재검토: @tailwindcss/typography 0.5.20이 6.0.10으로 정확히 고정한 postcss-selector-parser를
@@ -201,6 +202,17 @@ test('typography의 postcss-selector-parser는 수정본으로 고정하고 해�
   for (const name of ['postcss-selector-parser', '@tailwindcss/typography']) assert.equal(policy.packages.some(item => item.name === name), false);
   assert.deepEqual(policy.assessments.filter(item => /^(postcss-selector-parser|@tailwindcss\/typography):/.test(item.key)), []);
   assert.deepEqual(policy.contexts.filter(item => item.id === 'build-css-source-map'), []);
+});
+
+// shadcn-registry-cli의 4주 기한은 shadcn이 devDependencies이고 deepmerge 경로가 dev=true라는 전제에만 기댄다.
+// shadcn을 dependencies로 되돌리면 이 테스트와 audit 스냅샷(development)이 함께 실패해 재분류를 강제한다.
+test('shadcn CLI 경로는 개발 의존성으로만 설치되어 개발 도구 기한을 따른다', () => {
+  const manifest = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url)));
+  assert.equal(manifest.dependencies.shadcn, undefined);
+  assert.equal(manifest.devDependencies.shadcn, '^4.22.1');
+  for (const path of ['node_modules/shadcn', 'node_modules/@shadcn/registry', 'node_modules/deepmerge']) assert.equal(lock.packages[path].dev, true);
+  assert.deepEqual(policy.packages.find(item => item.name === 'deepmerge').nodes.map(node => node.development), [true]);
+  assert.ok(policy.assessments.filter(item => item.contextId === 'shadcn-registry-cli').every(item => item.reviewBy <= '2026-12-02'));
 });
 
 // minimatch 권고는 CLI dev=false 경로와 개발 도구 경로를 계속 분리해 서로 다른 기한으로 재검토합니다.
