@@ -1,10 +1,10 @@
 # API v1 현재 제공 범위
 
-공용 HTTP 계약의 정본은 [`packages/contracts/openapi.json`](https://github.com/yeongseon/hra-website/blob/main/packages/contracts/openapi.json)입니다. 이 파일은 OpenAPI 3.1.1 JSON 형식이며 기존 공지·본인 프로필·공개 일정·가이드북 목록·학사 MVP와 모바일 인증 계약을 기록합니다. 모바일 인증과 기존 경로의 Bearer 수용은 서버 작업 반영 후 사용할 수 있으며 계약 추가만으로 배포 완료를 뜻하지 않습니다. 나머지 자료 유형과 모바일 소셜 로그인은 후속 범위입니다.
+공용 HTTP 계약의 정본은 [`packages/contracts/openapi.json`](https://github.com/yeongseon/hra-website/blob/main/packages/contracts/openapi.json)입니다. 이 파일은 OpenAPI 3.1.1 JSON 형식이며 기존 공지·본인 프로필·공개 일정·가이드북 목록, 강의자료·주차별 텍스트 목록/상세와 자료 파일, 학사 MVP와 모바일 인증 계약을 기록합니다. 모바일 인증과 기존 경로의 Bearer 수용은 서버 작업 반영 후 사용할 수 있으며 계약 추가만으로 배포 완료를 뜻하지 않습니다. 수업일지·보고서 양식 등 나머지 자료 유형과 모바일 소셜 로그인은 후속 범위입니다.
 
 ## 모바일 인증
 
-서버 작업 반영 후 `/api/v1/me`, `/api/v1/resources/guidebooks`, `/api/v1/assignments` 및 그 상세·제출 조회, `/api/v1/submissions`, `/api/v1/uploads` 및 발급·검증·취소, `/api/v1/submissions/{id}/files/{fileId}`는 **Web 쿠키 또는 모바일 Bearer**를 받습니다. 공개 공지·일정은 계속 익명 조회입니다. Bearer는 `/api/v1` 어댑터에서만 처리하며 Server Action·페이지·관리자·legacy `/api/*`에는 적용하지 않습니다. 보호 경로에 `Authorization` 헤더가 있으면 쿠키보다 우선합니다. 비어 있거나 잘못된 토큰·형식·지원하지 않는 인증 방식도 401이며 유효한 쿠키가 함께 있어도 대체하지 않습니다. 쿠키 변경 요청의 동일 출처 Origin 방어는 유지하고 **검증된 모바일 Bearer** 요청만 해당 검사를 생략합니다. SDK 업로드 완료 callback의 권한은 Bearer나 쿠키가 아니라 기존 SDK 서명 검증에만 있습니다.
+서버 작업 반영 후 `/api/v1/me`, `/api/v1/resources/guidebooks`, 아래 「승인 회원 강의자료·주차별 텍스트·자료 파일」의 7경로, `/api/v1/assignments` 및 그 상세·제출 조회, `/api/v1/submissions`, `/api/v1/uploads` 및 발급·검증·취소, `/api/v1/submissions/{id}/files/{fileId}`는 **Web 쿠키 또는 모바일 Bearer**를 받습니다. 공개 공지·일정은 계속 익명 조회입니다. Bearer는 `/api/v1` 어댑터에서만 처리하며 Server Action·페이지·관리자·legacy `/api/*`에는 적용하지 않습니다. 보호 경로에 `Authorization` 헤더가 있으면 쿠키보다 우선합니다. 비어 있거나 잘못된 토큰·형식·지원하지 않는 인증 방식도 401이며 유효한 쿠키가 함께 있어도 대체하지 않습니다. 쿠키 변경 요청의 동일 출처 Origin 방어는 유지하고 **검증된 모바일 Bearer** 요청만 해당 검사를 생략합니다. SDK 업로드 완료 callback의 권한은 Bearer나 쿠키가 아니라 기존 SDK 서명 검증에만 있습니다.
 
 | 요청 | 입력·결과 | 전체 HTTP 상태 |
 | --- | --- | --- |
@@ -77,9 +77,38 @@ OpenAPI의 JSON 표현은 [OpenAPI 3.1.1 명세](https://spec.openapis.org/oas/v
 
 `GET /api/v1/resources/guidebooks`는 서버 작업 반영 후 Auth.js Web 쿠키 또는 모바일 Bearer로 승인된 `ADMIN`, `FACULTY`, `MEMBER`에게 가이드북 **메타데이터만** 제공합니다. Route 안에서 세션을 확인하고 Application Service가 현재 계정 행과 역할을 다시 대조합니다. 익명·삭제 또는 역할이 바뀐 계정은 401 `UNAUTHENTICATED`, 현재 승인 대기 계정은 403 `FORBIDDEN`입니다. Auth.js가 DB 오류를 무세션으로 바꾸는 경우는 `/api/v1/me`와 동일하게 401이 될 수 있습니다.
 
-`page`(기본 1)와 `pageSize`(기본 10, 최대 50)만 받으며 중복·미등록 key와 PostgreSQL offset 범위 밖 값은 400 `INVALID_INPUT`으로 거부합니다. 범위 밖 페이지는 요청 번호를 유지한 빈 `guidebooks` 배열과 공통 `page` 메타를 반환합니다. 목록은 작성 시각·ID 역순으로 안정 정렬합니다. 각 항목은 `id`·`title` 두 필드뿐이고 원본 파일 URL·파일명·Blob 토큰·시간대 없는 `createdAt`은 보내지 않습니다. 실제 파일은 기존 인증 다운로드 경로에서만 서버가 읽습니다. 모든 응답은 `Cache-Control: private, no-store`와 `Vary: Cookie`이며 저장소 장애는 원문 없는 503 `UNAVAILABLE`입니다.
+`page`(기본 1)와 `pageSize`(기본 10, 최대 50)만 받으며 중복·미등록 key와 PostgreSQL offset 범위 밖 값은 400 `INVALID_INPUT`으로 거부합니다. 범위 밖 페이지는 요청 번호를 유지한 빈 `guidebooks` 배열과 공통 `page` 메타를 반환합니다. 목록은 작성 시각·ID 역순으로 안정 정렬합니다. 각 항목은 `id`·`title` 두 필드뿐이고 원본 파일 URL·파일명·Blob 토큰·시간대 없는 `createdAt`은 보내지 않습니다. 실제 파일은 기존 인증 다운로드 경로와 아래 `GET /api/v1/resources/guidebooks/{id}/file`에서만 서버가 읽습니다. 모든 응답은 `Cache-Control: private, no-store`와 `Vary: Cookie`이며 저장소 장애는 원문 없는 503 `UNAVAILABLE`입니다.
 
 `/resources` 화면은 별도 통합 목록 Application Service를 사용하며 기수·다른 자료 유형과 기존 전체 정렬을 유지합니다. 가이드북 API는 페이지 조회에 필요한 최소 메타데이터만 제공하므로 화면의 통합 목록을 HTTP로 재호출하지 않습니다.
+
+## 승인 회원 강의자료·주차별 텍스트·자료 파일
+
+| 메서드·경로 | 제공하는 결과 |
+| --- | --- |
+| `GET /api/v1/resources/guidebooks/{id}/file` | 가이드북 원본 첨부 스트림 |
+| `GET /api/v1/resources/class-materials` | 역할에 허용된 강의자료 메타데이터 페이지 |
+| `GET /api/v1/resources/class-materials/{id}` | 강의자료 메타데이터와 원본 파일명 |
+| `GET /api/v1/resources/class-materials/{id}/file` | 강의자료 원본 첨부 스트림 |
+| `GET /api/v1/resources/weekly-texts` | 주차별 텍스트 메타데이터 페이지 |
+| `GET /api/v1/resources/weekly-texts/{id}` | 주차별 텍스트 Markdown 본문과 첨부 파일명 |
+| `GET /api/v1/resources/weekly-texts/{id}/file` | 주차별 텍스트 첨부 원본 스트림 |
+
+인증은 위 「모바일 인증」의 보호 경로와 같습니다. **모바일 Bearer 또는 Web 쿠키**를 받으며 `Authorization` 헤더가 있으면 쿠키보다 우선하고, 잘못된 토큰·형식·지원하지 않는 방식·회수된 모바일 세션은 유효한 쿠키가 있어도 401입니다. 모바일 세션은 매 요청 현재 상태를 다시 확인하고 세션 저장소 장애는 503입니다. Route 전용 `src/app/api/v1/resources/_lib/principal.ts`가 `withApiV1Principal`로 주체를 해석하고, Application Service(`src/features/{class-materials,weekly-texts}/member`, `src/features/guidebooks/file-download`)가 현재 계정 행과 역할을 다시 대조합니다. 익명·삭제·역할 변경은 401 `UNAUTHENTICATED`, 승인 대기 `PENDING`은 현재 계정 조회 전에 403 `FORBIDDEN`입니다. OpenAPI에는 `security: [{ bearerAuth: [] }]`를 선언하고 쿠키 대안은 설명에 기록합니다(`{}`는 익명 허용이라 사용하지 않습니다). Route는 Drizzle을 직접 호출하지 않습니다.
+
+권한 범위는 기존 Web 자료실과 같습니다.
+
+- **강의자료**: `MEMBER`는 학생용(`STUDENT`)만, `ADMIN`·`FACULTY`는 학생용·교수용(`FACULTY`)을 받습니다. 기존 `classMaterialReadFilter`를 목록·상세·파일 SQL WHERE에 적용하므로 MEMBER가 교수용 자료를 요청하면 없는 자료와 같은 404 `NOT_FOUND`입니다.
+- **주차별 텍스트**: 공동 자료 정책(#100)에 따라 승인 회원은 **기수와 무관하게** 열람합니다(허용 범위 정책 확인은 #441). Web 통합 목록·상세·기존 다운로드 경로와 같은 범위이며, 본인 기수만 보여 주는 `/resources/weekly-texts` 업로드 화면의 목록 필터는 표시용으로 API에 적용하지 않습니다.
+- **가이드북 파일**: 승인 회원은 모든 가이드북 원본을 받습니다.
+
+목록은 `page`(기본 1)·`pageSize`(기본 10, 최대 50)만 받고 가이드북 목록과 같은 400·범위 밖 빈 배열 규칙을 따릅니다. 정렬은 Web 통합 목록과 같은 수업일 역순(없으면 마지막)·작성 시각 역순이며 ID 역순으로 안정화합니다. 수업일 `classDate`는 Web 화면과 같은 KST 변환의 `YYYY-MM-DD` 달력 날짜이고, 시간대 없는 `createdAt`은 보내지 않습니다.
+
+- 강의자료 항목은 `id`·`title`·`audience`·`weekNumber`·`lectureTitle`·`classDate`이고 상세에만 `fileName`을 추가합니다. 업로더 계정·이름과 원본 URL은 반환하지 않습니다.
+- 주차별 텍스트 항목은 `id`·`title`·`textType`·`cohort{id,name}`·`classDate`·`hasBody`·`hasFile`이고 상세에만 Markdown `body`와 `fileName`을 추가합니다. 빈 본문·파일명·분류는 `null`이며 첨부 사진은 이 API 범위에 포함하지 않습니다.
+
+상세·파일 경로는 query를 받지 않으며 잘못된 UUID와 함께 400 `INVALID_INPUT`입니다. 파일 경로는 기존 Web 다운로드(`/api/resources/[kind]/[id]/download`)와 같은 `resourceBlobAccess`·`resourceBlobToken` 규칙으로 프로젝트 공개 저장소 또는 지정 비공개 저장소의 원본만 **서버가 읽어 첨부 스트림으로** 전달합니다. 원본 URL로 리다이렉트하거나 서명 URL을 발급하지 않고 `inline` 미리보기도 제공하지 않습니다. 성공 응답은 저장된 MIME(알 수 없으면 `application/octet-stream`)·안전한 `attachment` 파일명·`nosniff`·`sandbox; default-src 'none'` CSP를 사용하며, 같은 CSP를 `next.config.ts`의 정적 헤더로도 고정합니다. 없는 자료·첨부 없는 텍스트·허용되지 않은 저장 위치·공급자 304는 404, 비공개 토큰 누락·공급자 장애·응답 헤더 대기 60초 상한 초과는 원문 없는 503 `UNAVAILABLE`입니다. 요청 취소는 공급자 SDK 요청과 본문 스트림까지 전파하고, 응답 시작 뒤의 전송 오류는 고정 문구로 스트림을 중단합니다. 기존 Web 다운로드 경로와 마찬가지로 별도 요청 한도는 두지 않습니다.
+
+모든 응답은 `Cache-Control: private, no-store`, `Vary: Cookie, Authorization`, `X-Request-Id`를 포함합니다.
 
 ## 본인 과제·제출·파일 MVP
 

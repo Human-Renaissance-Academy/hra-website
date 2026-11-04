@@ -135,3 +135,20 @@ test("단일 동적 Route만 OpenAPI 변수로 대응하고 catch-all·이탈 �
     "src/app/api/v2/notices/route.ts",
   ]) assert.equal(routePathFromFile(invalid), null);
 });
+
+test("동적 ID 뒤 정적 하위 자원 Route와 같은 접두어의 목록·상세·파일 경로를 각각 추가 전용으로 대응", () => {
+  // 공동 자료 API(#272)처럼 목록·상세·파일이 한 접두어를 공유해도 Route 파일마다 OpenAPI 경로 하나로 대응해야 합니다.
+  assert.equal(routePathFromFile("src/app/api/v1/resources/class-materials/route.ts"), "/api/v1/resources/class-materials");
+  assert.equal(routePathFromFile("src/app/api/v1/resources/class-materials/[id]/route.ts"), "/api/v1/resources/class-materials/{id}");
+  assert.equal(routePathFromFile("src/app/api/v1/resources/guidebooks/[id]/file/route.ts"), "/api/v1/resources/guidebooks/{id}/file");
+  const prior = fixture(), current = fixture();
+  const added = ["/api/v1/resources/weekly-texts", "/api/v1/resources/weekly-texts/{id}", "/api/v1/resources/weekly-texts/{id}/file"];
+  added.forEach((path, index) => {
+    current.paths[path] = { get: { operationId: `weeklyText${index}`, responses: { "200": { description: "합성 응답" } } } };
+  });
+  assert.deepEqual(validate(current, prior, [...routes, ...added]), []);
+  // 파일 Route만 남기고 OpenAPI에서 빠뜨리면 구현 불일치로 거부합니다.
+  const missing = structuredClone(current);
+  delete missing.paths["/api/v1/resources/weekly-texts/{id}/file"];
+  assert.deepEqual(validate(missing, prior, [...routes, ...added]), ["OPENAPI_ROUTE_MISMATCH"]);
+});
