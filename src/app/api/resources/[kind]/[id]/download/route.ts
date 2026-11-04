@@ -23,6 +23,12 @@ export const dynamic = "force-dynamic";
 
 type Context = { params: Promise<{ kind: string; id: string }> };
 
+/** 이 경로가 제공하는 자료 종류입니다. 아래 조회 분기와 같은 목록을 유지합니다. */
+const resourceKinds = new Set(["class-materials", "guidebooks", "weekly-texts", "weekly-text-images", "class-log-images"]);
+
+/** 빈도 제한 429·저장소 장애 503 평문 응답의 공통 헤더입니다. */
+const limitErrorHeaders = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" } as const;
+
 /** 응답 시작 뒤의 읽기·취소 실패도 고정 오류로 처리하고 공급자 reader를 정리합니다. */
 function protectedStream(source: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
   const reader = source.getReader();
@@ -82,22 +88,23 @@ export async function GET(request: Request, { params }: Context): Promise<Respon
   const session = await requireSharedResourceReader();
   const { kind, id } = await params;
   const parsedId = z.uuid().safeParse(id);
-  if (!parsedId.success) return new Response("자료를 찾을 수 없습니다.", { status: 404 });
+  // 알 수 없는 자료 종류도 잘못된 ID처럼 예산을 쓰지 않고 먼저 404로 끝냅니다(#444).
+  if (!parsedId.success || !resourceKinds.has(kind)) return new Response("자료를 찾을 수 없습니다.", { status: 404 });
 
-  // 인증·승인 역할 확인(미로그인·승인 대기는 위에서 이동) 뒤에만 사용자 id로 조회 예산을 예약합니다.
-  // 브라우저가 직접 여는 링크·<img> 경로라 기존 응답처럼 한국어 평문 본문을 유지합니다.
+  // 인증·승인 역할 확인(미로그인·승인 대기는 위에서 이동)과 입력 확인 뒤에만 사용자 id로 조회 예산을 예약합니다.
+  // 브라우저가 직접 여는 링크·<img> 경로라 기존 응답처럼 한국어 평문 본문을 유지하고 MIME 추측만 막습니다.
   try {
     await enforceResourceReadLimit(session.user.id);
   } catch (error) {
     if (error instanceof ResourceReadRateLimitError) {
       return new Response("요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.", {
         status: 429,
-        headers: { "Retry-After": String(error.retryAfterSeconds), "Cache-Control": "private, no-store" },
+        headers: { ...limitErrorHeaders, "Retry-After": String(error.retryAfterSeconds) },
       });
     }
     // 제한 저장소 장애는 예약 어댑터가 이미 기록했으므로 고정 문구의 503만 반환합니다.
     if (error instanceof ResourceReadLimitUnavailableError) {
-      return new Response("잠시 후 다시 시도해 주세요.", { status: 503, headers: { "Cache-Control": "private, no-store" } });
+      return new Response("잠시 후 다시 시도해 주세요.", { status: 503, headers: limitErrorHeaders });
     }
     throw error;
   }

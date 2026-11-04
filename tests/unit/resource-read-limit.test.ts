@@ -10,6 +10,7 @@
  *
  * 실제 principal 어댑터·서비스·공용 제한 경계를 거치고 세션 저장소·DB 저장소·Blob·예약 함수만 대체합니다.
  */
+import { readFileSync } from "node:fs";
 import { apiV1ResourceRateLimitedErrorSchema } from "@hra/contracts/api-v1";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RateLimitReservation } from "@/lib/rate-limit";
@@ -193,12 +194,22 @@ describe("Web 자료실 다운로드 경로 사용자별 조회 빈도 제한", 
       expect(response.status).toBe(429);
       expect(response.headers.get("retry-after")).toBe("17");
       expect(response.headers.get("cache-control")).toBe("private, no-store");
+      expect(response.headers.get("x-content-type-options")).toBe("nosniff");
       expect(await response.text()).toMatch(/[가-힣]/);
       expect(mocks.reserve).toHaveBeenCalledExactlyOnceWith(userId);
       expect(mocks.dbLimit).not.toHaveBeenCalled();
       expect(mocks.get).not.toHaveBeenCalled();
     },
   );
+
+  it("알 수 없는 자료 종류와 잘못된 ID는 예산에 기록하지 않고 404이다", async () => {
+    mocks.reserve.mockResolvedValue({ blocked: true, retryAfterSec: 17, reservationId: null });
+    expect((await webDownload(webRequest("unknown-kind"), webContext("unknown-kind"))).status).toBe(404);
+    const invalidId = await webDownload(webRequest("guidebooks"), { params: Promise.resolve({ kind: "guidebooks", id: "not-a-uuid" }) });
+    expect(invalidId.status).toBe(404);
+    expect(mocks.reserve).not.toHaveBeenCalled();
+    expect(mocks.dbLimit).not.toHaveBeenCalled();
+  });
 
   it("미로그인·승인 대기 이동은 제한보다 먼저이며 예산에 기록하지 않는다", async () => {
     mocks.requireReader.mockRejectedValueOnce(new Error("NEXT_REDIRECT"));
@@ -211,6 +222,8 @@ describe("Web 자료실 다운로드 경로 사용자별 조회 빈도 제한", 
     const response = await webDownload(webRequest("guidebooks"), webContext("guidebooks"));
     expect(response.status).toBe(503);
     expect(response.headers.get("retry-after")).toBeNull();
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(response.headers.get("x-content-type-options")).toBe("nosniff");
     expect(mocks.dbLimit).not.toHaveBeenCalled();
     expect(mocks.get).not.toHaveBeenCalled();
   });
@@ -267,6 +280,14 @@ describe("정상 사용 범위와 공유 예산", () => {
     expect([bearer.status, cookie.status]).toEqual([429, 429]);
     expect(bearer.headers.get("retry-after")).toBe("60");
     expect(cookie.headers.get("retry-after")).toBe("60");
+  });
+
+  it("주차별 텍스트 상세의 첨부 사진은 지연 로딩해 화면 밖 사진이 예산을 쓰지 않는다", () => {
+    const source = readFileSync("src/app/(member)/resources/weekly-texts/[id]/page.tsx", "utf8");
+    const imageTag = source.slice(source.indexOf("<img"), source.indexOf("/>", source.indexOf("<img")));
+    expect(imageTag).toContain("/api/resources/weekly-text-images/");
+    expect(imageTag).toContain('loading="lazy"');
+    expect(imageTag).toContain('decoding="async"');
   });
 
   it("정책 상수는 사진 100장 화면 두세 번과 목록·파일 몇 건을 1분 안에 허용한다", () => {
