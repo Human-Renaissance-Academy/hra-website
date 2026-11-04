@@ -259,6 +259,9 @@ test('외부 피드 resolved는 주소 없이 설치 경로만 진단하고 차�
 // #446: 모바일 앱 lockfile도 같은 정확 일치·기한·공식 registry 정책을 별도 원장으로 적용한다.
 const mobilePolicy = JSON.parse(readFileSync(new URL('../../security/mobile-dependency-triage.json', import.meta.url)));
 const mobileLock = JSON.parse(readFileSync(new URL('../../apps/mobile/package-lock.json', import.meta.url)));
+// 주의: mobileAudit는 원장에서 복원한 응답이라 아래 원장↔snapshot 일치 단언은 순환적이다. 여기서는 원장 nodes가
+// 실제 lock 경로·버전과 맞는지와 정책 규칙만 확인한다. 실제 registry audit와 원장의 일치는 `npm run verify:dependencies`
+// 실행(CI의 repository-security 워크플로)에서만 검사된다.
 const mobileAudit = { auditReportVersion: 2, vulnerabilities: Object.fromEntries(mobilePolicy.packages.map(pkg => [pkg.name, { name: pkg.name, severity: pkg.severity, range: pkg.range, nodes: pkg.nodes.map(node => node.path), via: pkg.via.map(v => v.source ? { ...v, url: 'https://github.com/advisories/' + v.id } : v.dependency) }])) };
 const mobileResult = { affectedPackages: 44, advisoryEntries: 4, p1: 0 };
 

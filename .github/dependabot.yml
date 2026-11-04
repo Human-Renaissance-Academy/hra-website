@@ -50,4 +50,11 @@ updates:
           - react
           - react-dom
           - "@types/react"
-    # 무시 규칙을 두지 않는다. Expo SDK major 제안도 SDK 업그레이드 절차(expo-doctor·Android 빌드)로 검토한다.
+    # Expo SDK major 제안은 SDK 업그레이드 절차(expo-doctor·Android 빌드)로 검토한다.
+    # TypeScript major만 루트(#436)와 같은 이유로 자동 제안하지 않는다. 모바일은 Expo SDK 58 요구(~6.0.3)에 맞춰
+    # typescript 6.0.3을 고정하고, peer가 ^5.x인 openapi-typescript에 override로 같은 버전을 쓰므로
+    # major 상승은 doctor·생성기 호환성 검증이 먼저 필요하다. minor/patch 갱신은 계속 받는다.
+    ignore:
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
