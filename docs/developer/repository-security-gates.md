@@ -39,6 +39,8 @@ node --test scripts/tests/secret-scan.test.mjs scripts/tests/dependency-policy.t
 
 한국 시간 2026-11-04에는 모든 평가의 2026-11-05 기한 도래 전에 69평가를 권고별로 재검토했다. 기존 lock 범위 안 수정본을 `npm update brace-expansion source-map-js esbuild vite`로 적용해 brace-expansion 1.1.21·5.0.12, source-map-js 1.2.2, 루트 esbuild 0.28.2, vite 8.3.5(vitest 전용 개발 의존성, rolldown 1.2.16 동반)로 갱신했고 `package.json`은 바꾸지 않았다. 실제 audit에서 사라진 brace-expansion 12건, Vite 5건, source-map-js 1건, esbuild Windows serve 권고 1건 등 평가 **19건**과 참조가 없어진 `tooling-brace-expansion`·`vitest-vite` context를 제거했다(31패키지·23 object-advisory·69평가·7context → 28·4·50·5). 남은 4개 권고는 범위 안 수정본이 없거나 정확한 pin으로 적용되지 않아 사용면을 다시 평가하고, 일괄 연장 없이 위험별 기한을 뒀다. `reviewedOn`은 게이트가 비교하는 UTC 날짜(2026-11-03)로 기록한다.
 
+재검토 기한의 일반 기준은 실제 registry로 다시 확인한 검토일(`reviewedOn`)부터 dev=false이거나 수정본이 있는데 적용하지 못한 사용면은 2주, dev=false CLI 전이 경로의 DoS는 3주, 개발 도구 전용(dev=true) 경로는 4주이며 이 기간을 넘겨 정하지 않는다. `reviewedOn`은 게이트가 오늘 날짜와 비교하는 UTC 날짜로 기록한다.
+
 | context | 평가 | 남은 권고 | 위험 판단 | 재검토 기한 |
 | --- | --- | --- | --- | --- |
 | `shadcn-ts-morph-glob` | 3 | [minimatch globParts 증폭](https://github.com/advisories/GHSA-g3hv-75wg-m249) | CLI 전이 경로의 DoS, 제품 호출 없음(2026-11-04부터 dev=true, 기한은 유지) | 2026-11-26 |
