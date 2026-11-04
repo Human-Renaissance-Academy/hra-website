@@ -27,16 +27,21 @@ node --test scripts/tests/secret-scan.test.mjs scripts/tests/dependency-policy.t
 
 실행기는 credential 환경을 전달하지 않고, 소유 임시 디렉터리의 package/lock 복사본과 비어 있는 npm 설정으로 `npm audit --json --package-lock-only --ignore-scripts`를 실행한다. registry는 `https://registry.npmjs.org`로 고정한다. exit 1의 발견과 통신/구문 오류를 구분하며 raw npm 오류는 출력하지 않는다. 설치 파일을 수정하거나 자동 업데이트하지 않는다.
 
-`security/dependency-triage.json`은 **28 affected package**의 현재 exact metadata를 고정한다(한국 시간 2026-11-04 registry 재확인). **4 object-advisory entry**와 전이 링크를 포함한 **50 검토 항목**, **5 공유 context**는 각각 다른 수다. 동일 GHSA의 여러 영향 범위/source ID도 별도로 보존한다. package nodes+lock 버전과 advisory ID/source/range 집합은 독립적이다. 모든 nodes×advisory 조합을 실제 영향 경로라고 해석하지 않는다. npm의 `dev` 값도 실제 운영 도달성을 대신하지 않는다.
+`security/dependency-triage.json`은 **26 affected package**의 현재 exact metadata를 고정한다(한국 시간 2026-11-04 registry 재확인). **3 object-advisory entry**와 전이 링크를 포함한 **48 검토 항목**, **4 공유 context**는 각각 다른 수다. 동일 GHSA의 여러 영향 범위/source ID도 별도로 보존한다. package nodes+lock 버전과 advisory ID/source/range 집합은 독립적이다. 모든 nodes×advisory 조합을 실제 영향 경로라고 해석하지 않는다. npm의 `dev` 값도 실제 운영 도달성을 대신하지 않는다.
 
 `package-lock.json`의 모든 `resolved`는 `https://registry.npmjs.org/`로 시작해야 한다(워크스페이스 link 제외). 개인 `~/.npmrc`나 사내 미러가 만든 외부 피드 주소가 섞이면 `DEPENDENCY_LOCK_REGISTRY_INVALID`와 설치 경로만 출력하고 차단한다(#432). 외부 주소 자체는 로그에 남기지 않는다.
+
+한국 시간 2026-11-04 저녁에는 가장 이른 기한(2026-11-19)이 도래하기 전에 해당 평가 6건을 빈 캐시의 실제 registry audit와 `npm view`로 다시 확인했다.
+
+- [postcss-selector-parser 권고](https://github.com/advisories/GHSA-rj75-hqrm-r3gf)는 6.x 수정본 6.1.5가 있지만 최신 @tailwindcss/typography 0.5.20이 6.0.10을 정확히 고정해 `npm update`로 적용되지 않는다. upstream의 6.1.5 상향 PR도 아직 병합되지 않았다. 이에 `package.json`에 typography 하위로만 범위를 제한한 `overrides`(`postcss-selector-parser: ^6.1.5`)를 추가하고 lockfile의 해당 항목 하나만 6.1.5로 바꿨다. 6.0.10과 6.1.5의 런타임 의존성(`cssesc`·`util-deprecate`)은 같다. 저장소 `globals.css`와 typography 전체 변형(`prose-*` 크기·색상·`prose-invert`·`not-prose`·요소 modifier)을 강제로 포함한 입력을 `@tailwindcss/postcss`로 컴파일한 결과는 갱신 전후 바이트 단위로 같았다. 이에 패키지 2개(`postcss-selector-parser`·`@tailwindcss/typography`), 평가 **2건**, 참조가 없어진 `build-css-source-map` context를 제거했다(28패키지·4 object-advisory·50평가·5context → 26·3·48·4). shadcn 내부의 postcss-selector-parser 7.1.6은 영향 범위 밖이다.
+- [deepmerge 권고](https://github.com/advisories/GHSA-gcqx-w48m-w2h4)는 최신이 여전히 4.3.1이고 권고의 첫 수정 버전도 없다. upstream 수정 PR은 열려 있지만 릴리스되지 않았다. 최신 shadcn 4.23.0·@shadcn/registry 0.2.1도 `deepmerge ^4.3.1`을 사용한다. 사용면(제품은 `shadcn/tailwind.css`만 읽고 CLI JavaScript를 호출하지 않음)과 위험 등급(dev=false, prototype 계열, 공식 패치 없음)이 그대로이므로 `shadcn-registry-cli` 평가 4건은 공격 조건과 검토일(`2026-11-04`)만 갱신했다. 기한은 늘리지 않고 **2026-11-19**로 유지한다.
+- 다른 context의 평가와 기한은 바꾸지 않았다.
 
 한국 시간 2026-11-04에는 모든 평가의 2026-11-05 기한 도래 전에 69평가를 권고별로 재검토했다. 기존 lock 범위 안 수정본을 `npm update brace-expansion source-map-js esbuild vite`로 적용해 brace-expansion 1.1.21·5.0.12, source-map-js 1.2.2, 루트 esbuild 0.28.2, vite 8.3.5(vitest 전용 개발 의존성, rolldown 1.2.16 동반)로 갱신했고 `package.json`은 바꾸지 않았다. 실제 audit에서 사라진 brace-expansion 12건, Vite 5건, source-map-js 1건, esbuild Windows serve 권고 1건 등 평가 **19건**과 참조가 없어진 `tooling-brace-expansion`·`vitest-vite` context를 제거했다(31패키지·23 object-advisory·69평가·7context → 28·4·50·5). 남은 4개 권고는 범위 안 수정본이 없거나 정확한 pin으로 적용되지 않아 사용면을 다시 평가하고, 일괄 연장 없이 위험별 기한을 뒀다. `reviewedOn`은 게이트가 비교하는 UTC 날짜(2026-11-03)로 기록한다.
 
 | context | 평가 | 남은 권고 | 위험 판단 | 재검토 기한 |
 | --- | --- | --- | --- | --- |
-| `shadcn-registry-cli` | 4 | [deepmerge prototype 상속](https://github.com/advisories/GHSA-gcqx-w48m-w2h4) | dev=false, 공식 패치 없음, prototype 계열. 제품은 CSS만 읽는다 | 2026-11-19 |
-| `build-css-source-map` | 2 | [postcss-selector-parser selector 파싱 CPU](https://github.com/advisories/GHSA-rj75-hqrm-r3gf) | dev=false 빌드 경로. 6.1.5 수정본이 있으나 @tailwindcss/typography 0.5.20의 6.0.10 정확 pin으로 미적용 | 2026-11-19 |
+| `shadcn-registry-cli` | 4 | [deepmerge prototype 상속](https://github.com/advisories/GHSA-gcqx-w48m-w2h4) | dev=false, 공식 패치 없음(2026-11-04 재확인), prototype 계열. 제품은 CSS만 읽는다 | 2026-11-19 |
 | `shadcn-ts-morph-glob` | 3 | [minimatch globParts 증폭](https://github.com/advisories/GHSA-g3hv-75wg-m249) | dev=false CLI 전이 경로의 DoS, 제품 호출 없음 | 2026-11-26 |
 | `build-esbuild` | 4 | [esbuild serve cross-origin 응답](https://github.com/advisories/GHSA-67mh-4wv8-2f99) | dev=true, drizzle-kit의 esbuild 0.18.20 transform만 사용하고 serve 미사용 | 2026-12-03 |
 | `tooling-minimatch-glob` | 37 | [minimatch globParts 증폭](https://github.com/advisories/GHSA-g3hv-75wg-m249) | dev=true 린트·맞춤법 도구, 고정 저장소 glob만 입력 | 2026-12-03 |
@@ -53,10 +58,10 @@ node --test scripts/tests/secret-scan.test.mjs scripts/tests/dependency-policy.t
 
 2026-10-24 registry 재확인에서는 새 [fast-uri 권고](https://github.com/advisories/GHSA-w74x-v6f9-j3xg)와 [undici 권고](https://github.com/advisories/GHSA-4qv8-2p9j-2685)를 확인했다. 잠금파일에서 fast-uri 3.1.9, Blob 경로 undici 6.29.1, jsdom 내부 undici 7.30.1로 각각 패치했다. 패치 뒤 기존 undici 권고도 audit에서 사라져 undici 패키지 1개·평가 31건만 원장에서 삭제했다. 다른 설치 패키지·기존 평가 내용·재검토 기한과 신규 권고 실패 차단은 유지한다.
 
-원장 schema v2로 전환할 당시에는 권고별 `assessments` **32건**의 `key`·공격 조건·P2 판단·담당자 `repo-maintainers`·검토일·재검토 기한을 그대로 뒀다. 동일한 사용하는 API·호출 위치·사용면 평가·잔여 전제 네 필드만 `contexts` **6건**에 모아 `contextId`로 참조했다. 반복 설명 필드는 종전 32×4=128회에서 6×4=24회로 줄었고 JSON은 43,030바이트에서 27,621바이트로 줄었다. 이 수치는 당시 중복 제거의 기록이며 현재 집계는 위 50평가·5context다. 서로 다른 권고의 공격 조건·검토 기한을 합치거나 package nodes×advisory를 새로운 영향 경로로 만들어 내지 않는다.
+원장 schema v2로 전환할 당시에는 권고별 `assessments` **32건**의 `key`·공격 조건·P2 판단·담당자 `repo-maintainers`·검토일·재검토 기한을 그대로 뒀다. 동일한 사용하는 API·호출 위치·사용면 평가·잔여 전제 네 필드만 `contexts` **6건**에 모아 `contextId`로 참조했다. 반복 설명 필드는 종전 32×4=128회에서 6×4=24회로 줄었고 JSON은 43,030바이트에서 27,621바이트로 줄었다. 이 수치는 당시 중복 제거의 기록이며 현재 집계는 위 48평가·4context다. 서로 다른 권고의 공격 조건·검토 기한을 합치거나 package nodes×advisory를 새로운 영향 경로로 만들어 내지 않는다.
 
-공유 context 하나를 수정하면 이를 참조하는 권고 2~37건의 판단문이 함께 바뀐다. PR에서 참조하는 `key` 목록과 권고별 공격 조건·날짜를 함께 검토한다. 비어 있거나 중복된 context, 없는 참조, 미사용 context, 누락된 권고별 평가와 예전 중복 필드는 실패한다. 담당자 표시는 P1 위험 수용 승인이 아니다. 패치된 js-yaml의 사용면은 내장 기본본의 JSON_SCHEMA 파싱과 저장소 YAML 검사이며, 남은 glob/CSS/esbuild/deepmerge는 도구 입력을 따로 검토한다. Blob의 undici 6과 jsdom 내부 undici 7은 위 패치 버전으로 잠가 현재 원장에서 빠졌지만, 이후 새 권고는 같은 exact gate에서 다시 차단한다. 신뢰 HTTPS만으로 모든 fetch 위험이 배제되지는 않는다.
+공유 context 하나를 수정하면 이를 참조하는 권고 3~37건의 판단문이 함께 바뀐다. PR에서 참조하는 `key` 목록과 권고별 공격 조건·날짜를 함께 검토한다. 비어 있거나 중복된 context, 없는 참조, 미사용 context, 누락된 권고별 평가와 예전 중복 필드는 실패한다. 담당자 표시는 P1 위험 수용 승인이 아니다. 패치된 js-yaml의 사용면은 내장 기본본의 JSON_SCHEMA 파싱과 저장소 YAML 검사이며, 남은 glob/esbuild/deepmerge는 도구 입력을 따로 검토한다. Blob의 undici 6과 jsdom 내부 undici 7은 위 패치 버전으로 잠가 현재 원장에서 빠졌지만, 이후 새 권고는 같은 exact gate에서 다시 차단한다. 신뢰 HTTPS만으로 모든 fetch 위험이 배제되지는 않는다.
 
-새 advisory·source·범위·심각도·패키지 경로·설치 버전, 누락/잘못된 원장, 만료는 실패한다. 불일치 진단은 정제된 패키지·GHSA ID·숫자 source·설치 경로만 출력하고 감사 원문의 제목·범위·버전은 출력하지 않는다. 현재 P2는 독립 코드 검토를 거치는 사용면 평가이며 모든 high 항목을 면제하는 정책이 아니다. 남은 재검토 기한은 위 표처럼 사용면 위험에 따라 **2026-11-19**(dev=false 또는 수정본 미적용)·**2026-11-26**(dev=false CLI DoS)·**2026-12-03**(개발 도구 전용)으로 나뉜다. 기한 전에 패치 또는 새 근거를 검토하고 실제 재검토일과 기한을 갱신한다. 단순히 기한을 늘리지 않는다. 확인된 P1은 이 게이트에서 항상 차단하며 수정이 필요하다. 권한 있는 owner의 개별 예외가 필요하다면 별도 검토로 정책을 확장해야 하며 에이전트가 승인 사실을 만들어 통과시키지 않는다.
+새 advisory·source·범위·심각도·패키지 경로·설치 버전, 누락/잘못된 원장, 만료는 실패한다. 불일치 진단은 정제된 패키지·GHSA ID·숫자 source·설치 경로만 출력하고 감사 원문의 제목·범위·버전은 출력하지 않는다. 현재 P2는 독립 코드 검토를 거치는 사용면 평가이며 모든 high 항목을 면제하는 정책이 아니다. 남은 재검토 기한은 위 표처럼 사용면 위험에 따라 **2026-11-19**(dev=false prototype 계열·공식 패치 없음)·**2026-11-26**(dev=false CLI DoS)·**2026-12-03**(개발 도구 전용)으로 나뉜다. 기한 전에 패치 또는 새 근거를 검토하고 실제 재검토일과 기한을 갱신한다. 단순히 기한을 늘리지 않는다. 확인된 P1은 이 게이트에서 항상 차단하며 수정이 필요하다. 권한 있는 owner의 개별 예외가 필요하다면 별도 검토로 정책을 확장해야 하며 에이전트가 승인 사실을 만들어 통과시키지 않는다.
 
 공식 근거: [npm audit 동작](https://docs.npmjs.com/cli/v11/commands/npm-audit/), 각 원장 항목의 GHSA ID. 원장의 source 번호와 범위는 registry 관측 시점 자료이므로 upstream advisory 변경은 재검토를 유발한다.

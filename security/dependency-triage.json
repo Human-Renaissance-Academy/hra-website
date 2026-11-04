@@ -122,23 +122,6 @@
       ]
     },
     {
-      "name": "@tailwindcss/typography",
-      "severity": "moderate",
-      "range": "<=0.0.0-insiders.fda8ce5 || >=0.5.5",
-      "nodes": [
-        {
-          "path": "node_modules/@tailwindcss/typography",
-          "version": "0.5.20",
-          "development": false
-        }
-      ],
-      "via": [
-        {
-          "dependency": "postcss-selector-parser"
-        }
-      ]
-    },
-    {
       "name": "@ts-morph/common",
       "severity": "moderate",
       "range": ">=0.9.0",
@@ -486,27 +469,6 @@
       ]
     },
     {
-      "name": "postcss-selector-parser",
-      "severity": "moderate",
-      "range": "<6.1.5",
-      "nodes": [
-        {
-          "path": "node_modules/postcss-selector-parser",
-          "version": "6.0.10",
-          "development": false
-        }
-      ],
-      "via": [
-        {
-          "source": 1243379,
-          "id": "GHSA-rj75-hqrm-r3gf",
-          "severity": "moderate",
-          "range": "<6.1.5",
-          "title": "PostCSS: Quadratic complexity in flat selector parsing allows CPU exhaustion"
-        }
-      ]
-    },
-    {
       "name": "shadcn",
       "severity": "moderate",
       "range": "<=0.0.0-rc-20261007105214 || >=2.0.0",
@@ -585,18 +547,11 @@
       "residualAssumptions": "2026-11-04(KST) 기준 drizzle-kit 최신 0.31.11과 @esbuild-kit/core-utils 최신 3.3.2도 esbuild ~0.18.20을 고정해 범위 내 수정본이 없다. 개발 도구 전용이므로 2026-12-03까지 drizzle-kit의 @esbuild-kit 제거·상위 갱신을 재검토하고, 누군가 이 esbuild로 serve를 실행하면 즉시 재분류한다."
     },
     {
-      "id": "build-css-source-map",
-      "usedApi": "Tailwind CSS 빌드 시 @tailwindcss/typography 0.5.20 플러그인이 postcss-selector-parser 6.0.10으로 저장소 CSS selector를 파싱한다.",
-      "callLocations": "src/app/globals.css:4의 @plugin \"@tailwindcss/typography\"; postcss.config.mjs; package.json build. source-map-js는 2026-11-04(KST) 1.2.2로 갱신되어 이 맥락에서 제외됐다.",
-      "assessment": "남은 공격 조건(GHSA-rj75-hqrm-r3gf)은 미신뢰 CSS selector의 동기 파싱이 CPU를 점유하는 것이다. 파서 입력은 저장소 CSS와 플러그인 내장 selector뿐이며 사용자 콘텐츠·요청은 CSS 빌드 입력으로 컴파일되지 않는다. lock의 dev=false는 빌드 시점 의존성이며 운영 요청 경로를 뜻하지 않는다.",
-      "residualAssumptions": "2026-11-04(KST) 기준 6.1.5 이상 수정본은 있으나 최신 @tailwindcss/typography 0.5.20이 6.0.10을 정확히 고정해 npm update로 적용되지 않는다. 수정본이 있는데 적용되지 않은 상태이므로 짧은 2026-11-19 기한으로 전이 override의 빌드 산출 CSS 호환성 검증 또는 상위 갱신을 재검토한다. 악성 dependency CSS 공급망 입력은 CI 자원 고갈 위험으로 남는다."
-    },
-    {
       "id": "shadcn-registry-cli",
       "usedApi": "shadcn CLI와 @shadcn/registry의 설정·registry 항목 병합에 쓰이는 deepmerge 4.3.1이다. 제품에서는 shadcn/tailwind.css만 빌드 시 읽으며 해당 JavaScript API를 호출하지 않는다.",
       "callLocations": "src/app/globals.css:3의 CSS import; node_modules/shadcn/dist/index.js 및 @shadcn/registry/dist의 설정·registry 병합 코드. 제품 TypeScript·CI 명령에는 해당 JavaScript 실행 경로가 없다.",
       "assessment": "공식 권고 https://github.com/advisories/GHSA-gcqx-w48m-w2h4 는 공격자 제어 객체의 병합 결과가 의도하지 않은 prototype 값을 상속할 수 있는 조건을 다룬다. 운영 웹 요청의 해당 API 도달 경로는 발견되지 않아 P2로 추적하지만 도구 입력 위험은 남고 독립 보안 리뷰를 거친다. 이 판단은 P1 위험 수용이나 npm production 표시만을 근거로 한 자동 허용이 아니다.",
-      "residualAssumptions": "2026-11-04(KST) registry 재확인 기준 공식 권고와 npm에서 patched release는 없으며 최신 shadcn·registry도 deepmerge ^4.3.1을 사용한다. 신뢰할 수 없는 remote registry·프로젝트 설정을 사용하는 CLI 실행을 금지한다. 이는 운영 조건이며 새 런타임 차단 구현을 뜻하지 않는다. 제품 JavaScript 연결·미신뢰 입력 허용 시 즉시 재분류하고 2026-11-19까지 공식 패치·전이 의존성 대안을 재검토한다."
+      "residualAssumptions": "2026-11-04(KST) 빈 캐시 registry audit·npm view 재확인 기준 deepmerge 최신은 여전히 4.3.1이고 GitHub 권고의 first_patched_version도 없다(권고 갱신 2026-10-27). upstream에 prototype poisoning 수정 PR이 2026-10-29부터 열려 있으나 병합·릴리스되지 않았고, 최신 shadcn 4.23.0·@shadcn/registry 0.2.1도 deepmerge ^4.3.1을 사용해 상위 갱신으로 해소되지 않는다. 신뢰할 수 없는 remote registry·프로젝트 설정을 사용하는 CLI 실행을 금지한다. 이는 운영 조건이며 새 런타임 차단 구현을 뜻하지 않는다. 제품 JavaScript 연결·미신뢰 입력 허용 시 즉시 재분류한다. 사용면·위험 등급(dev=false, prototype 계열, 공식 패치 없음)이 바뀌지 않았으므로 기한을 늘리지 않고 2026-11-19까지 수정 릴리스·전이 의존성 대안(shadcn의 dependencies 위치 재검토 포함)을 다시 검토한다."
     },
     {
       "id": "tooling-minimatch-glob",
@@ -633,15 +588,6 @@
       "attackCondition": "@esbuild-kit/core-utils 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04(KST) 재확인 결과 경로가 그대로이며 2026-12-03까지 함께 재검토한다."
     },
     {
-      "key": "@tailwindcss/typography:postcss-selector-parser",
-      "contextId": "build-css-source-map",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-03",
-      "reviewBy": "2026-11-19",
-      "attackCondition": "postcss-selector-parser 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04(KST) 재확인 결과 경로가 그대로이며 2026-11-19까지 함께 재검토한다."
-    },
-    {
       "key": "drizzle-kit:@esbuild-kit/esm-loader",
       "contextId": "build-esbuild",
       "priority": "P2",
@@ -660,49 +606,40 @@
       "attackCondition": "GHSA-67mh-4wv8-2f99(<=0.24.2): esbuild serve 개발 서버가 모든 origin 요청에 응답을 노출하는 조건이다. 영향 설치본은 drizzle-kit → @esbuild-kit/core-utils의 esbuild 0.18.20(dev=true)뿐이며 transform만 호출하고 serve를 열지 않는다. 2026-11-04(KST) registry 재확인 결과 ~0.18.20 범위 수정본과 drizzle-kit 대체 릴리스가 없어 개발 도구 위험으로 2026-12-03까지 재검토한다."
     },
     {
-      "key": "postcss-selector-parser:1243379",
-      "contextId": "build-css-source-map",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-03",
-      "reviewBy": "2026-11-19",
-      "attackCondition": "GHSA-rj75-hqrm-r3gf(<6.1.5): 미신뢰 CSS selector의 동기 파싱이 CPU를 점유하는 조건이다. 설치 6.0.10(dev=false, 빌드 시점)은 @tailwindcss/typography 0.5.20의 정확한 pin이며 2026-11-04(KST) 기준 최신 typography도 동일해 npm update로 수정본 6.1.5를 적용할 수 없다. 입력은 저장소 CSS뿐이지만 수정본이 존재하므로 2026-11-19까지 override 호환성 검증 또는 상위 갱신을 재검토한다."
-    },
-    {
       "key": "@shadcn/registry:deepmerge",
       "contextId": "shadcn-registry-cli",
       "priority": "P2",
       "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-03",
+      "reviewedOn": "2026-11-04",
       "reviewBy": "2026-11-19",
-      "attackCondition": "@shadcn/registry 0.2.0이 deepmerge 4.3.1을 통해 설정·registry 입력을 병합하는 전이 사용면이다. 공식 https://github.com/advisories/GHSA-gcqx-w48m-w2h4 의 조건을 별도로 검토하며 제품에서는 CSS만 사용한다. 미신뢰 remote registry·설정으로 CLI를 실행하지 않고 무패치 상태를 2026-11-19까지 재검토한다. 2026-11-04(KST) registry 재확인에서 경로와 무패치 상태가 그대로임을 확인했다."
+      "attackCondition": "@shadcn/registry 0.2.0이 deepmerge 4.3.1을 통해 설정·registry 입력을 병합하는 전이 사용면이다. 공식 https://github.com/advisories/GHSA-gcqx-w48m-w2h4 의 조건을 별도로 검토하며 제품에서는 CSS만 사용한다. 2026-11-04(KST) 빈 캐시 registry audit·npm view 재확인에서 최신 @shadcn/registry 0.2.1도 deepmerge ^4.3.1이라 경로와 무패치 상태가 그대로다. 미신뢰 remote registry·설정으로 CLI를 실행하지 않고 2026-11-19까지 재검토한다."
     },
     {
       "key": "deepmerge:1243505",
       "contextId": "shadcn-registry-cli",
       "priority": "P2",
       "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-03",
+      "reviewedOn": "2026-11-04",
       "reviewBy": "2026-11-19",
-      "attackCondition": "GHSA-gcqx-w48m-w2h4(>=4.2.0 <=4.3.1): 공격자가 병합 원본과 대상 형태를 제어하면 반환 객체가 의도하지 않은 prototype 값을 상속하는 조건이다. 설치 4.3.1(dev=false)은 영향 범위이며 2026-11-04(KST) registry 재확인 결과 최신이 4.3.1로 공식 패치가 없다. 제품 JavaScript 호출은 없고 shadcn CLI의 설정·registry 병합에서만 쓰이나 prototype 계열·dev=false라 짧은 2026-11-19 기한으로 재검토한다."
+      "attackCondition": "GHSA-gcqx-w48m-w2h4(>=4.2.0 <=4.3.1): 공격자가 병합 원본과 대상 형태를 제어하면 mergeObject()가 키를 검증하지 않아 반환 객체가 의도하지 않은 prototype 값을 상속하는 조건이다. 설치 4.3.1(dev=false)은 영향 범위이며 2026-11-04(KST) 빈 캐시 registry audit·npm view 재확인 결과 공식 패치가 없고 upstream 수정 PR도 미릴리스다. 제품 JavaScript 호출은 없고 shadcn CLI의 설정·registry 병합에서만 쓰이나 prototype 계열·dev=false라 위험 등급이 그대로여서 2026-11-19 기한을 유지한다."
     },
     {
       "key": "shadcn:@shadcn/registry",
       "contextId": "shadcn-registry-cli",
       "priority": "P2",
       "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-03",
+      "reviewedOn": "2026-11-04",
       "reviewBy": "2026-11-19",
-      "attackCondition": "shadcn 4.22.1에서 @shadcn/registry 0.2.0을 거쳐 deepmerge 4.3.1로 이어지는 CLI 설정·registry 입력 병합의 전이 경로다. 공식 https://github.com/advisories/GHSA-gcqx-w48m-w2h4 를 기준으로 검토하며 제품은 CSS만 사용한다. 미신뢰 remote registry·설정 CLI 실행을 금지하고 2026-11-19까지 무패치 상태를 재검토한다. 2026-11-04(KST) registry 재확인에서 경로와 무패치 상태가 그대로임을 확인했다."
+      "attackCondition": "shadcn 4.22.1에서 @shadcn/registry 0.2.0을 거쳐 deepmerge 4.3.1로 이어지는 CLI 설정·registry 입력 병합의 전이 경로다. 공식 https://github.com/advisories/GHSA-gcqx-w48m-w2h4 를 기준으로 검토하며 제품은 CSS만 사용한다. 2026-11-04(KST) 빈 캐시 registry audit·npm view 재확인에서 최신 shadcn 4.23.0도 같은 경로라 갱신으로 해소되지 않는다. 미신뢰 remote registry·설정 CLI 실행을 금지하고 2026-11-19까지 재검토한다."
     },
     {
       "key": "shadcn:deepmerge",
       "contextId": "shadcn-registry-cli",
       "priority": "P2",
       "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-03",
+      "reviewedOn": "2026-11-04",
       "reviewBy": "2026-11-19",
-      "attackCondition": "shadcn 4.22.1이 deepmerge 4.3.1을 직접 사용하는 CLI 설정 병합 경로다. 공식 https://github.com/advisories/GHSA-gcqx-w48m-w2h4 의 영향 조건이며 제품은 CSS만 읽고 해당 JavaScript를 호출하지 않는다. 미신뢰 remote registry·설정 CLI 실행을 금지하고 2026-11-19까지 공식 패치를 재검토한다. 2026-11-04(KST) registry 재확인에서 경로와 무패치 상태가 그대로임을 확인했다."
+      "attackCondition": "shadcn 4.22.1이 deepmerge 4.3.1을 직접 사용하는 CLI 설정 병합 경로다. 공식 https://github.com/advisories/GHSA-gcqx-w48m-w2h4 의 영향 조건이며 제품은 CSS만 읽고 해당 JavaScript를 호출하지 않는다. 2026-11-04(KST) 빈 캐시 registry audit·npm view 재확인에서 최신 shadcn 4.23.0도 deepmerge ^4.3.1이라 경로와 무패치 상태가 그대로다. 미신뢰 remote registry·설정 CLI 실행을 금지하고 2026-11-19까지 공식 패치를 재검토한다."
     },
     {
       "key": "@eslint-community/eslint-utils:eslint",

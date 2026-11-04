@@ -7,7 +7,7 @@ const policy = JSON.parse(readFileSync(new URL('../../security/dependency-triage
 const lock = JSON.parse(readFileSync(new URL('../../package-lock.json', import.meta.url)));
 // 실제 원장의 독립 nodes/via 집합으로 npm 응답을 복원한다. 공격 조건 설명은 응답 metadata와 분리한다.
 const audit = { auditReportVersion: 2, vulnerabilities: Object.fromEntries(policy.packages.map(pkg => [pkg.name, { name: pkg.name, severity: pkg.severity, range: pkg.range, nodes: pkg.nodes.map(node => node.path), via: pkg.via.map(v => v.source ? { ...v, url: 'https://github.com/advisories/' + v.id } : v.dependency) }])) };
-test('현재 정확한 집합은 package 수와 advisory 수를 구분한다', () => { assert.deepEqual(verifyDependencyPolicy(audit, lock, policy, '2026-11-03'), { affectedPackages: 28, advisoryEntries: 4, p1: 0 }); });
+test('현재 정확한 집합은 package 수와 advisory 수를 구분한다', () => { assert.deepEqual(verifyDependencyPolicy(audit, lock, policy, '2026-11-04'), { affectedPackages: 26, advisoryEntries: 3, p1: 0 }); });
 for (const [name, change] of [
   ['새 advisory', a => a.vulnerabilities.esbuild.via[0].source++],
   ['영향 범위 변경', a => a.vulnerabilities.esbuild.via[0].range += ' || 99.0.0'],
@@ -16,20 +16,20 @@ for (const [name, change] of [
   ['패키지 누락', a => delete a.vulnerabilities.esbuild],
   ['통신 오류 응답', a => a.error = { code: 'ENETWORK', summary: 'sensitive sentinel' }],
   ['잘못된 via', a => a.vulnerabilities.esbuild.via = [null]],
-]) test(name + ' 차단', () => { const input = structuredClone(audit); change(input); assert.throws(() => verifyDependencyPolicy(input, lock, policy, '2026-11-03'), /DEPENDENCY_/); });
+]) test(name + ' 차단', () => { const input = structuredClone(audit); change(input); assert.throws(() => verifyDependencyPolicy(input, lock, policy, '2026-11-04'), /DEPENDENCY_/); });
 for (const [name, change] of [
   ['미분류', p => p.assessments.pop()], ['P1', p => p.assessments[0].priority = 'P1'],
   ['owner 누락', p => p.assessments[0].owner = ''], ['설명 누락', p => p.assessments[0].assessment = ''],
   ['중복 검토', p => p.assessments[0] = p.assessments[1]],
-]) test(name + ' 원장 차단', () => { const input = structuredClone(policy); change(input); assert.throws(() => verifyDependencyPolicy(audit, lock, input, '2026-11-03'), /DEPENDENCY_/); });
+]) test(name + ' 원장 차단', () => { const input = structuredClone(policy); change(input); assert.throws(() => verifyDependencyPolicy(audit, lock, input, '2026-11-04'), /DEPENDENCY_/); });
 // 가장 이른 재검토 기한(2026-11-19) 다음 날부터는 실제 원장 전체가 만료로 차단된다.
 test('검토 기한 만료 차단', () => assert.throws(() => verifyDependencyPolicy(audit, lock, policy, '2026-11-20'), /DEPENDENCY_TRIAGE_INVALID/));
-test('lock 설치 버전 변경 차단', () => { const input = structuredClone(lock); input.packages['node_modules/@esbuild-kit/core-utils/node_modules/esbuild'].version = '99.0.0'; assert.throws(() => verifyDependencyPolicy(audit, input, policy, '2026-11-03'), /DEPENDENCY_TRIAGE_CHANGED/); });
+test('lock 설치 버전 변경 차단', () => { const input = structuredClone(lock); input.packages['node_modules/@esbuild-kit/core-utils/node_modules/esbuild'].version = '99.0.0'; assert.throws(() => verifyDependencyPolicy(audit, input, policy, '2026-11-04'), /DEPENDENCY_TRIAGE_CHANGED/); });
 test('깨진 audit는 정상 0건이 아니다', () => { for (const input of [null, {}, { auditReportVersion: 2, vulnerabilities: [] }]) assert.throws(() => dependencySnapshot(input, lock), /DEPENDENCY_REPORT_INVALID/); });
 
 // 감사 응답의 제목·영향 범위는 원문에 민감한 문자열이 섞일 수 있으므로 진단에는 식별자만 남긴다.
 function capturePolicyError(inputAudit, inputLock = lock) {
-  try { verifyDependencyPolicy(inputAudit, inputLock, policy, '2026-11-03'); }
+  try { verifyDependencyPolicy(inputAudit, inputLock, policy, '2026-11-04'); }
   catch (error) { return error; }
   assert.fail('변경된 감사 결과가 차단되지 않았다');
 }
@@ -53,7 +53,7 @@ test('권고 제거는 철회로 단정하지 않고 원장에만 남은 ID를 �
   const removed = { source: 999997, id: 'GHSA-test-5678', severity: 'moderate', range: '<99', title: 'SENSITIVE_SENTINEL' };
   input.packages.find(item => item.name === 'esbuild').via.push(removed);
   let error;
-  try { verifyDependencyPolicy(audit, lock, input, '2026-11-03'); }
+  try { verifyDependencyPolicy(audit, lock, input, '2026-11-04'); }
   catch (caught) { error = caught; }
   assert.equal(error?.message, 'DEPENDENCY_TRIAGE_CHANGED');
   assert.deepEqual(error.diagnostics, [{ kind: 'ADVISORY_ONLY_IN_POLICY', package: 'esbuild', id: removed.id, source: removed.source }]);
@@ -80,7 +80,7 @@ test('새 설치 경로는 경로만 진단하고 실제 lock 일치 검사를 �
   const error = capturePolicyError(input, inputLock);
   assert.deepEqual(error.diagnostics, [{ kind: 'NODE_ONLY_IN_AUDIT', package: 'esbuild', path: 'node_modules/fixture-esbuild' }]);
   assert.doesNotMatch(JSON.stringify(error.diagnostics), /99\.0\.0/);
-  assert.throws(() => verifyDependencyPolicy(input, lock, policy, '2026-11-03'), /DEPENDENCY_LOCK_MISMATCH/);
+  assert.throws(() => verifyDependencyPolicy(input, lock, policy, '2026-11-04'), /DEPENDENCY_LOCK_MISMATCH/);
 });
 
 test('변경이 20건을 넘으면 생략 건수를 남기면서 차단한다', () => {
@@ -111,19 +111,19 @@ test('손상된 원장은 원문 없이 실패 차단한다', () => {
   const input = structuredClone(policy);
   input.packages[0].via = [null];
   let error;
-  try { verifyDependencyPolicy(audit, lock, input, '2026-11-03'); }
+  try { verifyDependencyPolicy(audit, lock, input, '2026-11-04'); }
   catch (caught) { error = caught; }
   assert.equal(error?.message, 'DEPENDENCY_TRIAGE_CHANGED');
   assert.deepEqual(dependencyDiagnosticLines(error), ['DEPENDENCY_TRIAGE_CHANGED']);
 });
 
-test('v2 원장은 50개 권고별 판단과 5개 공유 사용 맥락을 유지한다', () => {
+test('v2 원장은 48개 권고별 판단과 4개 공유 사용 맥락을 유지한다', () => {
   assert.equal(policy.schemaVersion, 2);
-  assert.equal(policy.assessments.length, 50);
-  assert.equal(policy.contexts.length, 5);
-  assert.equal(new Set(policy.assessments.map(item => item.contextId)).size, 5);
-  assert.deepEqual(policy.contexts.map(context => policy.assessments.filter(item => item.contextId === context.id).length).sort((a, b) => a - b), [2, 3, 4, 4, 37]);
-  assert.deepEqual(verifyDependencyPolicy(audit, lock, policy, '2026-11-03'), { affectedPackages: 28, advisoryEntries: 4, p1: 0 });
+  assert.equal(policy.assessments.length, 48);
+  assert.equal(policy.contexts.length, 4);
+  assert.equal(new Set(policy.assessments.map(item => item.contextId)).size, 4);
+  assert.deepEqual(policy.contexts.map(context => policy.assessments.filter(item => item.contextId === context.id).length).sort((a, b) => a - b), [3, 4, 4, 37]);
+  assert.deepEqual(verifyDependencyPolicy(audit, lock, policy, '2026-11-04'), { affectedPackages: 26, advisoryEntries: 3, p1: 0 });
 });
 
 for (const [name, change] of [
@@ -140,13 +140,13 @@ for (const [name, change] of [
 ]) test(name + ' 차단', () => {
   const input = structuredClone(policy);
   change(input);
-  assert.throws(() => verifyDependencyPolicy(audit, lock, input, '2026-11-03'), /DEPENDENCY_/);
+  assert.throws(() => verifyDependencyPolicy(audit, lock, input, '2026-11-04'), /DEPENDENCY_/);
 });
 
 test('구 schema v1은 새 검토 원장으로 자동 승인하지 않는다', () => {
   const input = structuredClone(policy);
   input.schemaVersion = 1;
-  assert.throws(() => verifyDependencyPolicy(audit, lock, input, '2026-11-03'), /DEPENDENCY_TRIAGE_CHANGED/);
+  assert.throws(() => verifyDependencyPolicy(audit, lock, input, '2026-11-04'), /DEPENDENCY_TRIAGE_CHANGED/);
 });
 
 test('동일 GHSA의 다른 source ID는 각각 진단하고 차단한다', () => {
@@ -161,15 +161,16 @@ test('동일 GHSA의 다른 source ID는 각각 진단하고 차단한다', () =
   assert.doesNotMatch(dependencyDiagnosticLines(error).join('\n'), /title|range|version/);
 });
 
-// 수정 버전으로 대체한 YAML의 임시 예외는 다시 나타나지 않고, shadcn CLI 평가는 2026-11-04(KST) 재검토 기한을 따릅니다.
+// 수정 버전으로 대체한 YAML의 임시 예외는 다시 나타나지 않고, shadcn CLI 평가는 2026-11-04(UTC) 재검토 결과
+// 공식 패치가 여전히 없고 위험 등급도 그대로라 기존 2026-11-19 기한을 늘리지 않습니다.
 test('패치된 YAML 설치본은 임시 평가·공유 맥락 없이 확인한다', () => {
   assert.equal(policy.packages.some(item => item.name === 'js-yaml'), false);
   assert.deepEqual(policy.assessments.filter(item => item.key.startsWith('js-yaml:')), []);
   assert.deepEqual(policy.contexts.filter(item => ['yaml-parser-cli', 'yaml-omap'].includes(item.id)), []);
   const cliAssessments = policy.assessments.filter(item => item.contextId === 'shadcn-registry-cli');
   assert.equal(cliAssessments.length, 4);
-  assert.ok(cliAssessments.every(item => item.reviewedOn === '2026-11-03' && item.reviewBy === '2026-11-19'));
-  assert.deepEqual(verifyDependencyPolicy(audit, lock, policy, '2026-11-03'), { affectedPackages: 28, advisoryEntries: 4, p1: 0 });
+  assert.ok(cliAssessments.every(item => item.reviewedOn === '2026-11-04' && item.reviewBy === '2026-11-19'));
+  assert.deepEqual(verifyDependencyPolicy(audit, lock, policy, '2026-11-04'), { affectedPackages: 26, advisoryEntries: 3, p1: 0 });
 });
 
 // 2026-11-04(KST) 재검토: lock 범위 안 수정본으로 해소한 권고는 원장에서 제거하고, 남은 평가는 일괄 연장 없이
@@ -178,15 +179,28 @@ test('수정본으로 해소한 권고는 제거하고 남은 평가는 위험�
   for (const name of ['brace-expansion', 'source-map-js', 'vite']) assert.equal(policy.packages.some(item => item.name === name), false);
   assert.deepEqual(policy.assessments.filter(item => /^(brace-expansion|source-map-js|vite):/.test(item.key) || item.key === 'esbuild:1120680'), []);
   assert.deepEqual(policy.contexts.filter(item => ['tooling-brace-expansion', 'vitest-vite'].includes(item.id)), []);
-  assert.ok(policy.assessments.every(item => item.reviewedOn === '2026-11-03'));
+  // 2026-11-04(UTC)에 다시 검토한 shadcn CLI 평가만 검토일이 바뀌고, 나머지는 2026-11-03 검토일을 유지한다.
+  assert.ok(policy.assessments.every(item => item.reviewedOn === (item.contextId === 'shadcn-registry-cli' ? '2026-11-04' : '2026-11-03')));
   // dev=false이거나 수정본이 있는데 적용되지 못한 사용면은 2주, dev=false CLI DoS는 3주, 개발 도구 전용은 4주다.
-  const deadlines = { 'shadcn-registry-cli': '2026-11-19', 'build-css-source-map': '2026-11-19', 'shadcn-ts-morph-glob': '2026-11-26', 'build-esbuild': '2026-12-03', 'tooling-minimatch-glob': '2026-12-03' };
+  const deadlines = { 'shadcn-registry-cli': '2026-11-19', 'shadcn-ts-morph-glob': '2026-11-26', 'build-esbuild': '2026-12-03', 'tooling-minimatch-glob': '2026-12-03' };
   assert.deepEqual(Object.keys(deadlines).sort(), policy.contexts.map(item => item.id).sort());
   assert.ok(policy.assessments.every(item => item.reviewBy === deadlines[item.contextId]));
   // 기존 기한 다음 날(2026-11-06)에도 통과하고, 가장 이른 기한 다음 날부터는 다시 차단한다.
-  assert.deepEqual(verifyDependencyPolicy(audit, lock, policy, '2026-11-06'), { affectedPackages: 28, advisoryEntries: 4, p1: 0 });
-  assert.deepEqual(verifyDependencyPolicy(audit, lock, policy, '2026-11-19'), { affectedPackages: 28, advisoryEntries: 4, p1: 0 });
+  assert.deepEqual(verifyDependencyPolicy(audit, lock, policy, '2026-11-06'), { affectedPackages: 26, advisoryEntries: 3, p1: 0 });
+  assert.deepEqual(verifyDependencyPolicy(audit, lock, policy, '2026-11-19'), { affectedPackages: 26, advisoryEntries: 3, p1: 0 });
   assert.throws(() => verifyDependencyPolicy(audit, lock, policy, '2026-11-20'), /DEPENDENCY_TRIAGE_INVALID/);
+});
+
+// 2026-11-04(UTC) 재검토: @tailwindcss/typography 0.5.20이 6.0.10으로 정확히 고정한 postcss-selector-parser를
+// 범위 지정 overrides로 수정본 6.1.5에 올려 GHSA-rj75-hqrm-r3gf 평가 2건과 build-css-source-map 맥락을 제거한다.
+test('typography의 postcss-selector-parser는 수정본으로 고정하고 해소된 평가를 남기지 않는다', () => {
+  const manifest = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url)));
+  assert.deepEqual(manifest.overrides, { '@tailwindcss/typography': { 'postcss-selector-parser': '^6.1.5' } });
+  assert.equal(lock.packages['node_modules/@tailwindcss/typography'].dependencies['postcss-selector-parser'], '6.0.10');
+  assert.equal(lock.packages['node_modules/postcss-selector-parser'].version, '6.1.5');
+  for (const name of ['postcss-selector-parser', '@tailwindcss/typography']) assert.equal(policy.packages.some(item => item.name === name), false);
+  assert.deepEqual(policy.assessments.filter(item => /^(postcss-selector-parser|@tailwindcss\/typography):/.test(item.key)), []);
+  assert.deepEqual(policy.contexts.filter(item => item.id === 'build-css-source-map'), []);
 });
 
 // minimatch 권고는 CLI dev=false 경로와 개발 도구 경로를 계속 분리해 서로 다른 기한으로 재검토합니다.
@@ -205,9 +219,9 @@ test('minimatch 권고는 사용면을 분리해 위험별 기한으로 재검�
 // 실제 원장의 기한을 늘리지 않고 합성 평가만 만료시켜 일반 실패 차단이 남아 있음을 확인합니다.
 test('YAML 예외를 제거해도 다른 평가의 만료는 계속 차단한다', () => {
   const input = structuredClone(policy);
-  input.assessments[0].reviewBy = '2026-11-03';
-  assert.deepEqual(verifyDependencyPolicy(audit, lock, input, '2026-11-03'), { affectedPackages: 28, advisoryEntries: 4, p1: 0 });
-  assert.throws(() => verifyDependencyPolicy(audit, lock, input, '2026-11-04'), /DEPENDENCY_TRIAGE_INVALID/);
+  input.assessments[0].reviewBy = '2026-11-04';
+  assert.deepEqual(verifyDependencyPolicy(audit, lock, input, '2026-11-04'), { affectedPackages: 26, advisoryEntries: 3, p1: 0 });
+  assert.throws(() => verifyDependencyPolicy(audit, lock, input, '2026-11-05'), /DEPENDENCY_TRIAGE_INVALID/);
 });
 
 test('현재 lock의 모든 resolved는 공식 npm registry를 가리킨다', () => { assert.deepEqual(lockRegistryViolations(lock), []); });
@@ -217,7 +231,7 @@ test('외부 피드 resolved는 주소 없이 설치 경로만 진단하고 차�
   input.packages['node_modules/turndown'].resolved = 'https://registry.npmjs.org.evil.example/turndown/-/turndown-7.2.4.tgz';
   assert.deepEqual(lockRegistryViolations(input).map(item => item.path), ['node_modules/dotenv', 'node_modules/turndown']);
   let thrown;
-  try { verifyDependencyPolicy(audit, input, policy, '2026-11-03'); } catch (error) { thrown = error; }
+  try { verifyDependencyPolicy(audit, input, policy, '2026-11-04'); } catch (error) { thrown = error; }
   assert.equal(thrown?.message, 'DEPENDENCY_LOCK_REGISTRY_INVALID');
   const output = dependencyDiagnosticLines(thrown).join('\n');
   assert.match(output, /node_modules\/dotenv/);
