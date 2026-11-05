@@ -129,7 +129,7 @@ export interface paths {
         };
         /**
          * 현재 로그인한 사용자의 프로필 조회
-         * @description 현재는 Auth.js Web 세션 쿠키가 필요한 경로입니다. 쿠키 이름은 환경·보안 접두어·분할 여부에 따라 달라져 고정하지 않습니다. 모바일 Bearer 인증은 아직 지원하지 않습니다. PENDING 사용자도 자신의 프로필만 조회할 수 있으며 자료 접근 권한을 얻지 않습니다. query key는 허용하지 않습니다.
+         * @description 모바일 Bearer access token 또는 Auth.js Web 세션 쿠키가 필요한 경로입니다. Authorization 헤더가 있으면 쿠키보다 우선하며 유효하지 않은 Authorization은 쿠키로 대체하지 않고 401입니다. 쿠키 이름은 환경·보안 접두어·분할 여부에 따라 달라져 고정하지 않습니다. PENDING 사용자도 자신의 프로필만 조회할 수 있으며 자료 접근 권한을 얻지 않습니다. query key는 허용하지 않습니다.
          */
         get: operations["getCurrentUser"];
         put?: never;
@@ -169,7 +169,7 @@ export interface paths {
         };
         /**
          * 승인 회원 가이드북 목록 조회
-         * @description 현재 Auth.js Web 세션 쿠키와 승인된 회원 권한이 필요합니다. 쿠키 이름은 환경·보안 접두어·분할 여부에 따라 달라 고정하지 않으며 모바일 Bearer 인증은 아직 지원하지 않습니다. PENDING은 403, 세션이 없거나 현재 계정이 유효하지 않으면 401입니다. 알 수 없거나 중복된 query key는 400으로 거부합니다. 페이지 범위를 넘으면 요청한 page와 빈 guidebooks 배열을 반환합니다. 비공개 파일 URL·파일명·토큰은 반환하지 않습니다.
+         * @description 모바일 Bearer access token 또는 Auth.js Web 세션 쿠키와 승인된 회원 권한이 필요합니다. Authorization 헤더가 있으면 쿠키보다 우선하며 유효하지 않은 Authorization은 쿠키로 대체하지 않고 401입니다. 쿠키 이름은 환경·보안 접두어·분할 여부에 따라 달라 고정하지 않으며 PENDING은 403, 세션이 없거나 현재 계정이 유효하지 않으면 401입니다. 알 수 없거나 중복된 query key는 400으로 거부합니다. 페이지 범위를 넘으면 요청한 page와 빈 guidebooks 배열을 반환합니다. 비공개 파일 URL·파일명·토큰은 반환하지 않습니다.
          */
         get: operations["listMemberGuidebooks"];
         put?: never;
@@ -189,7 +189,7 @@ export interface paths {
         };
         /**
          * 본인 과제 목록 조회
-         * @description Auth.js Web 세션 쿠키로 매 요청 현재 권한을 검증합니다. 모바일 Bearer 인증은 아직 지원하지 않습니다(#273). 사용자 ID·역할·저장 키를 권한 증명으로 입력받지 않습니다. 알 수 없거나 중복된 query key를 400으로 거부합니다. MEMBER 본인의 유효한 학적과 공개된 대상만 조회합니다. 범위를 넘으면 요청 번호를 유지한 빈 배열을 반환합니다. 총수를 조회하지 않아 page에는 page·pageSize·hasNextPage만 포함합니다.
+         * @description 모바일 Bearer access token 또는 Auth.js Web 세션 쿠키로 매 요청 현재 권한을 검증합니다. Authorization 헤더가 있으면 쿠키보다 우선하며 유효하지 않은 Authorization은 쿠키로 대체하지 않고 401입니다. 사용자 ID·역할·저장 키를 권한 증명으로 입력받지 않습니다. 알 수 없거나 중복된 query key를 400으로 거부합니다. MEMBER 본인의 유효한 학적과 공개된 대상만 조회합니다. 범위를 넘으면 요청 번호를 유지한 빈 배열을 반환합니다. 총수를 조회하지 않아 page에는 page·pageSize·hasNextPage만 포함합니다.
          */
         get: operations["listMyAssignments"];
         put?: never;
@@ -209,7 +209,7 @@ export interface paths {
         };
         /**
          * 본인 과제 상세 조회
-         * @description Auth.js Web 세션 쿠키로 매 요청 현재 권한을 검증합니다. 모바일 Bearer 인증은 아직 지원하지 않습니다(#273). 사용자 ID·역할·저장 키를 권한 증명으로 입력받지 않습니다. query key는 허용하지 않습니다. MEMBER 본인에게 공개된 과제의 지침·최종 제출·PDF 메타만 반환합니다. 타인 대상·초안은 같은 404입니다.
+         * @description 모바일 Bearer access token 또는 Auth.js Web 세션 쿠키로 매 요청 현재 권한을 검증합니다. Authorization 헤더가 있으면 쿠키보다 우선하며 유효하지 않은 Authorization은 쿠키로 대체하지 않고 401입니다. 사용자 ID·역할·저장 키를 권한 증명으로 입력받지 않습니다. query key는 허용하지 않습니다. MEMBER 본인에게 공개된 과제의 지침·최종 제출·PDF 메타만 반환합니다. 타인 대상·초안은 같은 404입니다.
          */
         get: operations["getMyAssignment"];
         put?: never;
@@ -229,7 +229,7 @@ export interface paths {
         };
         /**
          * 과제의 본인 최종 제출 조회
-         * @description Auth.js Web 세션 쿠키로 매 요청 현재 권한을 검증합니다. 모바일 Bearer 인증은 아직 지원하지 않습니다(#273). 사용자 ID·역할·저장 키를 권한 증명으로 입력받지 않습니다. query key는 허용하지 않습니다. 본인 과제 상세와 동일한 인가를 적용하고 submission과 file만 재투영합니다. 아직 제출하지 않았으면 두 값은 null입니다.
+         * @description 모바일 Bearer access token 또는 Auth.js Web 세션 쿠키로 매 요청 현재 권한을 검증합니다. Authorization 헤더가 있으면 쿠키보다 우선하며 유효하지 않은 Authorization은 쿠키로 대체하지 않고 401입니다. 사용자 ID·역할·저장 키를 권한 증명으로 입력받지 않습니다. query key는 허용하지 않습니다. 본인 과제 상세와 동일한 인가를 적용하고 submission과 file만 재투영합니다. 아직 제출하지 않았으면 두 값은 null입니다.
          */
         get: operations["getMyAssignmentSubmission"];
         put?: never;
@@ -251,7 +251,7 @@ export interface paths {
         put?: never;
         /**
          * 본인 과제 제출 확정
-         * @description Auth.js Web 세션 쿠키로 매 요청 현재 권한을 검증합니다. 모바일 Bearer 인증은 아직 지원하지 않습니다(#273). 사용자 ID·역할·저장 키를 권한 증명으로 입력받지 않습니다. query key는 허용하지 않습니다. 동일 출처 Origin과 application/json이 필수이며 실제 JSON 본문을 16KiB로 제한합니다. 동일한 submissionKey는 이미 확정된 성공을 복구하며 새 확정과 재시도 모두 HTTP 200입니다. replayed로 구분합니다. 실제 파일 검증·마감·현재 대상 재인가·원자 저장은 기존 Application Service에서 수행합니다.
+         * @description 모바일 Bearer access token 또는 Auth.js Web 세션 쿠키로 매 요청 현재 권한을 검증합니다. Authorization 헤더가 있으면 쿠키보다 우선하며 유효하지 않은 Authorization은 쿠키로 대체하지 않고 401입니다. 사용자 ID·역할·저장 키를 권한 증명으로 입력받지 않습니다. query key는 허용하지 않습니다. 쿠키 요청은 동일 출처 Origin이 필수이고 검증된 Bearer 요청은 Origin 검사를 생략하며, application/json이 필수이고 실제 JSON 본문을 16KiB로 제한합니다. 동일한 submissionKey는 이미 확정된 성공을 복구하며 새 확정과 재시도 모두 HTTP 200입니다. replayed로 구분합니다. 실제 파일 검증·마감·현재 대상 재인가·원자 저장은 기존 Application Service에서 수행합니다.
          */
         post: operations["finalizeMyAssignmentSubmission"];
         delete?: never;
@@ -271,7 +271,7 @@ export interface paths {
         put?: never;
         /**
          * 본인 과제 PDF 업로드 의도 발급
-         * @description Auth.js Web 세션 쿠키로 매 요청 현재 권한을 검증합니다. 모바일 Bearer 인증은 아직 지원하지 않습니다(#273). 사용자 ID·역할·저장 키를 권한 증명으로 입력받지 않습니다. query key는 허용하지 않습니다. 동일 출처 Origin과 application/json이 필수이며 실제 JSON 본문을 16KiB로 제한합니다. PDF 한 개를 50MiB 이하로 요청합니다. 원본 파일 URL·토큰 대신 발급 ID·불투명 pathname·UTC 만료 시각만 반환합니다. 파일명은 저장 키로 사용하지 않습니다.
+         * @description 모바일 Bearer access token 또는 Auth.js Web 세션 쿠키로 매 요청 현재 권한을 검증합니다. Authorization 헤더가 있으면 쿠키보다 우선하며 유효하지 않은 Authorization은 쿠키로 대체하지 않고 401입니다. 사용자 ID·역할·저장 키를 권한 증명으로 입력받지 않습니다. query key는 허용하지 않습니다. 쿠키 요청은 동일 출처 Origin이 필수이고 검증된 Bearer 요청은 Origin 검사를 생략하며, application/json이 필수이고 실제 JSON 본문을 16KiB로 제한합니다. PDF 한 개를 50MiB 이하로 요청합니다. 원본 파일 URL·토큰 대신 발급 ID·불투명 pathname·UTC 만료 시각만 반환합니다. 파일명은 저장 키로 사용하지 않습니다.
          */
         post: operations["createMyAssignmentUploadIntent"];
         delete?: never;
@@ -292,7 +292,7 @@ export interface paths {
         post?: never;
         /**
          * 본인 업로드 의도 취소
-         * @description Auth.js Web 세션 쿠키로 매 요청 현재 권한을 검증합니다. 모바일 Bearer 인증은 아직 지원하지 않습니다(#273). 사용자 ID·역할·저장 키를 권한 증명으로 입력받지 않습니다. query key는 허용하지 않습니다. 동일 출처 Origin과 application/json이 필수이며 실제 JSON 본문을 16KiB로 제한합니다. 현재 본인 대상·발급 소유권을 다시 확인하고 원장을 종료합니다. CANCELLED는 실제 객체의 즉시 삭제를 뜻하지 않습니다.
+         * @description 모바일 Bearer access token 또는 Auth.js Web 세션 쿠키로 매 요청 현재 권한을 검증합니다. Authorization 헤더가 있으면 쿠키보다 우선하며 유효하지 않은 Authorization은 쿠키로 대체하지 않고 401입니다. 사용자 ID·역할·저장 키를 권한 증명으로 입력받지 않습니다. query key는 허용하지 않습니다. 쿠키 요청은 동일 출처 Origin이 필수이고 검증된 Bearer 요청은 Origin 검사를 생략하며, application/json이 필수이고 실제 JSON 본문을 16KiB로 제한합니다. 현재 본인 대상·발급 소유권을 다시 확인하고 원장을 종료합니다. CANCELLED는 실제 객체의 즉시 삭제를 뜻하지 않습니다.
          */
         delete: operations["cancelMyAssignmentUploadIntent"];
         options?: never;
@@ -311,7 +311,7 @@ export interface paths {
         put?: never;
         /**
          * 본인 업로드 PDF 검증
-         * @description Auth.js Web 세션 쿠키로 매 요청 현재 권한을 검증합니다. 모바일 Bearer 인증은 아직 지원하지 않습니다(#273). 사용자 ID·역할·저장 키를 권한 증명으로 입력받지 않습니다. query key는 허용하지 않습니다. 동일 출처 Origin과 application/json이 필수이며 실제 JSON 본문을 16KiB로 제한합니다. 서버가 비공개 원본의 크기·PDF 시그니처·SHA256을 검증하고 원장에 기록합니다. VERIFIED는 최종 제출 완료가 아닙니다.
+         * @description 모바일 Bearer access token 또는 Auth.js Web 세션 쿠키로 매 요청 현재 권한을 검증합니다. Authorization 헤더가 있으면 쿠키보다 우선하며 유효하지 않은 Authorization은 쿠키로 대체하지 않고 401입니다. 사용자 ID·역할·저장 키를 권한 증명으로 입력받지 않습니다. query key는 허용하지 않습니다. 쿠키 요청은 동일 출처 Origin이 필수이고 검증된 Bearer 요청은 Origin 검사를 생략하며, application/json이 필수이고 실제 JSON 본문을 16KiB로 제한합니다. 서버가 비공개 원본의 크기·PDF 시그니처·SHA256을 검증하고 원장에 기록합니다. VERIFIED는 최종 제출 완료가 아닙니다.
          */
         post: operations["verifyMyAssignmentUploadIntent"];
         delete?: never;
@@ -331,7 +331,7 @@ export interface paths {
         put?: never;
         /**
          * 과제 업로드 SDK 토큰·서명 영수증 교환
-         * @description Auth.js Web 세션 쿠키로 매 요청 현재 권한을 검증합니다. 모바일 Bearer 인증은 아직 지원하지 않습니다(#273). 사용자 ID·역할·저장 키를 권한 증명으로 입력받지 않습니다. query key는 허용하지 않습니다. application/json의 실제 본문을 16KiB로 제한합니다. blob.generate-client-token은 동일 출처 Origin·현재 MEMBER 대상·발급 소유권·정확한 pathname·단일 PUT과 요청 예산을 검증합니다. 토큰 생성의 Origin 거부는 기존 서비스의 404 NOT_FOUND를 유지합니다. blob.upload-completed만 공급자 SDK 서명을 검증한 callback으로 Origin·사용자 세션 없이 수신합니다. 추가 JSON 속성과 키 순서를 포함한 원본 파싱 객체를 SDK에 전달하며 재구성한 객체로 서명을 검증하지 않습니다. callback은 기존 원장 수신을 멱등 기록하고 VERIFIED나 제출 완료로 승격하지 않습니다. 성공 본문은 Vercel SDK 프로토콜 그대로이며 오류만 공통 v1 JSON입니다.
+         * @description 모바일 Bearer access token 또는 Auth.js Web 세션 쿠키로 매 요청 현재 권한을 검증합니다. Authorization 헤더가 있으면 쿠키보다 우선하며 유효하지 않은 Authorization은 쿠키로 대체하지 않고 401입니다. 사용자 ID·역할·저장 키를 권한 증명으로 입력받지 않습니다. query key는 허용하지 않습니다. application/json의 실제 본문을 16KiB로 제한합니다. blob.generate-client-token은 쿠키 요청의 동일 출처 Origin(검증된 Bearer 요청은 생략)·현재 MEMBER 대상·발급 소유권·정확한 pathname·단일 PUT과 요청 예산을 검증합니다. 토큰 생성의 Origin 거부는 기존 서비스의 404 NOT_FOUND를 유지합니다. blob.upload-completed만 공급자 SDK 서명을 검증한 callback으로 Origin·사용자 세션 없이 수신합니다. 추가 JSON 속성과 키 순서를 포함한 원본 파싱 객체를 SDK에 전달하며 재구성한 객체로 서명을 검증하지 않습니다. callback은 기존 원장 수신을 멱등 기록하고 VERIFIED나 제출 완료로 승격하지 않습니다. 성공 본문은 Vercel SDK 프로토콜 그대로이며 오류만 공통 v1 JSON입니다.
          */
         post: operations["exchangeAssignmentUploadProtocol"];
         delete?: never;
@@ -349,7 +349,7 @@ export interface paths {
         };
         /**
          * 인가된 개인 제출 PDF 다운로드
-         * @description Auth.js Web 세션 쿠키로 매 요청 현재 권한을 검증합니다. 모바일 Bearer 인증은 아직 지원하지 않습니다(#273). 사용자 ID·역할·저장 키를 권한 증명으로 입력받지 않습니다. query key는 허용하지 않습니다. 현재 본인 소유권 또는 지정 학사 책임자 인가와 감사 기록이 확인된 뒤에만 비공개 Blob을 읽습니다. 홈페이지 ADMIN·교수 FACULTY 역할만으로 허용하지 않습니다. 원본 URL·저장 키·토큰을 응답에 포함하지 않습니다. 파일은 첨부 스트림이며 응답 시작 뒤 전송 중단은 JSON 오류로 바꿀 수 없어 스트림을 중단하고 고정 감사 이벤트로 기록합니다.
+         * @description 모바일 Bearer access token 또는 Auth.js Web 세션 쿠키로 매 요청 현재 권한을 검증합니다. Authorization 헤더가 있으면 쿠키보다 우선하며 유효하지 않은 Authorization은 쿠키로 대체하지 않고 401입니다. 사용자 ID·역할·저장 키를 권한 증명으로 입력받지 않습니다. query key는 허용하지 않습니다. 현재 본인 소유권 또는 지정 학사 책임자 인가와 감사 기록이 확인된 뒤에만 비공개 Blob을 읽습니다. 홈페이지 ADMIN·교수 FACULTY 역할만으로 허용하지 않습니다. 원본 URL·저장 키·토큰을 응답에 포함하지 않습니다. 파일은 첨부 스트림이며 응답 시작 뒤 전송 중단은 JSON 오류로 바꿀 수 없어 스트림을 중단하고 고정 감사 이벤트로 기록합니다.
          */
         get: operations["downloadAuthorizedSubmissionFile"];
         put?: never;
@@ -966,8 +966,50 @@ export interface components {
         WeeklyTextDetailResponse: {
             weeklyText: components["schemas"]["WeeklyTextDetail"];
         };
+        /** @description 자료실 파일·메타데이터 조회의 사용자별 빈도 제한(#444) 초과 응답입니다. retryAfterSeconds는 Retry-After 헤더와 같은 1~3600초입니다. */
+        ResourceRateLimitedError: {
+            error: {
+                /** @constant */
+                code: "RATE_LIMITED";
+                message: string;
+                /** Format: uuid */
+                requestId: string;
+                retryAfterSeconds: number;
+            };
+        };
     };
-    responses: never;
+    responses: {
+        /** @description 자료실 조회 빈도 제한 초과(#444). /api/v1/resources 아래 모든 GET(목록·상세·파일)이 401·403 판단 뒤 반환할 수 있습니다. 인증 사용자별로 Web 쿠키·모바일 Bearer와 Web 다운로드 경로가 분당 300회·시간당 2000회 예산을 공유합니다. 기존 path item은 append-only 정책으로 바꾸지 않았으므로 이 응답 정의를 함께 참조합니다(#439). 제한 저장소 장애는 429가 아니라 503 UNAVAILABLE입니다. */
+        ResourceRateLimited: {
+            headers: {
+                "Cache-Control"?: "private, no-store";
+                Vary?: "Cookie, Authorization";
+                "X-Request-Id"?: string;
+                /** @description 본문 retryAfterSeconds와 같은 대기 초 수입니다. */
+                "Retry-After"?: string;
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ResourceRateLimitedError"];
+            };
+        };
+        /** @description 자료 파일 경로(/api/v1/resources/*\/{id}/file)의 조회 빈도 제한 초과(#444). ResourceRateLimited와 같은 예산·본문이며 파일 경로 공통 sandbox 헤더를 함께 보냅니다. */
+        ResourceFileRateLimited: {
+            headers: {
+                "Cache-Control"?: "private, no-store";
+                Vary?: "Cookie, Authorization";
+                "X-Request-Id"?: string;
+                /** @description 본문 retryAfterSeconds와 같은 대기 초 수입니다. */
+                "Retry-After"?: string;
+                "X-Content-Type-Options"?: "nosniff";
+                "Content-Security-Policy"?: "sandbox; default-src 'none'";
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ResourceRateLimitedError"];
+            };
+        };
+    };
     parameters: never;
     requestBodies: never;
     headers: never;
@@ -1469,7 +1511,7 @@ export interface operations {
             200: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     [name: string]: unknown;
                 };
                 content: {
@@ -1480,7 +1522,7 @@ export interface operations {
             400: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     [name: string]: unknown;
                 };
                 content: {
@@ -1491,7 +1533,7 @@ export interface operations {
             401: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     [name: string]: unknown;
                 };
                 content: {
@@ -1502,7 +1544,7 @@ export interface operations {
             403: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     [name: string]: unknown;
                 };
                 content: {
@@ -1513,7 +1555,7 @@ export interface operations {
             503: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     [name: string]: unknown;
                 };
                 content: {
@@ -1538,7 +1580,7 @@ export interface operations {
             200: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1550,7 +1592,7 @@ export interface operations {
             400: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1562,7 +1604,7 @@ export interface operations {
             401: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1574,7 +1616,7 @@ export interface operations {
             403: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1586,7 +1628,7 @@ export interface operations {
             503: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1612,7 +1654,7 @@ export interface operations {
             200: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1624,7 +1666,7 @@ export interface operations {
             400: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1636,7 +1678,7 @@ export interface operations {
             401: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1648,7 +1690,7 @@ export interface operations {
             403: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1660,7 +1702,7 @@ export interface operations {
             404: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1672,7 +1714,7 @@ export interface operations {
             503: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1698,7 +1740,7 @@ export interface operations {
             200: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1710,7 +1752,7 @@ export interface operations {
             400: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1722,7 +1764,7 @@ export interface operations {
             401: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1734,7 +1776,7 @@ export interface operations {
             403: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1746,7 +1788,7 @@ export interface operations {
             404: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1758,7 +1800,7 @@ export interface operations {
             503: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1771,9 +1813,9 @@ export interface operations {
     finalizeMyAssignmentSubmission: {
         parameters: {
             query?: never;
-            header: {
-                /** @description 요청 URL과 동일한 신뢰 출처가 필요합니다. */
-                Origin: string;
+            header?: {
+                /** @description 쿠키 요청에서는 요청 URL과 동일한 신뢰 출처가 필요합니다. 검증된 모바일 Bearer 요청은 생략할 수 있습니다. */
+                Origin?: string;
             };
             path?: never;
             cookie?: never;
@@ -1788,7 +1830,7 @@ export interface operations {
             200: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1800,7 +1842,7 @@ export interface operations {
             400: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1812,7 +1854,7 @@ export interface operations {
             401: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1824,7 +1866,7 @@ export interface operations {
             403: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1836,7 +1878,7 @@ export interface operations {
             404: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1848,7 +1890,7 @@ export interface operations {
             409: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1860,7 +1902,7 @@ export interface operations {
             413: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1872,7 +1914,7 @@ export interface operations {
             429: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     /** @description 재시도까지 기다릴 초 수입니다. */
                     "Retry-After"?: string;
@@ -1886,7 +1928,7 @@ export interface operations {
             503: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1899,9 +1941,9 @@ export interface operations {
     createMyAssignmentUploadIntent: {
         parameters: {
             query?: never;
-            header: {
-                /** @description 요청 URL과 동일한 신뢰 출처가 필요합니다. */
-                Origin: string;
+            header?: {
+                /** @description 쿠키 요청에서는 요청 URL과 동일한 신뢰 출처가 필요합니다. 검증된 모바일 Bearer 요청은 생략할 수 있습니다. */
+                Origin?: string;
             };
             path?: never;
             cookie?: never;
@@ -1916,7 +1958,7 @@ export interface operations {
             200: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1928,7 +1970,7 @@ export interface operations {
             400: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1940,7 +1982,7 @@ export interface operations {
             401: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1952,7 +1994,7 @@ export interface operations {
             403: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1964,7 +2006,7 @@ export interface operations {
             404: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1976,7 +2018,7 @@ export interface operations {
             409: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -1988,7 +2030,7 @@ export interface operations {
             413: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2000,7 +2042,7 @@ export interface operations {
             429: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     /** @description 재시도까지 기다릴 초 수입니다. */
                     "Retry-After"?: string;
@@ -2014,7 +2056,7 @@ export interface operations {
             503: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2027,9 +2069,9 @@ export interface operations {
     cancelMyAssignmentUploadIntent: {
         parameters: {
             query?: never;
-            header: {
-                /** @description 요청 URL과 동일한 신뢰 출처가 필요합니다. */
-                Origin: string;
+            header?: {
+                /** @description 쿠키 요청에서는 요청 URL과 동일한 신뢰 출처가 필요합니다. 검증된 모바일 Bearer 요청은 생략할 수 있습니다. */
+                Origin?: string;
             };
             path: {
                 /** @description 존재하지 않거나 허용되지 않은 대상과 잘못된 UUID는 동일한 404로 처리합니다. */
@@ -2047,7 +2089,7 @@ export interface operations {
             200: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2059,7 +2101,7 @@ export interface operations {
             400: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2071,7 +2113,7 @@ export interface operations {
             401: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2083,7 +2125,7 @@ export interface operations {
             403: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2095,7 +2137,7 @@ export interface operations {
             404: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2107,7 +2149,7 @@ export interface operations {
             409: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2119,7 +2161,7 @@ export interface operations {
             413: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2131,7 +2173,7 @@ export interface operations {
             503: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2144,9 +2186,9 @@ export interface operations {
     verifyMyAssignmentUploadIntent: {
         parameters: {
             query?: never;
-            header: {
-                /** @description 요청 URL과 동일한 신뢰 출처가 필요합니다. */
-                Origin: string;
+            header?: {
+                /** @description 쿠키 요청에서는 요청 URL과 동일한 신뢰 출처가 필요합니다. 검증된 모바일 Bearer 요청은 생략할 수 있습니다. */
+                Origin?: string;
             };
             path: {
                 /** @description 존재하지 않거나 허용되지 않은 대상과 잘못된 UUID는 동일한 404로 처리합니다. */
@@ -2164,7 +2206,7 @@ export interface operations {
             200: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2176,7 +2218,7 @@ export interface operations {
             400: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2188,7 +2230,7 @@ export interface operations {
             401: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2200,7 +2242,7 @@ export interface operations {
             403: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2212,7 +2254,7 @@ export interface operations {
             404: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2224,7 +2266,7 @@ export interface operations {
             409: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2236,7 +2278,7 @@ export interface operations {
             413: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2248,7 +2290,7 @@ export interface operations {
             429: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     /** @description 재시도까지 기다릴 초 수입니다. */
                     "Retry-After"?: string;
@@ -2262,7 +2304,7 @@ export interface operations {
             503: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2276,7 +2318,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                /** @description 토큰 발급에는 필수이고 SDK 서명이 검증된 upload-completed callback에만 예외입니다. */
+                /** @description 쿠키 요청의 토큰 발급에는 필수입니다. 검증된 모바일 Bearer 요청과 SDK 서명이 검증된 upload-completed callback은 생략할 수 있습니다. */
                 Origin?: string;
             };
             path?: never;
@@ -2292,7 +2334,7 @@ export interface operations {
             200: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2304,7 +2346,7 @@ export interface operations {
             400: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2316,7 +2358,7 @@ export interface operations {
             401: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2328,7 +2370,7 @@ export interface operations {
             403: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2340,7 +2382,7 @@ export interface operations {
             404: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2352,7 +2394,7 @@ export interface operations {
             409: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2364,7 +2406,7 @@ export interface operations {
             413: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2376,7 +2418,7 @@ export interface operations {
             429: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     /** @description 재시도까지 기다릴 초 수입니다. */
                     "Retry-After"?: string;
@@ -2390,7 +2432,7 @@ export interface operations {
             503: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2418,7 +2460,7 @@ export interface operations {
             200: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     /** @description 원본명을 안전하게 인코딩한 attachment입니다. */
                     "Content-Disposition"?: string;
@@ -2435,7 +2477,7 @@ export interface operations {
             400: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2447,7 +2489,7 @@ export interface operations {
             401: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2459,7 +2501,7 @@ export interface operations {
             403: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2471,7 +2513,7 @@ export interface operations {
             404: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
@@ -2483,7 +2525,7 @@ export interface operations {
             503: {
                 headers: {
                     "Cache-Control"?: "private, no-store";
-                    Vary?: "Cookie";
+                    Vary?: "Cookie, Authorization";
                     "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
