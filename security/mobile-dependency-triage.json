@@ -3,57 +3,6 @@
   "note": "모바일 앱(apps/mobile/package-lock.json) 원장이다. P2는 코드 사용면 평가이며 owner의 P1 위험 수용 승인이 아니다. advisory 집합과 nodes는 독립적이며 모든 조합이 실제 영향 경로라는 뜻이 아니다. 독립 리뷰에서 재검토한다.",
   "packages": [
     {
-      "name": "@eslint-community/eslint-utils",
-      "severity": "moderate",
-      "range": "*",
-      "nodes": [
-        {
-          "path": "node_modules/@eslint-community/eslint-utils",
-          "version": "4.10.1",
-          "development": true
-        }
-      ],
-      "via": [
-        {
-          "dependency": "eslint"
-        }
-      ]
-    },
-    {
-      "name": "@eslint/config-array",
-      "severity": "moderate",
-      "range": "*",
-      "nodes": [
-        {
-          "path": "node_modules/@eslint/config-array",
-          "version": "0.21.2",
-          "development": true
-        }
-      ],
-      "via": [
-        {
-          "dependency": "minimatch"
-        }
-      ]
-    },
-    {
-      "name": "@eslint/eslintrc",
-      "severity": "moderate",
-      "range": "0.0.1 || >=0.1.1",
-      "nodes": [
-        {
-          "path": "node_modules/@eslint/eslintrc",
-          "version": "3.3.7",
-          "development": true
-        }
-      ],
-      "via": [
-        {
-          "dependency": "minimatch"
-        }
-      ]
-    },
-    {
       "name": "@expo/cli",
       "severity": "high",
       "range": ">=0.19.0-canary-20240625-2333e70",
@@ -116,7 +65,7 @@
     {
       "name": "@expo/fingerprint",
       "severity": "moderate",
-      "range": "*",
+      "range": ">=0.11.12-canary-20250303-4dba60e",
       "nodes": [
         {
           "path": "node_modules/@expo/fingerprint",
@@ -153,7 +102,7 @@
     {
       "name": "@jest/core",
       "severity": "moderate",
-      "range": "*",
+      "range": ">=30.0.0-alpha.1",
       "nodes": [
         {
           "path": "node_modules/@jest/core",
@@ -188,7 +137,7 @@
     {
       "name": "@jest/expect",
       "severity": "moderate",
-      "range": "*",
+      "range": ">=30.5.0",
       "nodes": [
         {
           "path": "node_modules/@jest/expect",
@@ -205,7 +154,7 @@
     {
       "name": "@jest/globals",
       "severity": "moderate",
-      "range": ">=28.0.0-alpha.0",
+      "range": ">=30.5.0",
       "nodes": [
         {
           "path": "node_modules/@jest/globals",
@@ -222,7 +171,7 @@
     {
       "name": "@jest/reporters",
       "severity": "moderate",
-      "range": "*",
+      "range": ">=30.0.0-alpha.1",
       "nodes": [
         {
           "path": "node_modules/@jest/reporters",
@@ -242,7 +191,7 @@
     {
       "name": "@jest/transform",
       "severity": "moderate",
-      "range": "*",
+      "range": ">=30.5.0",
       "nodes": [
         {
           "path": "node_modules/@jest/core/node_modules/@jest/transform",
@@ -253,11 +202,6 @@
           "path": "node_modules/@jest/reporters/node_modules/@jest/transform",
           "version": "30.5.2",
           "development": false
-        },
-        {
-          "path": "node_modules/@jest/transform",
-          "version": "29.7.0",
-          "development": true
         },
         {
           "path": "node_modules/jest-config/node_modules/@jest/transform",
@@ -292,43 +236,9 @@
       ]
     },
     {
-      "name": "@react-native/jest-preset",
-      "severity": "moderate",
-      "range": "*",
-      "nodes": [
-        {
-          "path": "node_modules/@react-native/jest-preset",
-          "version": "0.88.1",
-          "development": true
-        }
-      ],
-      "via": [
-        {
-          "dependency": "babel-jest"
-        }
-      ]
-    },
-    {
-      "name": "@redocly/openapi-core",
-      "severity": "moderate",
-      "range": "<=2.6.0",
-      "nodes": [
-        {
-          "path": "node_modules/@redocly/openapi-core",
-          "version": "1.34.22",
-          "development": true
-        }
-      ],
-      "via": [
-        {
-          "dependency": "minimatch"
-        }
-      ]
-    },
-    {
       "name": "@typescript-eslint/eslint-plugin",
       "severity": "moderate",
-      "range": "*",
+      "range": ">=6.16.0",
       "nodes": [
         {
           "path": "node_modules/@typescript-eslint/eslint-plugin",
@@ -345,16 +255,13 @@
         },
         {
           "dependency": "@typescript-eslint/utils"
-        },
-        {
-          "dependency": "eslint"
         }
       ]
     },
     {
       "name": "@typescript-eslint/parser",
       "severity": "moderate",
-      "range": "*",
+      "range": ">=6.16.0",
       "nodes": [
         {
           "path": "node_modules/@typescript-eslint/parser",
@@ -365,16 +272,13 @@
       "via": [
         {
           "dependency": "@typescript-eslint/typescript-estree"
-        },
-        {
-          "dependency": "eslint"
         }
       ]
     },
     {
       "name": "@typescript-eslint/type-utils",
       "severity": "moderate",
-      "range": ">=5.9.2-alpha.0",
+      "range": ">=6.16.0",
       "nodes": [
         {
           "path": "node_modules/@typescript-eslint/type-utils",
@@ -388,9 +292,6 @@
         },
         {
           "dependency": "@typescript-eslint/utils"
-        },
-        {
-          "dependency": "eslint"
         }
       ]
     },
@@ -414,7 +315,7 @@
     {
       "name": "@typescript-eslint/utils",
       "severity": "moderate",
-      "range": "*",
+      "range": ">=6.16.0",
       "nodes": [
         {
           "path": "node_modules/@typescript-eslint/utils",
@@ -424,26 +325,15 @@
       ],
       "via": [
         {
-          "dependency": "@eslint-community/eslint-utils"
-        },
-        {
           "dependency": "@typescript-eslint/typescript-estree"
-        },
-        {
-          "dependency": "eslint"
         }
       ]
     },
     {
       "name": "babel-jest",
       "severity": "moderate",
-      "range": ">=24.0.0-alpha.0",
+      "range": ">=30.5.0",
       "nodes": [
-        {
-          "path": "node_modules/babel-jest",
-          "version": "29.7.0",
-          "development": true
-        },
         {
           "path": "node_modules/jest-config/node_modules/babel-jest",
           "version": "30.5.2",
@@ -467,7 +357,7 @@
     {
       "name": "babel-plugin-istanbul",
       "severity": "moderate",
-      "range": ">=5.0.1",
+      "range": ">=8.0.0",
       "nodes": [
         {
           "path": "node_modules/@jest/core/node_modules/babel-plugin-istanbul",
@@ -478,11 +368,6 @@
           "path": "node_modules/@jest/reporters/node_modules/babel-plugin-istanbul",
           "version": "8.0.0",
           "development": false
-        },
-        {
-          "path": "node_modules/babel-plugin-istanbul",
-          "version": "6.1.1",
-          "development": true
         },
         {
           "path": "node_modules/jest-config/node_modules/babel-plugin-istanbul",
@@ -538,35 +423,9 @@
       ]
     },
     {
-      "name": "eslint",
-      "severity": "moderate",
-      "range": "0.7.1 - 2.0.0-rc.1 || >=4.1.0",
-      "nodes": [
-        {
-          "path": "node_modules/eslint",
-          "version": "9.39.1",
-          "development": true
-        }
-      ],
-      "via": [
-        {
-          "dependency": "@eslint-community/eslint-utils"
-        },
-        {
-          "dependency": "@eslint/config-array"
-        },
-        {
-          "dependency": "@eslint/eslintrc"
-        },
-        {
-          "dependency": "minimatch"
-        }
-      ]
-    },
-    {
       "name": "eslint-config-expo",
       "severity": "moderate",
-      "range": "*",
+      "range": "<=0.0.1-canary-20240418-8d74597 || >=7.0.0",
       "nodes": [
         {
           "path": "node_modules/eslint-config-expo",
@@ -583,15 +442,6 @@
         },
         {
           "dependency": "eslint-plugin-expo"
-        },
-        {
-          "dependency": "eslint-plugin-import"
-        },
-        {
-          "dependency": "eslint-plugin-react"
-        },
-        {
-          "dependency": "eslint"
         }
       ]
     },
@@ -609,43 +459,6 @@
       "via": [
         {
           "dependency": "@typescript-eslint/utils"
-        },
-        {
-          "dependency": "eslint"
-        }
-      ]
-    },
-    {
-      "name": "eslint-plugin-import",
-      "severity": "moderate",
-      "range": ">=1.15.0",
-      "nodes": [
-        {
-          "path": "node_modules/eslint-plugin-import",
-          "version": "2.32.0",
-          "development": true
-        }
-      ],
-      "via": [
-        {
-          "dependency": "minimatch"
-        }
-      ]
-    },
-    {
-      "name": "eslint-plugin-react",
-      "severity": "moderate",
-      "range": ">=7.23.0",
-      "nodes": [
-        {
-          "path": "node_modules/eslint-plugin-react",
-          "version": "7.37.5",
-          "development": true
-        }
-      ],
-      "via": [
-        {
-          "dependency": "minimatch"
         }
       ]
     },
@@ -672,7 +485,7 @@
     {
       "name": "glob",
       "severity": "moderate",
-      "range": "3.0.0 - 14.0.1",
+      "range": "9.0.0 - 14.0.1",
       "nodes": [
         {
           "path": "node_modules/@jest/core/node_modules/glob",
@@ -713,11 +526,6 @@
           "path": "node_modules/jest-snapshot/node_modules/glob",
           "version": "10.5.0",
           "development": false
-        },
-        {
-          "path": "node_modules/test-exclude/node_modules/glob",
-          "version": "7.2.3",
-          "development": true
         }
       ],
       "via": [
@@ -756,7 +564,7 @@
     {
       "name": "jest-circus",
       "severity": "moderate",
-      "range": ">=27.0.0-next.0",
+      "range": ">=30.0.0-alpha.1",
       "nodes": [
         {
           "path": "node_modules/jest-circus",
@@ -799,7 +607,7 @@
     {
       "name": "jest-config",
       "severity": "moderate",
-      "range": ">=24.0.0-alpha.0",
+      "range": ">=25.2.0-alpha.86",
       "nodes": [
         {
           "path": "node_modules/jest-config",
@@ -828,7 +636,7 @@
     {
       "name": "jest-expo",
       "severity": "moderate",
-      "range": ">=33.0.0-rc.0",
+      "range": ">=58.0.7",
       "nodes": [
         {
           "path": "node_modules/jest-expo",
@@ -838,18 +646,6 @@
       ],
       "via": [
         {
-          "dependency": "@jest/globals"
-        },
-        {
-          "dependency": "@react-native/jest-preset"
-        },
-        {
-          "dependency": "babel-jest"
-        },
-        {
-          "dependency": "jest-snapshot"
-        },
-        {
           "dependency": "jest-watch-typeahead"
         }
       ]
@@ -857,7 +653,7 @@
     {
       "name": "jest-resolve-dependencies",
       "severity": "moderate",
-      "range": ">=27.0.0-next.0",
+      "range": ">=30.5.0",
       "nodes": [
         {
           "path": "node_modules/jest-resolve-dependencies",
@@ -874,7 +670,7 @@
     {
       "name": "jest-runner",
       "severity": "moderate",
-      "range": ">=27.0.0-next.0",
+      "range": ">=30.0.0-alpha.1",
       "nodes": [
         {
           "path": "node_modules/jest-runner",
@@ -894,7 +690,7 @@
     {
       "name": "jest-runtime",
       "severity": "moderate",
-      "range": ">=24.2.0-alpha.0",
+      "range": ">=30.0.0-alpha.1",
       "nodes": [
         {
           "path": "node_modules/jest-runtime",
@@ -920,7 +716,7 @@
     {
       "name": "jest-snapshot",
       "severity": "moderate",
-      "range": ">=27.0.0-next.0",
+      "range": ">=30.5.0",
       "nodes": [
         {
           "path": "node_modules/jest-snapshot",
@@ -954,7 +750,7 @@
     {
       "name": "minimatch",
       "severity": "moderate",
-      "range": "<11.0.1",
+      "range": "7.0.0 - 11.0.0",
       "nodes": [
         {
           "path": "node_modules/@expo/fingerprint/node_modules/minimatch",
@@ -980,11 +776,6 @@
           "path": "node_modules/@jest/reporters/node_modules/test-exclude/node_modules/glob/node_modules/minimatch",
           "version": "9.0.9",
           "development": false
-        },
-        {
-          "path": "node_modules/@redocly/openapi-core/node_modules/minimatch",
-          "version": "5.1.9",
-          "development": true
         },
         {
           "path": "node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch",
@@ -1045,44 +836,22 @@
           "path": "node_modules/jest-snapshot/node_modules/minimatch",
           "version": "10.2.6",
           "development": false
-        },
-        {
-          "path": "node_modules/minimatch",
-          "version": "3.1.5",
-          "development": true
         }
       ],
       "via": [
         {
-          "source": 1244012,
+          "source": 1244623,
           "id": "GHSA-g3hv-75wg-m249",
           "severity": "moderate",
-          "range": "<11.0.1",
+          "range": ">=7.0.0 <11.0.1",
           "title": "minimatch has potential denial of service via globparts amplification"
-        }
-      ]
-    },
-    {
-      "name": "openapi-typescript",
-      "severity": "moderate",
-      "range": ">=7.0.0-next.0",
-      "nodes": [
-        {
-          "path": "node_modules/openapi-typescript",
-          "version": "7.13.0",
-          "development": true
-        }
-      ],
-      "via": [
-        {
-          "dependency": "@redocly/openapi-core"
         }
       ]
     },
     {
       "name": "test-exclude",
       "severity": "moderate",
-      "range": "4.2.2 || >=5.0.0",
+      "range": ">=7.0.0",
       "nodes": [
         {
           "path": "node_modules/@jest/core/node_modules/test-exclude",
@@ -1118,17 +887,9 @@
           "path": "node_modules/jest-snapshot/node_modules/test-exclude",
           "version": "7.0.2",
           "development": false
-        },
-        {
-          "path": "node_modules/test-exclude",
-          "version": "6.0.0",
-          "development": true
         }
       ],
       "via": [
-        {
-          "dependency": "glob"
-        },
         {
           "dependency": "glob"
         },
@@ -1183,47 +944,13 @@
     },
     {
       "id": "eslint-lint-tooling",
-      "usedApi": "eslint 9.39.1과 eslint-config-expo 58.0.4가 포함한 typescript-eslint·eslint-plugin-import·eslint-plugin-react·eslint-plugin-expo가 minimatch 3.1.5·10.2.6으로 eslint.config.cjs의 files·ignores 패턴을 해석한다.",
-      "callLocations": "apps/mobile package.json의 lint 명령과 eslint.config.cjs; node_modules/eslint, node_modules/@eslint/*, node_modules/@typescript-eslint/*, node_modules/minimatch. npm lock에서 dev=true인 개발 도구 경로다.",
+      "usedApi": "eslint-config-expo 58.0.4가 포함한 typescript-eslint 8.72.1의 @typescript-eslint/typescript-estree가 minimatch 10.2.6으로 projectService의 allowDefaultProject 파일 패턴을 해석하고, eslint-plugin-expo·@typescript-eslint/* 플러그인이 이를 통해 eslint.config.cjs의 린트를 수행한다.",
+      "callLocations": "apps/mobile package.json의 lint 명령과 eslint.config.cjs; node_modules/@typescript-eslint/*, node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch, node_modules/eslint-config-expo, node_modules/eslint-plugin-expo. npm lock에서 dev=true인 개발 도구 경로다.",
       "assessment": "minimatch GHSA-g3hv-75wg-m249의 공격 조건은 공격자가 통제하는 glob 패턴이다. lint 패턴은 저장소가 소유한 설정 파일에 고정되어 있고 외부 입력이 도달하지 않으므로 영향은 개발·CI lint 시간의 가용성으로 한정된다. 앱 번들 경로가 아니다.",
-      "residualAssumptions": "2026-11-04 기준 eslint 9와 플러그인은 minimatch ^3·^9·^10을 요구해 수정본(11.0.1 이상)이 범위 밖이다. 개발 도구 전용이므로 4주 뒤 2026-12-02까지 eslint·eslint-config-expo 갱신을 재검토하고, lint 패턴을 외부 입력으로 받게 되면 즉시 재분류한다."
-    },
-    {
-      "id": "openapi-codegen-redocly",
-      "usedApi": "openapi-typescript 7.13.0이 포함한 @redocly/openapi-core가 minimatch 5.1.9로 OpenAPI 번들링 설정의 경로 패턴을 해석한다. 입력은 저장소의 /api/v1 OpenAPI 문서다.",
-      "callLocations": "apps/mobile package.json의 api:generate·api:check 명령과 scripts/generate-api.mjs; node_modules/@redocly/openapi-core/node_modules/minimatch. npm lock에서 dev=true인 코드 생성 도구 경로다.",
-      "assessment": "minimatch 패턴은 Redocly 기본 설정과 저장소가 소유한 OpenAPI 문서에서만 오며 외부 요청이 도달하지 않는다. 영향은 코드 생성 시간의 가용성으로 한정되고 생성 결과는 api:check로 최신성을 비교하므로 조작된 산출물이 조용히 들어가지 않는다.",
-      "residualAssumptions": "2026-11-04 기준 openapi-typescript 최신 7.x는 @redocly/openapi-core 1.x에 머물러 minimatch 수정본(11.0.1 이상)이 범위 밖이다. 개발 도구 전용이므로 4주 뒤 2026-12-02까지 생성기 갱신을 재검토하고, 외부 OpenAPI 문서를 입력으로 쓰게 되면 즉시 재분류한다."
+      "residualAssumptions": "2026-11-05(UTC) 기준 GitHub가 권고 범위를 >=7.0.0 <11.0.1로 정정해 eslint 9.39.1·eslint-plugin-import·eslint-plugin-react가 쓰는 minimatch 3.1.5와 그 전이 링크는 audit에서 빠졌다. 남은 10.x 최신 10.2.6도 영향 범위이고 최신 typescript-estree 8.72.1은 minimatch ^10.2.2를 선언해 수정본(11.0.1 이상)이 범위 밖이므로 major 강제 override는 하지 않았다. 개발 도구 전용이므로 기존 기한 2026-12-02까지 eslint-config-expo·typescript-eslint 갱신을 재검토하고, lint 패턴을 외부 입력으로 받게 되거나 권고 범위가 다시 바뀌어 3.x가 포함되면 즉시 재분류한다."
     }
   ],
   "assessments": [
-    {
-      "key": "@eslint-community/eslint-utils:eslint",
-      "contextId": "eslint-lint-tooling",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "eslint 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
-    {
-      "key": "@eslint/config-array:minimatch",
-      "contextId": "eslint-lint-tooling",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "minimatch 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
-    {
-      "key": "@eslint/eslintrc:minimatch",
-      "contextId": "eslint-lint-tooling",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "minimatch 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
     {
       "key": "@expo/cli:@expo/metro-config",
       "contextId": "expo-cli-config-glob",
@@ -1414,139 +1141,76 @@
       "attackCondition": "babel-plugin-istanbul 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
     },
     {
-      "key": "@react-native/jest-preset:babel-jest",
-      "contextId": "jest-test-runner",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-11-25",
-      "attackCondition": "babel-jest 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
-    },
-    {
-      "key": "@redocly/openapi-core:minimatch",
-      "contextId": "openapi-codegen-redocly",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "minimatch 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
-    {
       "key": "@typescript-eslint/eslint-plugin:@typescript-eslint/parser",
       "contextId": "eslint-lint-tooling",
       "priority": "P2",
       "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
+      "reviewedOn": "2026-11-05",
       "reviewBy": "2026-12-02",
-      "attackCondition": "@typescript-eslint/parser 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+      "attackCondition": "@typescript-eslint/parser 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
     },
     {
       "key": "@typescript-eslint/eslint-plugin:@typescript-eslint/type-utils",
       "contextId": "eslint-lint-tooling",
       "priority": "P2",
       "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
+      "reviewedOn": "2026-11-05",
       "reviewBy": "2026-12-02",
-      "attackCondition": "@typescript-eslint/type-utils 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+      "attackCondition": "@typescript-eslint/type-utils 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
     },
     {
       "key": "@typescript-eslint/eslint-plugin:@typescript-eslint/utils",
       "contextId": "eslint-lint-tooling",
       "priority": "P2",
       "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
+      "reviewedOn": "2026-11-05",
       "reviewBy": "2026-12-02",
-      "attackCondition": "@typescript-eslint/utils 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
-    {
-      "key": "@typescript-eslint/eslint-plugin:eslint",
-      "contextId": "eslint-lint-tooling",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "eslint 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+      "attackCondition": "@typescript-eslint/utils 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
     },
     {
       "key": "@typescript-eslint/parser:@typescript-eslint/typescript-estree",
       "contextId": "eslint-lint-tooling",
       "priority": "P2",
       "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
+      "reviewedOn": "2026-11-05",
       "reviewBy": "2026-12-02",
-      "attackCondition": "@typescript-eslint/typescript-estree 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
-    {
-      "key": "@typescript-eslint/parser:eslint",
-      "contextId": "eslint-lint-tooling",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "eslint 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+      "attackCondition": "@typescript-eslint/typescript-estree 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
     },
     {
       "key": "@typescript-eslint/type-utils:@typescript-eslint/typescript-estree",
       "contextId": "eslint-lint-tooling",
       "priority": "P2",
       "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
+      "reviewedOn": "2026-11-05",
       "reviewBy": "2026-12-02",
-      "attackCondition": "@typescript-eslint/typescript-estree 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+      "attackCondition": "@typescript-eslint/typescript-estree 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
     },
     {
       "key": "@typescript-eslint/type-utils:@typescript-eslint/utils",
       "contextId": "eslint-lint-tooling",
       "priority": "P2",
       "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
+      "reviewedOn": "2026-11-05",
       "reviewBy": "2026-12-02",
-      "attackCondition": "@typescript-eslint/utils 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
-    {
-      "key": "@typescript-eslint/type-utils:eslint",
-      "contextId": "eslint-lint-tooling",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "eslint 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+      "attackCondition": "@typescript-eslint/utils 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
     },
     {
       "key": "@typescript-eslint/typescript-estree:minimatch",
       "contextId": "eslint-lint-tooling",
       "priority": "P2",
       "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
+      "reviewedOn": "2026-11-05",
       "reviewBy": "2026-12-02",
-      "attackCondition": "minimatch 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
-    {
-      "key": "@typescript-eslint/utils:@eslint-community/eslint-utils",
-      "contextId": "eslint-lint-tooling",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "@eslint-community/eslint-utils 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+      "attackCondition": "minimatch 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
     },
     {
       "key": "@typescript-eslint/utils:@typescript-eslint/typescript-estree",
       "contextId": "eslint-lint-tooling",
       "priority": "P2",
       "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
+      "reviewedOn": "2026-11-05",
       "reviewBy": "2026-12-02",
-      "attackCondition": "@typescript-eslint/typescript-estree 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
-    {
-      "key": "@typescript-eslint/utils:eslint",
-      "contextId": "eslint-lint-tooling",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "eslint 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+      "attackCondition": "@typescript-eslint/typescript-estree 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
     },
     {
       "key": "babel-jest:@jest/transform",
@@ -1585,130 +1249,40 @@
       "attackCondition": "GHSA-gcqx-w48m-w2h4: 신뢰하지 않는 객체를 deepmerge로 병합해 prototype을 오염시켜야 한다. @expo/config와 jest-config는 저장소가 소유한 설정 객체만 병합한다."
     },
     {
-      "key": "eslint:@eslint-community/eslint-utils",
-      "contextId": "eslint-lint-tooling",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "@eslint-community/eslint-utils 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
-    {
-      "key": "eslint:@eslint/config-array",
-      "contextId": "eslint-lint-tooling",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "@eslint/config-array 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
-    {
-      "key": "eslint:@eslint/eslintrc",
-      "contextId": "eslint-lint-tooling",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "@eslint/eslintrc 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
-    {
-      "key": "eslint:minimatch",
-      "contextId": "eslint-lint-tooling",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "minimatch 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
-    {
       "key": "eslint-config-expo:@typescript-eslint/eslint-plugin",
       "contextId": "eslint-lint-tooling",
       "priority": "P2",
       "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
+      "reviewedOn": "2026-11-05",
       "reviewBy": "2026-12-02",
-      "attackCondition": "@typescript-eslint/eslint-plugin 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+      "attackCondition": "@typescript-eslint/eslint-plugin 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
     },
     {
       "key": "eslint-config-expo:@typescript-eslint/parser",
       "contextId": "eslint-lint-tooling",
       "priority": "P2",
       "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
+      "reviewedOn": "2026-11-05",
       "reviewBy": "2026-12-02",
-      "attackCondition": "@typescript-eslint/parser 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+      "attackCondition": "@typescript-eslint/parser 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
     },
     {
       "key": "eslint-config-expo:eslint-plugin-expo",
       "contextId": "eslint-lint-tooling",
       "priority": "P2",
       "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
+      "reviewedOn": "2026-11-05",
       "reviewBy": "2026-12-02",
-      "attackCondition": "eslint-plugin-expo 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
-    {
-      "key": "eslint-config-expo:eslint-plugin-import",
-      "contextId": "eslint-lint-tooling",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "eslint-plugin-import 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
-    {
-      "key": "eslint-config-expo:eslint-plugin-react",
-      "contextId": "eslint-lint-tooling",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "eslint-plugin-react 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
-    {
-      "key": "eslint-config-expo:eslint",
-      "contextId": "eslint-lint-tooling",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "eslint 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+      "attackCondition": "eslint-plugin-expo 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
     },
     {
       "key": "eslint-plugin-expo:@typescript-eslint/utils",
       "contextId": "eslint-lint-tooling",
       "priority": "P2",
       "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
+      "reviewedOn": "2026-11-05",
       "reviewBy": "2026-12-02",
-      "attackCondition": "@typescript-eslint/utils 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
-    {
-      "key": "eslint-plugin-expo:eslint",
-      "contextId": "eslint-lint-tooling",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "eslint 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
-    {
-      "key": "eslint-plugin-import:minimatch",
-      "contextId": "eslint-lint-tooling",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "minimatch 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
-    {
-      "key": "eslint-plugin-react:minimatch",
-      "contextId": "eslint-lint-tooling",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "minimatch 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+      "attackCondition": "@typescript-eslint/utils 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
     },
     {
       "key": "expo:@expo/cli",
@@ -1855,42 +1429,6 @@
       "attackCondition": "jest-runner 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
     },
     {
-      "key": "jest-expo:@jest/globals",
-      "contextId": "jest-test-runner",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-11-25",
-      "attackCondition": "@jest/globals 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
-    },
-    {
-      "key": "jest-expo:@react-native/jest-preset",
-      "contextId": "jest-test-runner",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-11-25",
-      "attackCondition": "@react-native/jest-preset 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
-    },
-    {
-      "key": "jest-expo:babel-jest",
-      "contextId": "jest-test-runner",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-11-25",
-      "attackCondition": "babel-jest 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
-    },
-    {
-      "key": "jest-expo:jest-snapshot",
-      "contextId": "jest-test-runner",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-11-25",
-      "attackCondition": "jest-snapshot 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
-    },
-    {
       "key": "jest-expo:jest-watch-typeahead",
       "contextId": "jest-test-runner",
       "priority": "P2",
@@ -1981,22 +1519,13 @@
       "attackCondition": "jest 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
     },
     {
-      "key": "minimatch:1244012",
+      "key": "minimatch:1244623",
       "contextId": "expo-cli-config-glob",
       "priority": "P2",
       "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
+      "reviewedOn": "2026-11-05",
       "reviewBy": "2026-11-25",
-      "attackCondition": "GHSA-g3hv-75wg-m249: 공격자가 통제하는 glob 패턴으로 확장 폭주를 일으켜야 한다. Expo·jest·eslint·Redocly의 패턴은 저장소 설정과 패키지 기본값에 고정되어 있다."
-    },
-    {
-      "key": "openapi-typescript:@redocly/openapi-core",
-      "contextId": "openapi-codegen-redocly",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "@redocly/openapi-core 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+      "attackCondition": "GHSA-g3hv-75wg-m249(2026-11-04T16:50Z 정정, >=7.0.0 <11.0.1): 공격자가 통제하는 glob 패턴으로 확장 폭주를 일으켜야 한다. 남은 minimatch 9.0.9·10.2.6을 쓰는 Expo·jest·typescript-eslint의 패턴은 저장소 설정과 패키지 기본값에 고정되어 있다."
     },
     {
       "key": "test-exclude:glob",
