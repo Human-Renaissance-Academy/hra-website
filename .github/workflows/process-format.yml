@@ -78,7 +78,7 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
-      - run: node --test scripts/tests/release-policy.test.mjs
+      - run: node --test scripts/tests/release-policy.test.mjs scripts/tests/process-format-check.test.mjs
       - run: node scripts/check-release-config.mjs
       - run: node --test scripts/tests/commit-messages.test.mjs
       - run: node --test scripts/tests/openapi-append-only.test.mjs scripts/tests/openapi-cli.test.mjs

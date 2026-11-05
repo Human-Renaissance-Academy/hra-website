@@ -10,8 +10,19 @@ import { classifyPullRequest } from "./_lib/release-policy.mjs";
 
 const MARKER = "<!-- process-format-check -->";
 const releaseAuthor = process.env.RELEASE_PLEASE_BOT_LOGIN?.trim() || "github-actions[bot]";
+// 변경 파일이 수백 개인 PR 의 `--paginate --slurp` 응답은 기본 maxBuffer(1MB)를 넘는다(ENOBUFS).
+// 검사기가 파일 이름·상태를 판정하므로 요청을 줄이지 않고 한도를 넉넉히 올린다.
+const GH_MAX_BUFFER = 64 * 1024 * 1024;
 function gh(args, input) {
-  return execFileSync("gh", args, { encoding: "utf8", input, stdio: ["pipe", "pipe", "inherit"] });
+  try {
+    return execFileSync("gh", args, { encoding: "utf8", input, maxBuffer: GH_MAX_BUFFER, stdio: ["pipe", "pipe", "inherit"] });
+  } catch (error) {
+    // 출력 초과로 잘린 응답을 통과시키지 않고(fail-closed) 원인을 한국어로 알린다.
+    if (error?.code === "ENOBUFS") {
+      throw new Error(`gh 응답이 출력 버퍼 한도(${GH_MAX_BUFFER / 1024 / 1024}MB)를 초과하여 검사를 중단합니다.`);
+    }
+    throw error;
+  }
 }
 function api(path) {
   return JSON.parse(gh(["api", path]));
