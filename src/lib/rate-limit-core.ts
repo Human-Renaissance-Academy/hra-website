@@ -79,6 +79,24 @@ export const APPLICATION_SUBMISSION_DAILY_RATE_LIMIT = { windowMs: 24 * 60 * 60 
 export const APPLICATION_SUBMISSION_EMAIL_DAILY_RATE_LIMIT = { windowMs: 24 * 60 * 60 * 1000, maxAttempts: 5 } as const;
 
 /**
+ * 자료실 파일·메타데이터 조회의 인증 사용자별 빈도 제한 정책 (#444).
+ *
+ * 적용 경로: Web `/api/resources/[kind]/[id]/download` 와 `/api/v1/resources/*` 전체.
+ * 두 경로와 Web 쿠키·모바일 Bearer 가 같은 사용자 id 키 하나의 예산을 공유한다.
+ *
+ * 값 근거:
+ *   - 주차별 텍스트 상세 화면은 첨부 사진을 최대 100장까지 `<img>` 로 불러오고, 모든 자료 응답이
+ *     `Cache-Control: private, no-store` 라 화면을 다시 열 때마다 사진·PDF 미리보기를 다시 요청한다.
+ *   - 분당 300회: 사진 100장짜리 화면에 목록·상세·파일 몇 건을 더해도 한 화면이 약 110회이므로
+ *     1분 안에 그런 화면을 두세 번 새로 고쳐도 막히지 않는다. 일반 화면(목록 1회 + 파일 몇 건)은 10회 안팎이다.
+ *   - 시간당 2000회: 사진이 많은 주차별 텍스트 10여 개와 파일 수십 건을 한 시간 안에 훑어보는 정상 열람을 허용하면서,
+ *     유효한 세션 하나로 자료실 전체를 짧은 시간에 반복해서 내려받는 자동화는 분당 약 33회 수준으로 묶는다.
+ *   - 차단된 요청은 DB 함수가 기록하지 않으므로 재시도 폭주가 대기 시간을 늘리지 않는다.
+ */
+export const RESOURCE_READ_BURST_RATE_LIMIT = { windowMs: 60 * 1000, maxAttempts: 300 } as const;
+export const RESOURCE_READ_HOURLY_RATE_LIMIT = { windowMs: 60 * 60 * 1000, maxAttempts: 2000 } as const;
+
+/**
  * unknown IP 를 나타내는 sentinel 값.
  *
  * headers 전부가 비어 있을 때 (로컬 개발, unit test, misconfigured proxy 등)

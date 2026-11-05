@@ -106,9 +106,22 @@ OpenAPI의 JSON 표현은 [OpenAPI 3.1.1 명세](https://spec.openapis.org/oas/v
 - 강의자료 항목은 `id`·`title`·`audience`·`weekNumber`·`lectureTitle`·`classDate`이고 상세에만 `fileName`을 추가합니다. 업로더 계정·이름과 원본 URL은 반환하지 않습니다.
 - 주차별 텍스트 항목은 `id`·`title`·`textType`·`cohort{id,name}`·`classDate`·`hasBody`·`hasFile`이고 상세에만 Markdown `body`와 `fileName`을 추가합니다. 빈 본문·파일명·분류는 `null`이며 첨부 사진은 이 API 범위에 포함하지 않습니다.
 
-상세·파일 경로는 query를 받지 않으며 잘못된 UUID와 함께 400 `INVALID_INPUT`입니다. 파일 경로는 기존 Web 다운로드(`/api/resources/[kind]/[id]/download`)와 같은 `resourceBlobAccess`·`resourceBlobToken` 규칙으로 프로젝트 공개 저장소 또는 지정 비공개 저장소의 원본만 **서버가 읽어 첨부 스트림으로** 전달합니다. 원본 URL로 리다이렉트하거나 서명 URL을 발급하지 않고 `inline` 미리보기도 제공하지 않습니다. 성공 응답은 저장된 MIME(알 수 없으면 `application/octet-stream`)·안전한 `attachment` 파일명·`nosniff`·`sandbox; default-src 'none'` CSP를 사용하며, 같은 CSP를 `next.config.ts`의 정적 헤더로도 고정합니다. 없는 자료·첨부 없는 텍스트·허용되지 않은 저장 위치·공급자 304는 404, 비공개 토큰 누락·공급자 장애·응답 헤더 대기 60초 상한 초과는 원문 없는 503 `UNAVAILABLE`입니다. 요청 취소는 공급자 SDK 요청과 본문 스트림까지 전파하고, 응답 시작 뒤의 전송 오류는 고정 문구로 스트림을 중단합니다. 기존 Web 다운로드 경로와 마찬가지로 별도 요청 한도는 두지 않습니다.
+상세·파일 경로는 query를 받지 않으며 잘못된 UUID와 함께 400 `INVALID_INPUT`입니다. 파일 경로는 기존 Web 다운로드(`/api/resources/[kind]/[id]/download`)와 같은 `resourceBlobAccess`·`resourceBlobToken` 규칙으로 프로젝트 공개 저장소 또는 지정 비공개 저장소의 원본만 **서버가 읽어 첨부 스트림으로** 전달합니다. 원본 URL로 리다이렉트하거나 서명 URL을 발급하지 않고 `inline` 미리보기도 제공하지 않습니다. 성공 응답은 저장된 MIME(알 수 없으면 `application/octet-stream`)·안전한 `attachment` 파일명·`nosniff`·`sandbox; default-src 'none'` CSP를 사용하며, 같은 CSP를 `next.config.ts`의 정적 헤더로도 고정합니다. 없는 자료·첨부 없는 텍스트·허용되지 않은 저장 위치·공급자 304는 404, 비공개 토큰 누락·공급자 장애·응답 헤더 대기 60초 상한 초과는 원문 없는 503 `UNAVAILABLE`입니다. 요청 취소는 공급자 SDK 요청과 본문 스트림까지 전파하고, 응답 시작 뒤의 전송 오류는 고정 문구로 스트림을 중단합니다. 요청 한도는 아래 「자료 조회 빈도 제한」을 따릅니다.
 
 모든 응답은 `Cache-Control: private, no-store`, `Vary: Cookie, Authorization`, `X-Request-Id`를 포함합니다.
+
+### 자료 조회 빈도 제한 {#resource-read-rate-limit}
+
+[#444](https://github.com/yeongseon/hra-website/issues/444)에 따라 위 7경로와 `GET /api/v1/resources/guidebooks`, 기존 Web 다운로드 `/api/resources/[kind]/[id]/download`(사진 포함)는 **인증 사용자 id 하나당 하나의 예산**을 공유합니다. Web 쿠키와 모바일 Bearer 주체도 같은 키로 계산합니다.
+
+- **정책**: 분당 300회와 시간당 2000회를 함께 적용합니다(`src/lib/rate-limit-core.ts`의 `RESOURCE_READ_*_RATE_LIMIT`). 주차별 텍스트 상세 화면은 첨부 사진을 최대 100장까지 불러오고 자료 응답은 `no-store`라 다시 열 때마다 재요청하므로, 한 화면(약 110회)을 1분 안에 두세 번 다시 열어도 막히지 않는 값입니다. 목록과 파일 몇 건을 보는 일반 화면은 10회 안팎입니다. 시간당 상한은 세션 하나로 자료실 전체를 반복해서 내려받는 자동화를 분당 약 33회 수준으로 묶습니다. 주차별 텍스트 상세의 첨부 사진은 `loading="lazy"`·`decoding="async"`로 화면에 가까워질 때만 요청해 보지 않은 사진이 예산을 쓰지 않게 합니다.
+- **운영 관측**: 시간당 2000회는 실제 사용량 측정 없이 정한 초기값입니다. 배포 후 `rate-limit/reserve-resource-read` 로그와 자료 경로의 429 비율을 관찰하고, 정상 사용자의 429가 확인되면 값을 조정합니다(429 사진은 화면에서 깨진 이미지로만 보입니다).
+- **순서**: API v1은 입력 400 → 무인증·회수·삭제/역할 변경 401 → 승인 대기 403 → 빈도 제한 429 → 대상 404·파일 전송입니다. Web 다운로드는 미로그인·승인 대기 이동 → 잘못된 UUID·알 수 없는 자료 종류 404 → 빈도 제한 429 → 대상 404·파일 전송입니다. 401·403과 입력 오류 요청은 예산에 기록하지 않으며, 초과로 거부된 요청도 기록하지 않습니다.
+- **구현**: 기존 로그인·업로드와 같은 PostgreSQL `reserve_rate_limit` 원자 예약(`rate_limit_events`, 사용자 id는 범위별 SHA-256 해시로만 저장)을 재사용하며 새 저장소를 추가하지 않습니다. API v1 서비스는 `verifySharedResourceReader`·가이드북 목록 서비스에서, Web 다운로드는 `requireSharedResourceReader` 뒤에서 공용 `src/features/resources/read-limit.ts`를 호출합니다.
+- **초과 응답**: API v1은 공용 오류 봉투의 429 `RATE_LIMITED`와 `Retry-After`에 같은 `retryAfterSeconds`(1~3600초, `ResourceRateLimitedError`)를 반환하고 `Cache-Control`·`Vary: Cookie, Authorization`·`X-Request-Id`(파일 경로는 sandbox 헤더 포함)를 유지합니다. Web 다운로드는 기존 응답처럼 한국어 평문 429와 `Retry-After`이며 429·503 모두 `Cache-Control: private, no-store`와 `X-Content-Type-Options: nosniff`를 붙입니다.
+- **제한 저장소 장애 — fail-closed**: 기존 `reserve`는 DB 오류 시 항상 차단하고 모바일 로그인은 이를 503으로 구분합니다. 같은 선례에 따라 장애 시 자료를 제공하지 않고 429가 아닌 503 `UNAVAILABLE`(Web은 평문 503)을 반환합니다. 제한 저장소와 자료 메타데이터가 같은 PostgreSQL에 있어 장애 시 조회도 대부분 실패하므로, fail-open으로 얻는 가용성은 거의 없고 제한 우회 위험만 생기기 때문입니다.
+- **OpenAPI**: 기존 path item은 append-only gate로 바꿀 수 없으므로 429를 각 operation에 추가하지 않고 신규 `components.responses.ResourceRateLimited`(파일 경로는 `ResourceFileRateLimited`)와 `components.schemas.ResourceRateLimitedError`로 기록합니다. operation별 표기 정리는 [#439](https://github.com/yeongseon/hra-website/issues/439)의 기존 operation 정리와 함께 다룹니다.
+- 모바일 클라이언트는 위 「모바일 클라이언트 필수 계약」의 429 규칙대로 `Retry-After`만큼 기다리며 즉시 반복하지 않습니다.
 
 ## 본인 과제·제출·파일 MVP
 

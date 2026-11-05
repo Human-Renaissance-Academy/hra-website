@@ -670,6 +670,20 @@ export const apiV1MobileRateLimitedErrorSchema = z.object({
 export type ApiV1MobileRateLimitedError = z.infer<typeof apiV1MobileRateLimitedErrorSchema>;
 
 /**
+ * 자료실 파일·메타데이터 조회의 사용자별 빈도 제한(#444) 429 응답입니다.
+ * 가장 긴 제한 창(1시간)에 맞춰 1~3600초 재시도 값을 항상 포함하며 `Retry-After` 헤더와 같은 값입니다.
+ */
+export const apiV1ResourceRateLimitedErrorSchema = z.object({
+  error: z.object({
+    code: z.literal("RATE_LIMITED"),
+    message: z.string().min(1),
+    requestId: apiV1UuidSchema,
+    retryAfterSeconds: z.number().int().min(1).max(3600),
+  }).strict(),
+}).strict();
+export type ApiV1ResourceRateLimitedError = z.infer<typeof apiV1ResourceRateLimitedErrorSchema>;
+
+/**
  * 승인 회원 자료 목록(강의자료·주차별 텍스트)은 page와 pageSize만 허용합니다.
  * 가이드북 목록과 같은 기본값·상한이며 안전한 OFFSET 범위는 Route와 서비스에서 추가 검증합니다.
  */

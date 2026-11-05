@@ -9,7 +9,9 @@ import {
   parseResourceId,
   resourceErrorResponse,
   resourceJsonResponse,
+  resourceRateLimitedResponse,
 } from "@/features/resources/api-v1/http";
+import { ResourceReadRateLimitError } from "@/features/resources/read-limit";
 import { getWeeklyTextForMember } from "@/features/weekly-texts/member/service";
 import { logServerError } from "@/lib/errors";
 
@@ -34,6 +36,8 @@ async function handleGet(request: Request, params: Promise<{ id: string }>): Pro
     if (result.kind === "not_found") return resourceErrorResponse("NOT_FOUND", requestId);
     return resourceJsonResponse(toApiV1WeeklyTextDetailResponse(result.item), requestId);
   } catch (error) {
+    // 사용자별 조회 예산 초과(#444)는 429와 Retry-After, 제한 저장소 장애는 아래 공통 503입니다(fail-closed).
+    if (error instanceof ResourceReadRateLimitError) return resourceRateLimitedResponse(error, requestId);
     logServerError("api-v1/resources/weekly-texts/detail", error, { requestId });
     return resourceErrorResponse("UNAVAILABLE", requestId);
   }

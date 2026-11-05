@@ -8,7 +8,7 @@
  */
 import { neon, neonConfig } from "@neondatabase/serverless";
 import { drizzle, type NeonHttpDatabase } from "drizzle-orm/neon-http";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import * as schema from "@/lib/db/schema";
 import { createQaPostgres } from "../support/resource-qa-postgres.mjs";
@@ -91,6 +91,10 @@ describe.skipIf(!bin)("자료 API v1 실제 PostgreSQL 인가·투영 경계", (
         ('${texts.bodyOnly}','본문만 있는 텍스트','',NULL,'본문만',NULL,NULL,NULL,'2026-10-02 09:00:00');
     `);
 
+    // 사용자별 자료 조회 빈도 제한(#444)도 운영과 같은 원자 예약 함수로 실제 기록합니다.
+    cluster.sql("CREATE TABLE application_submissions (id uuid PRIMARY KEY);");
+    cluster.sql(readFileSync("scripts/sql/rate-limit-reservations.sql", "utf8"));
+
     const transport = createPsqlTransport(cluster.environment);
     neonConfig.fetchEndpoint = qaNeonEndpoint;
     neonConfig.fetchFunction = async (input: unknown, options: RequestInit) => {
@@ -125,8 +129,9 @@ describe.skipIf(!bin)("자료 API v1 실제 PostgreSQL 인가·투영 경계", (
       { id: materials.student, title: "학생용 자료", audience: "STUDENT", weekNumber: 2, lectureTitle: "고전", classDate: "2026-10-05" },
       { id: materials.undated, title: "날짜 없는 자료", audience: "STUDENT", weekNumber: null, lectureTitle: null, classDate: null },
     ] });
-    expect(statements).toHaveLength(3); // 현재 프로필·건수·목록
-    const listSql = statements.slice(1).join("\n");
+    expect(statements).toHaveLength(4); // 현재 프로필·조회 빈도 예약(#444)·건수·목록
+    expect(statements[1]).toContain("reserve_rate_limit");
+    const listSql = statements.slice(2).join("\n");
     expect(listSql).toContain("class_materials");
     expect(listSql).not.toMatch(/file_url|file_name|uploaded_by_id/);
   });
@@ -160,7 +165,7 @@ describe.skipIf(!bin)("자료 API v1 실제 PostgreSQL 인가·투영 경계", (
       { id: texts.bodyOnly, title: "본문만 있는 텍스트", textType: null, cohort: null, classDate: null, hasBody: true, hasFile: false },
     ] });
     // 존재 여부 계산식 외에 본문·파일 열을 그대로 SELECT 목록에 싣지 않습니다.
-    expect(statements).toHaveLength(3); // 현재 프로필·건수·목록
+    expect(statements).toHaveLength(4); // 현재 프로필·조회 빈도 예약(#444)·건수·목록
     const listSql = statements.at(-1) ?? "";
     expect(listSql).toContain("weekly_texts");
     expect(listSql).not.toMatch(/"weekly_texts"\."(?:body|file_url|file_name)"\s*(?:,|from)/i);
