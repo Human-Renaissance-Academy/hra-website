@@ -31,7 +31,8 @@ if (args.includes("--paginate")) {
     writeFileSync(event, JSON.stringify({ pull_request: { number: 7 } }));
     return spawnSync(process.execPath, [SCRIPT, "--event"], {
       encoding: "utf8", maxBuffer: 256 * 1024 * 1024,
-      env: { ...process.env, PATH: `${dir}:${process.env.PATH}`, GITHUB_REPOSITORY: "o/r", GITHUB_EVENT_PATH: event },
+      // 전체 환경을 넘기지 않고(환경변수 계약), 검사기 실행에 필요한 값만 명시적으로 전달한다.
+      env: { PATH: `${dir}:${process.env.PATH}`, GITHUB_REPOSITORY: "o/r", GITHUB_EVENT_PATH: event },
     });
   } finally {
     rmSync(dir, { recursive: true, force: true });
