@@ -1,11 +1,11 @@
 # 모바일 Bearer 로컬 통합 검증
 
 `scripts/verify-mobile-bearer-http.mjs`는 배포용 Next 서버, 폐기 가능한 PostgreSQL,
-G1 private 저장소 에뮬레이터를 연결해 모바일 Bearer 서버 HTTP 경계를 검증한다. 운영 적용 승인은 아니다.
+G1 private 저장소 에뮬레이터와 실제 모바일 코어 모듈을 연결해 모바일 Bearer HTTP 여정을 검증한다. 운영 적용 승인은 아니다.
 
 ## 준비와 실행
 
-Node 24, 루트의 lock 기반 설치, 로컬 PostgreSQL 바이너리가 필요하다.
+Node 24, 루트 및 `apps/mobile`의 lock 기반 설치, 로컬 PostgreSQL 바이너리가 필요하다.
 실제 `.env*` 실행 파일이 없는 별도 worktree에서 실행한다. 환경 파일을 복사하지 않는다.
 하네스는 기존 `.next/BUILD_ID`를 요구하며 자동 빌드하지 않는다. 서버 변경 뒤에는 반드시 재빌드한다.
 `src/`, `packages/contracts/`, `next.config.ts`, `package-lock.json`,
@@ -25,8 +25,9 @@ HRA_TEST_PG_BIN=/usr/lib/postgresql/14/bin npm run test:academic-g1
 ```
 
 각 명령의 종료 코드를 확인한다. `PASS MOBILE_*` 중간 출력만으로 전체 성공을 판단하지 않는다.
-모바일 앱 클라이언트 모듈(`apps/mobile`)의 E2E는 이 서버 인증 묶음에 포함하지 않으며 별도 앱 작업에서 검증한다.
-하네스 밖에서 실제 서버 주소나 운영 자격을 전달해 실행하지 않는다.
+하네스는 서버 사례 뒤 `npx --no-install jest -c jest.e2e.config.cjs --runInBand`를 `apps/mobile`에서 실행한다.
+Node 프로젝트는 `HRA_E2E_BASE_URL`이 없으면 건너뛰며 일반 `npm test`는 기존 `tests/`만 수집한다.
+하네스 밖에서 실제 서버 주소나 운영 자격을 전달해 이 테스트를 실행하지 않는다.
 
 ## 증명하는 범위
 
@@ -45,17 +46,22 @@ HRA_TEST_PG_BIN=/usr/lib/postgresql/14/bin npm run test:academic-g1
 - 실제 Blob GET barrier 중 logout-all 또는 계정 버전 증가 후 최종화 401,
   해당 submission_key의 제출 행 0건. 기존 에뮬레이터의 pauseNextRead를 사용하며
   서명·경로·실제 SQL 검사를 교체하지 않는다. 독립 사례 사이에서만 예산을 초기화한다.
+- 실제 `SessionManager/createAuthApi/createApiClient`의 복원·single flight·세대 barrier,
+  만료 뒤 보호 GET 단일 재시도 및 변경 요청 미재전송.
+- 실제 제출 코어와 fetch Blob 전송, 서버 커밋 후 응답 유실/재개, 취소,
+  Node 파일 시스템 다운로드 해시 및 취소 시 부분 파일 삭제.
 
 ## 격리와 진단
 
 G1의 Unix 소켓 PostgreSQL·가짜 Neon→로컬 SQL 어댑터·undici 네트워크 가드를 재사용한다.
-실제 인가·서비스·SQL·Blob 토큰 서명 함수는 교체하지 않는다. 서버는
+실제 인가·서비스·SQL·Blob 토큰 서명 함수는 교체하지 않는다. 서버와 Node 클라이언트 모두
 정확한 앱/저장소 주소와 허용 공급자 요청만 loopback으로 전달한다. 리다이렉트를 따라가지 않는다.
 합성 인증/Blob 키는 실행 메모리에만 두며 외부 환경은 PATH/HOME 등 허용 목록만 상속한다.
 독립 시나리오 사이에만 rate-limit 이벤트를 초기화하며 흐름 내부에서는 초기화하지 않는다.
 
 서버 원문 출력은 메모리에서 비밀번호·접근/갱신/Blob 토큰·Authorization·쿠키 패턴을 검사한다.
 정상·실패 시 자식 프로세스, 저장소, DB를 정리한다. 원문 HTTP/토큰 로그를 추가하지 않는다.
+Jest 실패 원문은 토큰을 포함할 수 있어 안전한 사례명/진단/소스 위치만 출력한다.
 
 `MOBILE_DB_STATEMENTS`는 전용 preload counting proxy가 성공/실패 DB 전송마다
 한 바이트만 누적한 전후 차이다. SQL·인자·결과는 기록하지 않는다. 현재 측정은
@@ -74,13 +80,20 @@ PostgreSQL은 `deadlock_timeout`(기본 1초)이 먼저 만료된 백엔드, 즉
 전체 회수는 **그 문장 스냅샷에 보이는 세션만** 회수한다. 이후 커밋된 신규 로그인까지
 금지하거나 Web session_version을 변경하는 기능은 아니다.
 
+`.github/workflows/mobile-server-e2e.yml`은 관련 서버·계약·모바일 코어/E2E·하네스
+변경을 선택해 환경 제거 빌드와 여정을 실행한다. 읽기 전용 권한, 고정 action,
+시간 상한을 사용하며 실패 때만 로그 artifact(`/tmp/mobile-server-*.log`: 환경 제거 빌드 출력과 하네스 출력)를 7일 보관한다.
+하네스는 고정 사례명·오류 코드·소스 위치와, 토큰·비밀번호 패턴을 걸러낸 모듈 로드 오류 한 줄(`DIAGNOSTIC ...`)만 출력하고 원문 토큰·응답 본문은 출력하지 않는다. 이 로그는 JSON 보고서용
+`check-public-artifact.mjs`의 검사 대상이 아니다([공개 산출물 검사](public-artifact-safety.md)).
+GitHub-hosted 실행 자체는 로컬에서 미검증이다.
+
 ## 한계
 
-실제 Vercel Blob/hosted Neon, 운영 SQL 적용, 모바일 앱 클라이언트·네이티브 저장소,
+실제 Vercel Blob/hosted Neon, 운영 SQL 적용, 네이티브 SecureStore/FileSystem,
 기기/에뮬레이터·UI·백그라운드·iOS를 증명하지 않는다. 가이드북 파일 다운로드는 이 범위에 없다.
 Node 최소 PDF는 서버의 PDF 시그니처 계약을 만족하지만 PDF 뷰어 렌더링 검사는 아니다.
 서버 로그 검사는 알려진 비밀 패턴 검사이지 임의 인코딩 정보 유출의 형식적 증명은 아니다.
-독립 보안 리뷰는 별도 필수 게이트다.
+일반 모바일 typecheck/lint/Jest와 독립 보안 리뷰는 별도 필수 게이트다.
 Node fetch 결과는 네이티브 redirect·재전송·헤더 이후 취소·wire attempt 수를 증명하지 않는다.
 실제 Web 그룹 변경 Server Action과 기존 쿠키의 통합 회귀도 이 하네스에는 없다.
 Blob 후 재인가는 체크포인트 보장이지 회수와 최종 SQL을 하나의 transaction으로

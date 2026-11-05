@@ -1,0 +1,104 @@
+# 운영 자격 없이 최신 production 빌드와 소유 로컬 PostgreSQL의 Bearer 여정을 검증합니다.
+name: 모바일 서버 실통합
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/app/api/v1/**'
+      - 'src/features/auth/**'
+      - 'src/features/academics/**'
+      - 'src/lib/api-v1-principal.ts'
+      - 'packages/contracts/**'
+      - 'apps/mobile/src/api/**'
+      - 'apps/mobile/src/auth/**'
+      - 'apps/mobile/src/features/files/**'
+      - 'apps/mobile/src/features/submission/**'
+      - 'apps/mobile/e2e/**'
+      - 'apps/mobile/package.json'
+      - 'apps/mobile/package-lock.json'
+      - 'apps/mobile/jest.e2e.config.cjs'
+      - 'scripts/verify-mobile-bearer-http.mjs'
+      - 'scripts/migrate-mobile-sessions.sql'
+      - 'tests/support/mobile-bearer-*'
+      - 'tests/integration/mobile-session-*'
+      - 'next.config.ts'
+      - 'package-lock.json'
+      - '.github/workflows/mobile-server-e2e.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/app/api/v1/**'
+      - 'src/features/auth/**'
+      - 'src/features/academics/**'
+      - 'src/lib/api-v1-principal.ts'
+      - 'packages/contracts/**'
+      - 'apps/mobile/src/api/**'
+      - 'apps/mobile/src/auth/**'
+      - 'apps/mobile/src/features/files/**'
+      - 'apps/mobile/src/features/submission/**'
+      - 'apps/mobile/e2e/**'
+      - 'apps/mobile/package.json'
+      - 'apps/mobile/package-lock.json'
+      - 'apps/mobile/jest.e2e.config.cjs'
+      - 'scripts/verify-mobile-bearer-http.mjs'
+      - 'scripts/migrate-mobile-sessions.sql'
+      - 'tests/support/mobile-bearer-*'
+      - 'tests/integration/mobile-session-*'
+      - 'next.config.ts'
+      - 'package-lock.json'
+      - '.github/workflows/mobile-server-e2e.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-server-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  bearer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/mobile/package-lock.json
+      - name: 격리 PostgreSQL 바이너리 준비
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql
+          pg_bin="$(pg_config --bindir)"
+          test -x "$pg_bin/initdb"
+          test -x "$pg_bin/pg_ctl"
+          printf 'HRA_TEST_PG_BIN=%s\n' "$pg_bin" >> "$GITHUB_ENV"
+      - run: npm ci --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
+        working-directory: apps/mobile
+      - name: 환경 제거 최신 웹 빌드
+        timeout-minutes: 8
+        shell: bash
+        run: |
+          set -o pipefail
+          env -i PATH="$PATH" HOME="$HOME" npm run build 2>&1 | tee /tmp/mobile-server-build.log
+      - name: 실제 Bearer HTTP 여정
+        timeout-minutes: 8
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/verify-mobile-bearer-http.mjs 2>&1 | tee /tmp/mobile-server-e2e.log
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: failure()
+        with:
+          name: mobile-server-failure
+          path: /tmp/mobile-server-*.log
+          if-no-files-found: warn
+          retention-days: 7

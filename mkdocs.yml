@@ -108,6 +108,7 @@ nav:
       - 목표 아키텍처: developer/platform-architecture.md
       - 전환 로드맵: PLATFORM-ROADMAP.md
       - 공용 API v1 계약: developer/api-v1.md
+      - 모바일 앱 개발: developer/mobile-app.md
       - 모바일 인증 HTTP 경계: developer/mobile-auth-routes.md
       - 모바일 요청 주체 어댑터: developer/mobile-principal-adapter.md
       - 모바일 세션 DB 검토: developer/mobile-session-migration.md

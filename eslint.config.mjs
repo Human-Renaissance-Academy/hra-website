@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     "site/**",
     ".playwright-mcp/**",
     "screenshots/**",
+    // 독립 Expo 프로젝트는 자체 설정과 CI에서 검사합니다.
+    "apps/mobile/**",
     // Git에서 제외한 로컬 일회성 생성 스크립트는 전체 린트 대상에서도 제외합니다.
     "update-curriculum.js",
   ]),

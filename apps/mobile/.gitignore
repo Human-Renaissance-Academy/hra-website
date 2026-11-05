@@ -1,0 +1,14 @@
+# 독립 설치와 CNG 산출물은 버전 관리하지 않습니다.
+node_modules/
+.expo/
+dist/
+coverage/
+android/
+ios/
+*.tsbuildinfo
+*.apk
+*.aab
+*.keystore
+*.jks
+.env*
+expo-env.d.ts
