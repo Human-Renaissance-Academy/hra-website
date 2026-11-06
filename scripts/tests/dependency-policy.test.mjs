@@ -198,7 +198,10 @@ test('수정본으로 해소한 권고는 제거하고 남은 평가는 위험�
 // 범위 지정 overrides로 수정본 6.1.5에 올려 GHSA-rj75-hqrm-r3gf 평가 2건과 build-css-source-map 맥락을 제거한다.
 test('typography의 postcss-selector-parser는 수정본으로 고정하고 해소된 평가를 남기지 않는다', () => {
   const manifest = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url)));
-  assert.deepEqual(manifest.overrides, { '@tailwindcss/typography': { 'postcss-selector-parser': '^6.1.5' } });
+  assert.deepEqual(manifest.overrides, {
+    '@tailwindcss/typography': { 'postcss-selector-parser': '^6.1.5' },
+    '@vercel/cli-config': { zod: '^4.6.6' },
+  });
   assert.equal(lock.packages['node_modules/@tailwindcss/typography'].dependencies['postcss-selector-parser'], '6.0.10');
   assert.equal(lock.packages['node_modules/postcss-selector-parser'].version, '6.1.5');
   for (const name of ['postcss-selector-parser', '@tailwindcss/typography']) assert.equal(policy.packages.some(item => item.name === name), false);
@@ -240,6 +243,14 @@ test('YAML 예외를 제거해도 다른 평가의 만료는 계속 차단한다
   input.assessments[0].reviewBy = '2026-11-05';
   assert.deepEqual(verifyDependencyPolicy(audit, lock, input, '2026-11-05'), { affectedPackages: 18, advisoryEntries: 3, p1: 0 });
   assert.throws(() => verifyDependencyPolicy(audit, lock, input, '2026-11-06'), /DEPENDENCY_TRIAGE_INVALID/);
+});
+
+// @vercel/cli-config의 정확히 고정된 구버전 Zod가 다시 설치되면 실제 npm audit와 별개로 회귀를 차단한다.
+test('Blob SDK는 cli-config의 Zod 취약 버전을 수정본으로만 해석한다', () => {
+  const manifest = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url)));
+  assert.equal(manifest.overrides['@vercel/cli-config']?.zod, '^4.6.6');
+  assert.equal(lock.packages['node_modules/@vercel/cli-config/node_modules/zod'], undefined);
+  assert.equal(lock.packages['node_modules/zod']?.version, '4.6.7');
 });
 
 test('현재 lock의 모든 resolved는 공식 npm registry를 가리킨다', () => { assert.deepEqual(lockRegistryViolations(lock), []); });
