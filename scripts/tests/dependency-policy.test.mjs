@@ -242,6 +242,14 @@ test('YAML 예외를 제거해도 다른 평가의 만료는 계속 차단한다
   assert.throws(() => verifyDependencyPolicy(audit, lock, input, '2026-11-06'), /DEPENDENCY_TRIAGE_INVALID/);
 });
 
+// @vercel/cli-config의 정확히 고정된 구버전 Zod가 다시 설치되면 실제 npm audit와 별개로 회귀를 차단한다.
+test('Blob SDK는 cli-config의 Zod 취약 버전을 수정본으로만 해석한다', () => {
+  const manifest = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url)));
+  assert.equal(manifest.overrides['@vercel/cli-config']?.zod, '^4.6.6');
+  assert.equal(lock.packages['node_modules/@vercel/cli-config/node_modules/zod'], undefined);
+  assert.equal(lock.packages['node_modules/zod']?.version, '4.6.7');
+});
+
 test('현재 lock의 모든 resolved는 공식 npm registry를 가리킨다', () => { assert.deepEqual(lockRegistryViolations(lock), []); });
 test('외부 피드 resolved는 주소 없이 설치 경로만 진단하고 차단한다', () => {
   const input = structuredClone(lock);
