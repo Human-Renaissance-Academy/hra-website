@@ -53,10 +53,10 @@ describe("#272 승인 회원 가이드북 목록 OpenAPI 3.1 계약", () => {
   it("Web 쿠키 인증·승인 역할과 400/401/403/503 및 전 응답 비공개 무저장 헤더를 고정한다", () => {
     expect(operation.description).toContain("Auth.js Web 세션 쿠키");
     expect(operation.description).toContain("PENDING은 403");
-    expect(operation.description).toContain("모바일 Bearer 인증은 아직 지원하지 않습니다");
+    expect(operation.description).toContain("모바일 Bearer access token");
     expect(operation.description).not.toContain("session-token");
     expect(Object.keys(openapi.components.securitySchemes)).toEqual(["bearerAuth"]);
-    expect(operation).not.toHaveProperty("security");
+    expect(operation.security).toEqual([{ bearerAuth: [] }]);
     const responses = {
       "200": "GuidebookListResponse", "400": "InvalidInputError",
       "401": "UnauthenticatedError", "403": "ForbiddenError", "503": "UnavailableError",
@@ -66,7 +66,7 @@ describe("#272 승인 회원 가이드북 목록 OpenAPI 3.1 계약", () => {
       const response = operation.responses[status];
       expect(response.content["application/json"].schema.$ref).toBe(`#/components/schemas/${schema}`);
       expect(response.headers["Cache-Control"].schema).toEqual({ type: "string", const: "private, no-store" });
-      expect(response.headers.Vary.schema).toEqual({ type: "string", const: "Cookie" });
+      expect(response.headers.Vary.schema).toEqual({ type: "string", const: "Cookie, Authorization" });
     }
     expect(schemas.ForbiddenError.additionalProperties).toBe(false);
     expect(schemas.ForbiddenError.properties.error.additionalProperties).toBe(false);

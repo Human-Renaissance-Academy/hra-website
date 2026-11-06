@@ -69,3 +69,25 @@ UTC 2026-11-05에는 실제 audit가 `DEPENDENCY_TRIAGE_CHANGED`로 바뀐 원�
 새 advisory·source·범위·심각도·패키지 경로·설치 버전, 누락/잘못된 원장, 만료는 실패한다. 불일치 진단은 정제된 패키지·GHSA ID·숫자 source·설치 경로만 출력하고 감사 원문의 제목·범위·버전은 출력하지 않는다. 현재 P2는 독립 코드 검토를 거치는 사용면 평가이며 모든 high 항목을 면제하는 정책이 아니다. 남은 재검토 기한은 위 표처럼 사용면 위험에 따라 **2026-11-26**(CLI DoS, 2026-11-03 판단 당시 dev=false)·**2026-12-02**·**2026-12-03**(개발 도구 전용 4주)으로 나뉜다. 기한 전에 패치 또는 새 근거를 검토하고 실제 재검토일과 기한을 갱신한다. 단순히 기한을 늘리지 않는다. 확인된 P1은 이 게이트에서 항상 차단하며 수정이 필요하다. 권한 있는 owner의 개별 예외가 필요하다면 별도 검토로 정책을 확장해야 하며 에이전트가 승인 사실을 만들어 통과시키지 않는다.
 
 공식 근거: [npm audit 동작](https://docs.npmjs.com/cli/v11/commands/npm-audit/), 각 원장 항목의 GHSA ID. 원장의 source 번호와 범위는 registry 관측 시점 자료이므로 upstream advisory 변경은 재검토를 유발한다.
+
+### 모바일 앱 lockfile (#446)
+
+`apps/mobile`은 루트와 별도로 설치하는 독립 프로젝트이므로 `apps/mobile/package-lock.json`을 **별도 원장** `security/mobile-dependency-triage.json`으로 검사한다. `npm run verify:dependencies`는 루트와 모바일 대상을 차례로 같은 방식(소유 임시 디렉터리·빈 npm 설정·공식 registry 고정 audit)으로 검사하고, 대상별 결과를 `{"target":"root"|"mobile",...}` 한 줄로 출력한다. 한 대상이 실패해도 다른 대상을 계속 검사한 뒤 종료 코드 1로 차단하며, 실패 진단 앞에는 고정된 대상 이름 `DEPENDENCY_TARGET <이름>`만 붙인다. 공식 registry 검사(#432)·정확 일치·만료·P1 차단 규칙은 루트와 같다. 두 lock의 같은 패키지 이름이 서로 다른 버전·경로를 가지므로 원장을 합치지 않는다.
+
+모바일 원장의 `packages`는 사람이 쓰지 않고 실제 audit와 lock으로 `dependencySnapshot()`을 실행한 결과를 그대로 기록한다. 전이 패키지의 `range`는 registry의 최신 배포 목록에 따라 달라지므로 개인 npm 캐시가 아니라 빈 캐시(게이트와 같은 조건)로 얻은 audit를 사용한다. 한 패키지가 같은 이름의 전이 패키지를 여러 버전으로 두면(예: 최초 등록 시 `test-exclude`의 glob 7·10) npm이 같은 링크를 중복 보고한다. 링크 목록은 snapshot 정확 일치로 그대로 고정하고, 평가 키(`test-exclude:glob`)는 한 번만 요구한다.
+
+한국 시간 2026-11-04 최초 등록 시 audit는 high 3·moderate 41·low 1이었다. 처리 결과는 다음과 같다(`reviewedOn`은 게이트 기준 UTC 날짜 2026-11-04).
+
+| 권고 | 경로 | 처리 | 재검토 기한 |
+| --- | --- | --- | --- |
+| sharp(high) GHSA-f88m-g3jw-g9cj·GHSA-rgj7-g3m4-5g8c·GHSA-wq5f-xc86-pv6w | 아이콘 생성 devDependency | `sharp` 0.35.5로 갱신해 해소. `scripts/generate-icons.mjs` 출력(1024×1024 RGBA PNG 3개) 확인 | 해당 없음 |
+| zod(high) GHSA-mrhx-c7xc-m3w5 | `expo` → `@expo/cli`(zod ^3.25.76) DevTools 플러그인 manifest 검증 | zod 3.x 수정본 없음. zod 4 override는 CLI 호환성을 깨뜨릴 수 있어 미적용. 사용면 평가(`expo-cli-devtools-zod`) | 2026-11-18, Play 업로드(#283) 전 |
+| glob·minimatch·deepmerge(moderate·low) | Expo CLI·config·metro-config·fingerprint | 범위 안 수정본 없음(glob ^13, 수정본 14.0.2 이상). `expo-cli-config-glob` | 2026-11-25 |
+| 같은 권고의 jest 경로 | jest·jest-expo·babel-jest·test-exclude | expo-router 선택적 peer 때문에 npm `dev=false`로 기록된 테스트 도구. `jest-test-runner` | 2026-11-25 |
+| 같은 권고의 lint·코드 생성 경로 | eslint·typescript-eslint, openapi-typescript·Redocly | 개발 도구 전용(`dev=true`). `eslint-lint-tooling`·`openapi-codegen-redocly`(2026-11-05 권고 정정으로 제거) | 2026-12-02 |
+
+등록 시 결과는 44 affected package·4 object-advisory entry·92 평가 키·5 공유 context였다.
+
+UTC 2026-11-05에는 루트 원장과 같은 원인으로 모바일 대상이 `DEPENDENCY_TRIAGE_CHANGED`로 실패했다. GitHub가 [minimatch globParts 증폭 권고](https://github.com/advisories/GHSA-g3hv-75wg-m249)를 2026-11-04T16:50Z에 `<11.0.1`에서 `>=7.0.0 <11.0.1`로 정정해 npm audit source가 `1244012`에서 `1244623`으로 바뀌었다. 이에 minimatch 3.1.5(`node_modules/minimatch`, eslint 본체)·5.1.9(Redocly)와 이를 통해서만 영향받던 `eslint`·`@eslint/config-array`·`@eslint/eslintrc`·`@eslint-community/eslint-utils`·`eslint-plugin-import`·`eslint-plugin-react`·`@react-native/jest-preset`·`@redocly/openapi-core`·`openapi-typescript` 9개 패키지, glob 7 경로(`node_modules/test-exclude`)와 그 전이 링크가 audit에서 빠졌다. `packages`는 빈 캐시 audit에 `dependencySnapshot()`을 적용해 다시 생성했고, 평가 **26건**(`minimatch:1244012` 포함)과 참조가 없어진 `openapi-codegen-redocly` context를 제거한 뒤 `minimatch:1244623` 1건을 추가했다(44패키지·4 object-advisory·92평가·5context → 35·4·67·4). lockfile과 `package.json`은 바꾸지 않았다. 남은 minimatch 9.0.9·10.2.6 경로는 그대로 영향 범위이며 10.x 최신 10.2.6에도 수정본이 없다. 새 `minimatch:1244623`(`expo-cli-config-glob`)과 사실 서술을 고친 `eslint-lint-tooling` 평가 12건은 검토일을 `2026-11-05`로 갱신하고 기존 기한(각각 2026-11-25·2026-12-02)을 늘리지 않았다. 경로가 줄기만 하고 판단문을 바꾸지 않은 `jest-test-runner`와 나머지 context의 검토일·기한도 그대로 뒀다. 가장 이른 기한은 여전히 **2026-11-18**(`expo-cli-devtools-zod`)이다.
+
+현재 결과는 **35 affected package**, **4 object-advisory entry**, **67 평가 키**, **4 공유 context**다. `@expo/cli`는 zod 링크 때문에 high로 남는다. 모바일 release JS 번들(Metro)에는 위 패키지가 포함되지 않는다는 점은 [모바일 앱 문서](mobile-app.md)의 소스 맵 점검을 근거로 하며 운영 도달성 보증은 아니다. Dependabot은 `/apps/mobile` npm 의존성도 매주 검토하고 Expo SDK가 함께 고정하는 패키지를 `expo-sdk` 그룹으로 묶는다. TypeScript major만 루트(#436)와 같은 이유(Expo SDK 요구 6.0.3 고정·openapi-typescript override 호환성)로 자동 제안에서 제외하고 minor/patch는 계속 받는다. Android 네이티브(Gradle/Maven) 라이브러리는 npm audit 대상이 아니며 이 게이트 범위 밖이다.

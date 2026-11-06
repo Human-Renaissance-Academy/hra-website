@@ -5,6 +5,8 @@
  * - Web 세션(향후 #273 Bearer)에서 변환한 주체를 현재 사용자 행과 다시 대조합니다.
  * - 승인 대기(PENDING)는 프로필 조회를 포함한 DB 접근 전에 거부합니다.
  * - 목록 페이지 인자를 PostgreSQL LIMIT/OFFSET 범위 안의 정수로만 허용합니다.
+ * - 확인을 통과한 승인 회원의 조회 한 건을 사용자별 빈도 제한(#444, `./read-limit`)에 기록합니다.
+ *   이 함수를 호출하는 서비스는 모두 API v1 자료 경로이므로 401/403 판단 뒤에만 계산됩니다.
  *
  * 사용 위치: `src/features/{class-materials,weekly-texts}/member`, `src/features/guidebooks/file-download`
  */
@@ -12,6 +14,7 @@ import "server-only";
 
 import { API_V1_MAX_PAGE_SIZE } from "@hra/contracts/api-v1";
 import { canReadSharedResource } from "@/features/resources/access";
+import { enforceResourceReadLimit } from "@/features/resources/read-limit";
 import type { ApprovedResourceRole } from "@/features/resources/overview/repository";
 import { getCurrentProfile, type MePrincipal } from "@/features/users/me/service";
 import { toKstDateInput } from "@/lib/date-time";
@@ -24,7 +27,10 @@ export type SharedResourceReaderResult =
   | { kind: "unauthenticated" }
   | { kind: "forbidden" };
 
-/** 삭제·역할 변경 계정은 인증 실패로, 승인 대기는 권한 없음으로 구분합니다. */
+/**
+ * 삭제·역할 변경 계정은 인증 실패로, 승인 대기는 권한 없음으로 구분합니다.
+ * 승인 회원이면 조회 예산을 예약하며 초과·저장소 장애는 `./read-limit` 의 오류를 그대로 던집니다.
+ */
 export async function verifySharedResourceReader(principal: MePrincipal): Promise<SharedResourceReaderResult> {
   // 승인 대기 세션은 현재 계정 조회 전에 차단합니다. 다른 잘못된 주체는 getCurrentProfile이 null로 거부합니다.
   if (principal && typeof principal === "object" && principal.role === "PENDING") return { kind: "forbidden" };
@@ -33,6 +39,8 @@ export async function verifySharedResourceReader(principal: MePrincipal): Promis
   if (!profile) return { kind: "unauthenticated" };
   const role = profile.role;
   if (!canReadSharedResource(role) || role === "PENDING") return { kind: "forbidden" };
+  // 현재 계정 행으로 확인한 사용자 id 를 키로 사용해 Web 쿠키·모바일 Bearer 가 같은 예산을 공유합니다.
+  await enforceResourceReadLimit(profile.id);
   return { kind: "ok", reader: { id: profile.id, role, cohortId: profile.cohortId } };
 }
 

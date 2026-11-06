@@ -1,0 +1,1558 @@
+{
+  "schemaVersion": 2,
+  "note": "모바일 앱(apps/mobile/package-lock.json) 원장이다. P2는 코드 사용면 평가이며 owner의 P1 위험 수용 승인이 아니다. advisory 집합과 nodes는 독립적이며 모든 조합이 실제 영향 경로라는 뜻이 아니다. 독립 리뷰에서 재검토한다.",
+  "packages": [
+    {
+      "name": "@expo/cli",
+      "severity": "high",
+      "range": ">=0.19.0-canary-20240625-2333e70",
+      "nodes": [
+        {
+          "path": "node_modules/expo/node_modules/@expo/cli",
+          "version": "58.1.17",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "dependency": "@expo/metro-config"
+        },
+        {
+          "dependency": "glob"
+        },
+        {
+          "dependency": "zod"
+        }
+      ]
+    },
+    {
+      "name": "@expo/config",
+      "severity": "moderate",
+      "range": "9.1.0-canary-20240628-1ba8152 - 58.0.10",
+      "nodes": [
+        {
+          "path": "node_modules/@expo/config",
+          "version": "58.0.9",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "dependency": "deepmerge"
+        },
+        {
+          "dependency": "glob"
+        }
+      ]
+    },
+    {
+      "name": "@expo/config-plugins",
+      "severity": "moderate",
+      "range": "8.0.9-canary-20240719-83ee47b - 8.0.9-canary-20240814-ce0f7d5 || 8.1.0-canary-20240904-69100c1 - 58.0.11",
+      "nodes": [
+        {
+          "path": "node_modules/@expo/config-plugins",
+          "version": "58.0.11",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "dependency": "glob"
+        }
+      ]
+    },
+    {
+      "name": "@expo/fingerprint",
+      "severity": "moderate",
+      "range": ">=0.11.12-canary-20250303-4dba60e",
+      "nodes": [
+        {
+          "path": "node_modules/@expo/fingerprint",
+          "version": "0.21.7",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "dependency": "glob"
+        },
+        {
+          "dependency": "minimatch"
+        }
+      ]
+    },
+    {
+      "name": "@expo/metro-config",
+      "severity": "moderate",
+      "range": "0.19.0-canary-20240625-2333e70 - 58.0.20",
+      "nodes": [
+        {
+          "path": "node_modules/expo/node_modules/@expo/metro-config",
+          "version": "58.0.19",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "dependency": "glob"
+        }
+      ]
+    },
+    {
+      "name": "@jest/core",
+      "severity": "moderate",
+      "range": ">=30.0.0-alpha.1",
+      "nodes": [
+        {
+          "path": "node_modules/@jest/core",
+          "version": "30.5.2",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "dependency": "@jest/reporters"
+        },
+        {
+          "dependency": "@jest/transform"
+        },
+        {
+          "dependency": "jest-config"
+        },
+        {
+          "dependency": "jest-resolve-dependencies"
+        },
+        {
+          "dependency": "jest-runner"
+        },
+        {
+          "dependency": "jest-runtime"
+        },
+        {
+          "dependency": "jest-snapshot"
+        }
+      ]
+    },
+    {
+      "name": "@jest/expect",
+      "severity": "moderate",
+      "range": ">=30.5.0",
+      "nodes": [
+        {
+          "path": "node_modules/@jest/expect",
+          "version": "30.5.2",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "dependency": "jest-snapshot"
+        }
+      ]
+    },
+    {
+      "name": "@jest/globals",
+      "severity": "moderate",
+      "range": ">=30.5.0",
+      "nodes": [
+        {
+          "path": "node_modules/@jest/globals",
+          "version": "30.5.2",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "dependency": "@jest/expect"
+        }
+      ]
+    },
+    {
+      "name": "@jest/reporters",
+      "severity": "moderate",
+      "range": ">=30.0.0-alpha.1",
+      "nodes": [
+        {
+          "path": "node_modules/@jest/reporters",
+          "version": "30.5.2",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "dependency": "@jest/transform"
+        },
+        {
+          "dependency": "glob"
+        }
+      ]
+    },
+    {
+      "name": "@jest/transform",
+      "severity": "moderate",
+      "range": ">=30.5.0",
+      "nodes": [
+        {
+          "path": "node_modules/@jest/core/node_modules/@jest/transform",
+          "version": "30.5.2",
+          "development": false
+        },
+        {
+          "path": "node_modules/@jest/reporters/node_modules/@jest/transform",
+          "version": "30.5.2",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-config/node_modules/@jest/transform",
+          "version": "30.5.2",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-expo/node_modules/@jest/transform",
+          "version": "30.5.2",
+          "development": true
+        },
+        {
+          "path": "node_modules/jest-runner/node_modules/@jest/transform",
+          "version": "30.5.2",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-runtime/node_modules/@jest/transform",
+          "version": "30.5.2",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-snapshot/node_modules/@jest/transform",
+          "version": "30.5.2",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "dependency": "babel-plugin-istanbul"
+        }
+      ]
+    },
+    {
+      "name": "@typescript-eslint/eslint-plugin",
+      "severity": "moderate",
+      "range": ">=6.16.0",
+      "nodes": [
+        {
+          "path": "node_modules/@typescript-eslint/eslint-plugin",
+          "version": "8.72.1",
+          "development": true
+        }
+      ],
+      "via": [
+        {
+          "dependency": "@typescript-eslint/parser"
+        },
+        {
+          "dependency": "@typescript-eslint/type-utils"
+        },
+        {
+          "dependency": "@typescript-eslint/utils"
+        }
+      ]
+    },
+    {
+      "name": "@typescript-eslint/parser",
+      "severity": "moderate",
+      "range": ">=6.16.0",
+      "nodes": [
+        {
+          "path": "node_modules/@typescript-eslint/parser",
+          "version": "8.72.1",
+          "development": true
+        }
+      ],
+      "via": [
+        {
+          "dependency": "@typescript-eslint/typescript-estree"
+        }
+      ]
+    },
+    {
+      "name": "@typescript-eslint/type-utils",
+      "severity": "moderate",
+      "range": ">=6.16.0",
+      "nodes": [
+        {
+          "path": "node_modules/@typescript-eslint/type-utils",
+          "version": "8.72.1",
+          "development": true
+        }
+      ],
+      "via": [
+        {
+          "dependency": "@typescript-eslint/typescript-estree"
+        },
+        {
+          "dependency": "@typescript-eslint/utils"
+        }
+      ]
+    },
+    {
+      "name": "@typescript-eslint/typescript-estree",
+      "severity": "moderate",
+      "range": ">=6.16.0",
+      "nodes": [
+        {
+          "path": "node_modules/@typescript-eslint/typescript-estree",
+          "version": "8.72.1",
+          "development": true
+        }
+      ],
+      "via": [
+        {
+          "dependency": "minimatch"
+        }
+      ]
+    },
+    {
+      "name": "@typescript-eslint/utils",
+      "severity": "moderate",
+      "range": ">=6.16.0",
+      "nodes": [
+        {
+          "path": "node_modules/@typescript-eslint/utils",
+          "version": "8.72.1",
+          "development": true
+        }
+      ],
+      "via": [
+        {
+          "dependency": "@typescript-eslint/typescript-estree"
+        }
+      ]
+    },
+    {
+      "name": "babel-jest",
+      "severity": "moderate",
+      "range": ">=30.5.0",
+      "nodes": [
+        {
+          "path": "node_modules/jest-config/node_modules/babel-jest",
+          "version": "30.5.2",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-expo/node_modules/babel-jest",
+          "version": "30.5.2",
+          "development": true
+        }
+      ],
+      "via": [
+        {
+          "dependency": "@jest/transform"
+        },
+        {
+          "dependency": "babel-plugin-istanbul"
+        }
+      ]
+    },
+    {
+      "name": "babel-plugin-istanbul",
+      "severity": "moderate",
+      "range": ">=8.0.0",
+      "nodes": [
+        {
+          "path": "node_modules/@jest/core/node_modules/babel-plugin-istanbul",
+          "version": "8.0.0",
+          "development": false
+        },
+        {
+          "path": "node_modules/@jest/reporters/node_modules/babel-plugin-istanbul",
+          "version": "8.0.0",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-config/node_modules/babel-plugin-istanbul",
+          "version": "8.0.0",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-expo/node_modules/babel-plugin-istanbul",
+          "version": "8.0.0",
+          "development": true
+        },
+        {
+          "path": "node_modules/jest-runner/node_modules/babel-plugin-istanbul",
+          "version": "8.0.0",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-runtime/node_modules/babel-plugin-istanbul",
+          "version": "8.0.0",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-snapshot/node_modules/babel-plugin-istanbul",
+          "version": "8.0.0",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "dependency": "test-exclude"
+        }
+      ]
+    },
+    {
+      "name": "deepmerge",
+      "severity": "low",
+      "range": ">=4.2.0",
+      "nodes": [
+        {
+          "path": "node_modules/deepmerge",
+          "version": "4.3.1",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "source": 1243505,
+          "id": "GHSA-gcqx-w48m-w2h4",
+          "severity": "low",
+          "range": ">=4.2.0 <=4.3.1",
+          "title": "deepmerge mergeObject() allows prototype poisoning of returned objects"
+        }
+      ]
+    },
+    {
+      "name": "eslint-config-expo",
+      "severity": "moderate",
+      "range": "<=0.0.1-canary-20240418-8d74597 || >=7.0.0",
+      "nodes": [
+        {
+          "path": "node_modules/eslint-config-expo",
+          "version": "58.0.4",
+          "development": true
+        }
+      ],
+      "via": [
+        {
+          "dependency": "@typescript-eslint/eslint-plugin"
+        },
+        {
+          "dependency": "@typescript-eslint/parser"
+        },
+        {
+          "dependency": "eslint-plugin-expo"
+        }
+      ]
+    },
+    {
+      "name": "eslint-plugin-expo",
+      "severity": "moderate",
+      "range": ">=0.0.1-canary-20240327-a7302d9",
+      "nodes": [
+        {
+          "path": "node_modules/eslint-plugin-expo",
+          "version": "1.2.1",
+          "development": true
+        }
+      ],
+      "via": [
+        {
+          "dependency": "@typescript-eslint/utils"
+        }
+      ]
+    },
+    {
+      "name": "expo",
+      "severity": "moderate",
+      "range": ">=52.0.0-canary-20240625-2333e70",
+      "nodes": [
+        {
+          "path": "node_modules/expo",
+          "version": "58.0.21",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "dependency": "@expo/cli"
+        },
+        {
+          "dependency": "@expo/fingerprint"
+        }
+      ]
+    },
+    {
+      "name": "glob",
+      "severity": "moderate",
+      "range": "9.0.0 - 14.0.1",
+      "nodes": [
+        {
+          "path": "node_modules/@jest/core/node_modules/glob",
+          "version": "10.5.0",
+          "development": false
+        },
+        {
+          "path": "node_modules/@jest/reporters/node_modules/test-exclude/node_modules/glob",
+          "version": "10.5.0",
+          "development": false
+        },
+        {
+          "path": "node_modules/glob",
+          "version": "13.0.6",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-config/node_modules/test-exclude/node_modules/glob",
+          "version": "10.5.0",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-expo/node_modules/glob",
+          "version": "10.5.0",
+          "development": true
+        },
+        {
+          "path": "node_modules/jest-runner/node_modules/glob",
+          "version": "10.5.0",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-runtime/node_modules/test-exclude/node_modules/glob",
+          "version": "10.5.0",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-snapshot/node_modules/glob",
+          "version": "10.5.0",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "dependency": "minimatch"
+        },
+        {
+          "source": 1244013,
+          "id": "GHSA-3g3m-2fjr-6pw4",
+          "severity": "moderate",
+          "range": ">=9.0.0 <=14.0.1",
+          "title": "Glob: AbortSignal cancellation bypass allows post-timeout filesystem traversal"
+        }
+      ]
+    },
+    {
+      "name": "jest",
+      "severity": "moderate",
+      "range": ">=30.0.0-alpha.1",
+      "nodes": [
+        {
+          "path": "node_modules/jest",
+          "version": "30.5.2",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "dependency": "@jest/core"
+        },
+        {
+          "dependency": "jest-cli"
+        }
+      ]
+    },
+    {
+      "name": "jest-circus",
+      "severity": "moderate",
+      "range": ">=30.0.0-alpha.1",
+      "nodes": [
+        {
+          "path": "node_modules/jest-circus",
+          "version": "30.5.2",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "dependency": "@jest/expect"
+        },
+        {
+          "dependency": "jest-runtime"
+        },
+        {
+          "dependency": "jest-snapshot"
+        }
+      ]
+    },
+    {
+      "name": "jest-cli",
+      "severity": "moderate",
+      "range": ">=30.0.0-alpha.1",
+      "nodes": [
+        {
+          "path": "node_modules/jest-cli",
+          "version": "30.5.2",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "dependency": "@jest/core"
+        },
+        {
+          "dependency": "jest-config"
+        }
+      ]
+    },
+    {
+      "name": "jest-config",
+      "severity": "moderate",
+      "range": ">=25.2.0-alpha.86",
+      "nodes": [
+        {
+          "path": "node_modules/jest-config",
+          "version": "30.5.2",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "dependency": "babel-jest"
+        },
+        {
+          "dependency": "deepmerge"
+        },
+        {
+          "dependency": "glob"
+        },
+        {
+          "dependency": "jest-circus"
+        },
+        {
+          "dependency": "jest-runner"
+        }
+      ]
+    },
+    {
+      "name": "jest-expo",
+      "severity": "moderate",
+      "range": ">=58.0.7",
+      "nodes": [
+        {
+          "path": "node_modules/jest-expo",
+          "version": "58.0.13",
+          "development": true
+        }
+      ],
+      "via": [
+        {
+          "dependency": "jest-watch-typeahead"
+        }
+      ]
+    },
+    {
+      "name": "jest-resolve-dependencies",
+      "severity": "moderate",
+      "range": ">=30.5.0",
+      "nodes": [
+        {
+          "path": "node_modules/jest-resolve-dependencies",
+          "version": "30.5.2",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "dependency": "jest-snapshot"
+        }
+      ]
+    },
+    {
+      "name": "jest-runner",
+      "severity": "moderate",
+      "range": ">=30.0.0-alpha.1",
+      "nodes": [
+        {
+          "path": "node_modules/jest-runner",
+          "version": "30.5.2",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "dependency": "@jest/transform"
+        },
+        {
+          "dependency": "jest-runtime"
+        }
+      ]
+    },
+    {
+      "name": "jest-runtime",
+      "severity": "moderate",
+      "range": ">=30.0.0-alpha.1",
+      "nodes": [
+        {
+          "path": "node_modules/jest-runtime",
+          "version": "30.5.2",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "dependency": "@jest/globals"
+        },
+        {
+          "dependency": "@jest/transform"
+        },
+        {
+          "dependency": "glob"
+        },
+        {
+          "dependency": "jest-snapshot"
+        }
+      ]
+    },
+    {
+      "name": "jest-snapshot",
+      "severity": "moderate",
+      "range": ">=30.5.0",
+      "nodes": [
+        {
+          "path": "node_modules/jest-snapshot",
+          "version": "30.5.2",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "dependency": "@jest/transform"
+        }
+      ]
+    },
+    {
+      "name": "jest-watch-typeahead",
+      "severity": "moderate",
+      "range": ">=3.0.0",
+      "nodes": [
+        {
+          "path": "node_modules/jest-watch-typeahead",
+          "version": "3.0.1",
+          "development": true
+        }
+      ],
+      "via": [
+        {
+          "dependency": "jest"
+        }
+      ]
+    },
+    {
+      "name": "minimatch",
+      "severity": "moderate",
+      "range": "7.0.0 - 11.0.0",
+      "nodes": [
+        {
+          "path": "node_modules/@expo/fingerprint/node_modules/minimatch",
+          "version": "10.2.6",
+          "development": false
+        },
+        {
+          "path": "node_modules/@jest/core/node_modules/glob/node_modules/minimatch",
+          "version": "9.0.9",
+          "development": false
+        },
+        {
+          "path": "node_modules/@jest/core/node_modules/minimatch",
+          "version": "10.2.6",
+          "development": false
+        },
+        {
+          "path": "node_modules/@jest/reporters/node_modules/minimatch",
+          "version": "10.2.6",
+          "development": false
+        },
+        {
+          "path": "node_modules/@jest/reporters/node_modules/test-exclude/node_modules/glob/node_modules/minimatch",
+          "version": "9.0.9",
+          "development": false
+        },
+        {
+          "path": "node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch",
+          "version": "10.2.6",
+          "development": true
+        },
+        {
+          "path": "node_modules/glob/node_modules/minimatch",
+          "version": "10.2.6",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-config/node_modules/minimatch",
+          "version": "10.2.6",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-config/node_modules/test-exclude/node_modules/glob/node_modules/minimatch",
+          "version": "9.0.9",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-expo/node_modules/glob/node_modules/minimatch",
+          "version": "9.0.9",
+          "development": true
+        },
+        {
+          "path": "node_modules/jest-expo/node_modules/minimatch",
+          "version": "10.2.6",
+          "development": true
+        },
+        {
+          "path": "node_modules/jest-runner/node_modules/glob/node_modules/minimatch",
+          "version": "9.0.9",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-runner/node_modules/minimatch",
+          "version": "10.2.6",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-runtime/node_modules/minimatch",
+          "version": "10.2.6",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-runtime/node_modules/test-exclude/node_modules/glob/node_modules/minimatch",
+          "version": "9.0.9",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-snapshot/node_modules/glob/node_modules/minimatch",
+          "version": "9.0.9",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-snapshot/node_modules/minimatch",
+          "version": "10.2.6",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "source": 1244623,
+          "id": "GHSA-g3hv-75wg-m249",
+          "severity": "moderate",
+          "range": ">=7.0.0 <11.0.1",
+          "title": "minimatch has potential denial of service via globparts amplification"
+        }
+      ]
+    },
+    {
+      "name": "test-exclude",
+      "severity": "moderate",
+      "range": ">=7.0.0",
+      "nodes": [
+        {
+          "path": "node_modules/@jest/core/node_modules/test-exclude",
+          "version": "7.0.2",
+          "development": false
+        },
+        {
+          "path": "node_modules/@jest/reporters/node_modules/test-exclude",
+          "version": "7.0.2",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-config/node_modules/test-exclude",
+          "version": "7.0.2",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-expo/node_modules/test-exclude",
+          "version": "7.0.2",
+          "development": true
+        },
+        {
+          "path": "node_modules/jest-runner/node_modules/test-exclude",
+          "version": "7.0.2",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-runtime/node_modules/test-exclude",
+          "version": "7.0.2",
+          "development": false
+        },
+        {
+          "path": "node_modules/jest-snapshot/node_modules/test-exclude",
+          "version": "7.0.2",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "dependency": "glob"
+        },
+        {
+          "dependency": "minimatch"
+        }
+      ]
+    },
+    {
+      "name": "zod",
+      "severity": "high",
+      "range": "<4.6.6",
+      "nodes": [
+        {
+          "path": "node_modules/expo/node_modules/zod",
+          "version": "3.25.76",
+          "development": false
+        }
+      ],
+      "via": [
+        {
+          "source": 1243066,
+          "id": "GHSA-mrhx-c7xc-m3w5",
+          "severity": "high",
+          "range": "<4.6.6",
+          "title": "Zod can exhaust memory while validating oversized constrained collections"
+        }
+      ]
+    }
+  ],
+  "contexts": [
+    {
+      "id": "expo-cli-devtools-zod",
+      "usedApi": "expo 58.0.21이 포함한 @expo/cli 58.1.17이 zod 3.25.76의 z.object·z.string().min()·z.array 스키마로 `expo start` 개발 서버의 DevTools 플러그인 manifest와, Expo CLI MCP 연동을 켠 경우의 플러그인 CLI 확장 정의를 검증한다. 앱 소스(app/, src/)는 zod를 import하지 않는다.",
+      "callLocations": "apps/mobile package.json의 start·export:android·export:ios·prebuild:android 명령과 scripts/build-android.mjs가 실행하는 Expo CLI; node_modules/expo/node_modules/@expo/cli/build/src/start/server/DevToolsPlugin.schema.js·createMCPDevToolsExtensionSchema.js; node_modules/expo/node_modules/zod. eslint-plugin-react-hooks 개발 경로의 node_modules/zod 4.6.7은 이미 수정본이라 영향 경로가 아니다.",
+      "assessment": "GHSA-mrhx-c7xc-m3w5의 공격 조건은 공격자가 크기를 통제하는 거대한 입력을 길이·개수 제약 스키마로 검증시키는 것이다. 이 경로의 입력은 개발자가 설치한 로컬 패키지의 manifest와 로컬 MCP 클라이언트 요청뿐이며 HRA API나 앱 사용자 입력을 검증하지 않는다. 악성 패키지를 설치할 수 있는 공격자는 이미 설치 스크립트로 코드를 실행할 수 있어 추가 권한을 얻지 않는다. Metro release 번들에는 @expo/cli와 zod가 들어가지 않는다.",
+      "residualAssumptions": "2026-11-04 기준 @expo/cli 58.1.17은 zod ^3.25.76을 요구하고 zod 3.x에는 수정본이 없어(권고 범위 <4.6.6) lock 범위 안 해소가 불가하다. override로 zod 4를 강제하면 v3 API를 쓰는 CLI가 깨질 수 있어 적용하지 않았다. high이며 npm dev=false 경로이므로 2주 뒤 2026-11-18까지, 그리고 Play 업로드(#283) 전에 Expo SDK 58 패치의 zod 갱신을 재검토한다. CLI가 원격 입력을 zod로 검증하게 되면 즉시 재분류한다."
+    },
+    {
+      "id": "expo-cli-config-glob",
+      "usedApi": "@expo/cli·@expo/config·@expo/config-plugins·@expo/metro-config·@expo/fingerprint가 glob 13.0.6(minimatch 10.2.6)으로 프로젝트 파일을 찾고, @expo/config가 deepmerge 4.3.1로 app.config.ts 결과와 기본 설정을 병합한다. 패턴과 병합 입력은 저장소의 설정 파일과 Expo 패키지에 고정된 값이다.",
+      "callLocations": "apps/mobile의 app.config.ts·plugins/ 로컬 config plugin을 읽는 expo start·export·prebuild·expo-doctor 실행; node_modules/glob, node_modules/glob/node_modules/minimatch, node_modules/@expo/fingerprint/node_modules/minimatch, node_modules/deepmerge. 앱 런타임 번들 경로가 아니다.",
+      "assessment": "glob GHSA-3g3m-2fjr-6pw4는 호출자가 AbortSignal로 순회를 취소한 뒤에도 파일 처리가 이어지는 문제이고, minimatch GHSA-g3hv-75wg-m249는 공격자가 통제하는 패턴의 확장 폭주로 인한 DoS, deepmerge GHSA-gcqx-w48m-w2h4는 신뢰하지 않는 객체를 병합할 때의 prototype 오염이다. 이 경로의 패턴과 병합 입력은 저장소가 소유한 설정이며 외부 요청 본문이 도달하지 않으므로 영향은 개발·CI 빌드 시간의 가용성으로 한정된다.",
+      "residualAssumptions": "2026-11-04 기준 Expo 패키지는 glob ^13.0.0을 요구하지만 수정본은 14.0.2 이상이고, deepmerge 최신 4.3.1과 minimatch 10.x에도 수정본이 없어 범위 안 해소가 불가하다. npm dev=false CLI DoS 성격이므로 3주 뒤 2026-11-25까지 Expo SDK 58 패치의 glob 14 이행을 재검토한다. app.config.ts가 외부 입력을 병합하게 되면 즉시 재분류한다."
+    },
+    {
+      "id": "jest-test-runner",
+      "usedApi": "jest 30.5.2·jest-expo 58.0.13·babel-jest·babel-plugin-istanbul·test-exclude가 테스트 파일 탐색과 커버리지 계측에 glob 10.5.0·13.0.6, minimatch 9.0.9·10.2.6, deepmerge를 쓴다. expo-router의 선택적 peer(@testing-library/react-native) 때문에 npm lock의 dev 값이 false로 기록됐을 뿐 앱 소스는 jest 계열을 import하지 않는다.",
+      "callLocations": "apps/mobile package.json의 test 명령, jest.config.cjs·jest.e2e.config.cjs, tests/·e2e/의 테스트; node_modules/jest*, node_modules/@jest/*, node_modules/*/node_modules/test-exclude/node_modules/glob. CI와 개발자 로컬 테스트 실행에서만 로드된다.",
+      "assessment": "남은 공격 조건은 glob·minimatch·deepmerge 권고와 같고 입력은 저장소가 소유한 jest 설정의 testMatch·coverage 패턴과 테스트 파일 경로다. 외부 요청이나 앱 사용자 입력이 도달하지 않으며 영향은 테스트 실행 시간의 가용성으로 한정된다. Metro release 번들에는 jest 계열이 들어가지 않는다.",
+      "residualAssumptions": "2026-11-04 기준 test-exclude는 glob ^10.4.1, jest-config·jest-runtime은 glob ^13.0.6을 요구해 수정본(14.0.2 이상)이 범위 밖이다. npm dev=false로 기록된 테스트 도구 DoS이므로 3주 뒤 2026-11-25까지 jest·jest-expo 갱신을 재검토한다. 테스트가 외부에서 받은 패턴을 쓰게 되면 즉시 재분류한다."
+    },
+    {
+      "id": "eslint-lint-tooling",
+      "usedApi": "eslint-config-expo 58.0.4가 포함한 typescript-eslint 8.72.1의 @typescript-eslint/typescript-estree가 minimatch 10.2.6으로 projectService의 allowDefaultProject 파일 패턴을 해석하고, eslint-plugin-expo·@typescript-eslint/* 플러그인이 이를 통해 eslint.config.cjs의 린트를 수행한다.",
+      "callLocations": "apps/mobile package.json의 lint 명령과 eslint.config.cjs; node_modules/@typescript-eslint/*, node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch, node_modules/eslint-config-expo, node_modules/eslint-plugin-expo. npm lock에서 dev=true인 개발 도구 경로다.",
+      "assessment": "minimatch GHSA-g3hv-75wg-m249의 공격 조건은 공격자가 통제하는 glob 패턴이다. lint 패턴은 저장소가 소유한 설정 파일에 고정되어 있고 외부 입력이 도달하지 않으므로 영향은 개발·CI lint 시간의 가용성으로 한정된다. 앱 번들 경로가 아니다.",
+      "residualAssumptions": "2026-11-05(UTC) 기준 GitHub가 권고 범위를 >=7.0.0 <11.0.1로 정정해 eslint 9.39.1·eslint-plugin-import·eslint-plugin-react가 쓰는 minimatch 3.1.5와 그 전이 링크는 audit에서 빠졌다. 남은 10.x 최신 10.2.6도 영향 범위이고 최신 typescript-estree 8.72.1은 minimatch ^10.2.2를 선언해 수정본(11.0.1 이상)이 범위 밖이므로 major 강제 override는 하지 않았다. 개발 도구 전용이므로 기존 기한 2026-12-02까지 eslint-config-expo·typescript-eslint 갱신을 재검토하고, lint 패턴을 외부 입력으로 받게 되거나 권고 범위가 다시 바뀌어 3.x가 포함되면 즉시 재분류한다."
+    }
+  ],
+  "assessments": [
+    {
+      "key": "@expo/cli:@expo/metro-config",
+      "contextId": "expo-cli-config-glob",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "@expo/metro-config 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "@expo/cli:glob",
+      "contextId": "expo-cli-config-glob",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "glob 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "@expo/cli:zod",
+      "contextId": "expo-cli-devtools-zod",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-18",
+      "attackCondition": "zod 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-18까지 함께 재검토한다."
+    },
+    {
+      "key": "@expo/config:deepmerge",
+      "contextId": "expo-cli-config-glob",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "deepmerge 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "@expo/config:glob",
+      "contextId": "expo-cli-config-glob",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "glob 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "@expo/config-plugins:glob",
+      "contextId": "expo-cli-config-glob",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "glob 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "@expo/fingerprint:glob",
+      "contextId": "expo-cli-config-glob",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "glob 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "@expo/fingerprint:minimatch",
+      "contextId": "expo-cli-config-glob",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "minimatch 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "@expo/metro-config:glob",
+      "contextId": "expo-cli-config-glob",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "glob 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "@jest/core:@jest/reporters",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "@jest/reporters 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "@jest/core:@jest/transform",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "@jest/transform 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "@jest/core:jest-config",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "jest-config 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "@jest/core:jest-resolve-dependencies",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "jest-resolve-dependencies 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "@jest/core:jest-runner",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "jest-runner 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "@jest/core:jest-runtime",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "jest-runtime 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "@jest/core:jest-snapshot",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "jest-snapshot 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "@jest/expect:jest-snapshot",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "jest-snapshot 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "@jest/globals:@jest/expect",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "@jest/expect 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "@jest/reporters:@jest/transform",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "@jest/transform 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "@jest/reporters:glob",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "glob 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "@jest/transform:babel-plugin-istanbul",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "babel-plugin-istanbul 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "@typescript-eslint/eslint-plugin:@typescript-eslint/parser",
+      "contextId": "eslint-lint-tooling",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-05",
+      "reviewBy": "2026-12-02",
+      "attackCondition": "@typescript-eslint/parser 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+    },
+    {
+      "key": "@typescript-eslint/eslint-plugin:@typescript-eslint/type-utils",
+      "contextId": "eslint-lint-tooling",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-05",
+      "reviewBy": "2026-12-02",
+      "attackCondition": "@typescript-eslint/type-utils 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+    },
+    {
+      "key": "@typescript-eslint/eslint-plugin:@typescript-eslint/utils",
+      "contextId": "eslint-lint-tooling",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-05",
+      "reviewBy": "2026-12-02",
+      "attackCondition": "@typescript-eslint/utils 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+    },
+    {
+      "key": "@typescript-eslint/parser:@typescript-eslint/typescript-estree",
+      "contextId": "eslint-lint-tooling",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-05",
+      "reviewBy": "2026-12-02",
+      "attackCondition": "@typescript-eslint/typescript-estree 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+    },
+    {
+      "key": "@typescript-eslint/type-utils:@typescript-eslint/typescript-estree",
+      "contextId": "eslint-lint-tooling",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-05",
+      "reviewBy": "2026-12-02",
+      "attackCondition": "@typescript-eslint/typescript-estree 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+    },
+    {
+      "key": "@typescript-eslint/type-utils:@typescript-eslint/utils",
+      "contextId": "eslint-lint-tooling",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-05",
+      "reviewBy": "2026-12-02",
+      "attackCondition": "@typescript-eslint/utils 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+    },
+    {
+      "key": "@typescript-eslint/typescript-estree:minimatch",
+      "contextId": "eslint-lint-tooling",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-05",
+      "reviewBy": "2026-12-02",
+      "attackCondition": "minimatch 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+    },
+    {
+      "key": "@typescript-eslint/utils:@typescript-eslint/typescript-estree",
+      "contextId": "eslint-lint-tooling",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-05",
+      "reviewBy": "2026-12-02",
+      "attackCondition": "@typescript-eslint/typescript-estree 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+    },
+    {
+      "key": "babel-jest:@jest/transform",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "@jest/transform 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "babel-jest:babel-plugin-istanbul",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "babel-plugin-istanbul 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "babel-plugin-istanbul:test-exclude",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "test-exclude 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "deepmerge:1243505",
+      "contextId": "expo-cli-config-glob",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "GHSA-gcqx-w48m-w2h4: 신뢰하지 않는 객체를 deepmerge로 병합해 prototype을 오염시켜야 한다. @expo/config와 jest-config는 저장소가 소유한 설정 객체만 병합한다."
+    },
+    {
+      "key": "eslint-config-expo:@typescript-eslint/eslint-plugin",
+      "contextId": "eslint-lint-tooling",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-05",
+      "reviewBy": "2026-12-02",
+      "attackCondition": "@typescript-eslint/eslint-plugin 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+    },
+    {
+      "key": "eslint-config-expo:@typescript-eslint/parser",
+      "contextId": "eslint-lint-tooling",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-05",
+      "reviewBy": "2026-12-02",
+      "attackCondition": "@typescript-eslint/parser 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+    },
+    {
+      "key": "eslint-config-expo:eslint-plugin-expo",
+      "contextId": "eslint-lint-tooling",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-05",
+      "reviewBy": "2026-12-02",
+      "attackCondition": "eslint-plugin-expo 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+    },
+    {
+      "key": "eslint-plugin-expo:@typescript-eslint/utils",
+      "contextId": "eslint-lint-tooling",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-05",
+      "reviewBy": "2026-12-02",
+      "attackCondition": "@typescript-eslint/utils 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
+    },
+    {
+      "key": "expo:@expo/cli",
+      "contextId": "expo-cli-config-glob",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "@expo/cli 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "expo:@expo/fingerprint",
+      "contextId": "expo-cli-config-glob",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "@expo/fingerprint 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "glob:minimatch",
+      "contextId": "expo-cli-config-glob",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "minimatch 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "glob:1244013",
+      "contextId": "expo-cli-config-glob",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "GHSA-3g3m-2fjr-6pw4: 호출자가 AbortSignal로 glob 순회를 취소한 뒤에도 파일 처리가 이어지는 조건이 필요하다. 패턴과 루트는 Expo·jest 설정에 고정되어 외부 입력이 도달하지 않는다."
+    },
+    {
+      "key": "jest:@jest/core",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "@jest/core 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "jest:jest-cli",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "jest-cli 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "jest-circus:@jest/expect",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "@jest/expect 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "jest-circus:jest-runtime",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "jest-runtime 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "jest-circus:jest-snapshot",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "jest-snapshot 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "jest-cli:@jest/core",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "@jest/core 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "jest-cli:jest-config",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "jest-config 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "jest-config:babel-jest",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "babel-jest 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "jest-config:deepmerge",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "deepmerge 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "jest-config:glob",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "glob 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "jest-config:jest-circus",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "jest-circus 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "jest-config:jest-runner",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "jest-runner 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "jest-expo:jest-watch-typeahead",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "jest-watch-typeahead 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "jest-resolve-dependencies:jest-snapshot",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "jest-snapshot 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "jest-runner:@jest/transform",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "@jest/transform 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "jest-runner:jest-runtime",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "jest-runtime 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "jest-runtime:@jest/globals",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "@jest/globals 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "jest-runtime:@jest/transform",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "@jest/transform 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "jest-runtime:glob",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "glob 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "jest-runtime:jest-snapshot",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "jest-snapshot 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "jest-snapshot:@jest/transform",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "@jest/transform 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "jest-watch-typeahead:jest",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "jest 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "minimatch:1244623",
+      "contextId": "expo-cli-config-glob",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-05",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "GHSA-g3hv-75wg-m249(2026-11-04T16:50Z 정정, >=7.0.0 <11.0.1): 공격자가 통제하는 glob 패턴으로 확장 폭주를 일으켜야 한다. 남은 minimatch 9.0.9·10.2.6을 쓰는 Expo·jest·typescript-eslint의 패턴은 저장소 설정과 패키지 기본값에 고정되어 있다."
+    },
+    {
+      "key": "test-exclude:glob",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "glob 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "test-exclude:minimatch",
+      "contextId": "jest-test-runner",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-25",
+      "attackCondition": "minimatch 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
+    },
+    {
+      "key": "zod:1243066",
+      "contextId": "expo-cli-devtools-zod",
+      "priority": "P2",
+      "owner": "repo-maintainers",
+      "reviewedOn": "2026-11-04",
+      "reviewBy": "2026-11-18",
+      "attackCondition": "GHSA-mrhx-c7xc-m3w5: 공격자가 크기를 통제하는 거대한 입력을 길이·개수 제약 zod 스키마로 검증시켜 메모리를 고갈시켜야 한다. Expo CLI는 로컬 패키지 manifest만 검증하므로 원격 공격자가 입력을 공급할 수 없다."
+    }
+  ]
+}

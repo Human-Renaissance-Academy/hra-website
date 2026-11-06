@@ -1,0 +1,125 @@
+/**
+ * 역할: 내 과제(목록·상세) 및 과제 제출 흐름 화면에서 사용하는 한국어 표시 문구, 접근성 레이블, 오류 매핑 상수 정의
+ * 사용 위치: src/features/assignments 하위 뷰모델, API 어댑터, 화면 컴포넌트 및 테스트
+ * 주요 기능:
+ * - 공용 ko.ts를 수정하지 않고 과제/제출 기능 전용 한국어 문구를 한곳에서 관리
+ * - 상태 칩(제출 완료 / 미제출 / 마감됨), 재개 배너, 다운로드 진행 상태, 제출 단계별 진행률 문구 제공
+ * - 403 권한 안내, 503 학사 기능 비활성, 409/413/429 등 정중한 한국어 오류 메시지 제공
+ */
+
+export const assignmentsStrings = {
+  stack: {
+    listTitle: '내 과제',
+    detailTitle: '과제 상세',
+    submitTitle: '과제 제출',
+    backLabel: '뒤로',
+  },
+  status: {
+    submitted: '제출 완료',
+    unsubmitted: '미제출',
+    closed: '마감됨',
+  },
+  list: {
+    title: '내 과제',
+    subtitle: '공개된 본인 과제와 최종 제출 결과를 확인하세요. 시각은 한국시간입니다.',
+    loading: '과제 목록을 불러오는 중입니다.',
+    emptyTitle: '공개된 과제가 없습니다.',
+    emptyDescription: '새로운 과제가 공개되면 이곳에서 안내와 마감 시각을 확인할 수 있습니다.',
+    dueLabel: (dueDateTime: string) => `마감: ${dueDateTime}`,
+    submittedAtLabel: (submittedDateTime: string) => `제출 시각: ${submittedDateTime}`,
+    loadingMore: '다음 과제를 불러오는 중입니다.',
+    loadMoreError: '추가 과제를 불러오지 못했습니다.',
+    retryLoadMore: '다시 불러오기',
+    cardA11yLabel: (title: string, statusLabel: string, dueDateTime: string) =>
+      `${title}, ${statusLabel}, 마감 ${dueDateTime}`,
+    cardA11yHint: '누르면 과제 상세 화면으로 이동합니다.',
+  },
+  detail: {
+    title: '과제 상세',
+    loading: '과제 상세 정보를 불러오는 중입니다.',
+    dueSectionTitle: '마감 안내',
+    dueDateTimeLabel: (dueDateTime: string) => `제출 마감: ${dueDateTime} (한국시간)`,
+    publishedAtLabel: (publishedDateTime: string) => `공개 시각: ${publishedDateTime}`,
+    instructionsTitle: '과제 안내',
+    emptyInstructions: '추가 안내가 없습니다.',
+    submissionSectionTitle: '내 제출 현황',
+    notSubmittedDescription: '아직 제출한 파일이 없습니다.',
+    closedNotice: '과제가 종료되었거나 제출 마감이 지났습니다.',
+    submittedAtLabel: (submittedDateTime: string) => `제출 시각: ${submittedDateTime}`,
+    fileMetaLabel: (fileName: string, fileSizeText: string) => `${fileName} (${fileSizeText})`,
+    openSubmittedFile: '내 제출 파일 열기',
+    openSubmittedFileA11y: (fileName: string) => `내 제출 파일 열기, ${fileName}`,
+    submitPrimary: '제출하기',
+    resubmitPrimary: '다시 제출하기',
+    resumeBannerTitle: '이전에 진행하던 제출이 있습니다.',
+    resumeBannerMessage:
+      '중단된 제출 요청이 남아 있습니다. 이어서 제출하거나 처음부터 다시 시작할 수 있습니다.',
+    resumeContinueAction: '이어서 제출',
+    resumeResetAction: '처음부터 다시',
+    resumeResetConfirmTitle: '처음부터 다시 시작',
+    resumeResetConfirmMessage:
+      '이전에 진행하던 업로드 기록을 취소하고 처음부터 다시 시작하시겠습니까?',
+  },
+  fileDownload: {
+    downloadingIndeterminate: '제출 파일을 내려받는 중입니다...',
+    downloadingPercentage: (percent: number) => `제출 파일을 내려받는 중입니다 (${percent}%)`,
+    opening: '파일을 여는 중입니다...',
+    done: '파일을 열었습니다.',
+    cancelled: '내려받기가 취소되었습니다.',
+    cancelAction: '취소',
+    cancelA11yLabel: '제출 파일 내려받기 취소',
+    retryAction: '다시 시도',
+  },
+  submit: {
+    title: '과제 제출',
+    subtitle: '비어 있지 않은 PDF 파일 한 개를 50MiB 이하로 선택해 제출해 주세요.',
+    assignmentLabel: '제출 대상 과제',
+    dueLabel: (dueDateTime: string) => `마감 시각: ${dueDateTime}`,
+    pickSectionTitle: '제출할 PDF 파일',
+    pickButton: 'PDF 파일 선택',
+    changeFileButton: '다른 PDF 파일 선택',
+    noFileSelected: '선택된 PDF 파일이 없습니다. 제출할 PDF 파일을 선택해 주세요.',
+    confirmationCardTitle: '제출 확인',
+    selectedFileNameLabel: (name: string) => `파일 이름: ${name}`,
+    selectedFileSizeLabel: (sizeText: string) => `파일 크기: ${sizeText}`,
+    startSubmitAction: '제출하기',
+    retryAction: '다시 시도',
+    resumeAction: '이어서 제출',
+    cancelAction: '제출 취소',
+    startOverAction: '처음부터 다시',
+    backToDetailAction: '과제 상세로 돌아가기',
+    resumeReadyTitle: '이전 제출 이어하기',
+    resumeReadyDescription:
+      '이전에 승인된 업로드 요청이 남아 있습니다. 이어서 제출하거나 취소 후 새 파일을 선택해 주세요.',
+    steps: {
+      validating: '선택한 PDF 파일을 확인하고 있습니다...',
+      creatingIntent: '업로드 승인을 요청하고 있습니다...',
+      authorizing: '보안 전송 권한을 준비하고 있습니다...',
+      uploading: (percentage: number) => `파일을 전송하고 있습니다 (${percentage}%)`,
+      verifying: '업로드된 PDF 파일을 검증하고 있습니다...',
+      finalizing: '최종 제출을 확정하고 있습니다...',
+      cancelling: '진행 중인 제출을 취소하고 있습니다...',
+      cancelled: '제출이 취소되었습니다. 파일을 다시 선택하거나 재시도해 주세요.',
+      successTitle: '제출이 완료되었습니다.',
+      successDescription: '과제 파일이 정상적으로 제출되었습니다.',
+      replayedDescription: '이미 접수된 제출 내역이 확인되어 최종 제출을 완료했습니다.',
+    },
+  },
+  errors: {
+    invalidPdf: '비어 있지 않은 PDF 파일 한 개를 50MiB 이하로 선택해 주세요.',
+    forbiddenRole: '이 계정에서는 과제 기능을 사용할 수 없습니다.',
+    academicDisabled: '학사 기능이 아직 열리지 않았습니다.',
+    notFoundAssignment: '요청한 과제를 찾을 수 없습니다.',
+    notFoundSubmissionFile: '제출 파일을 찾을 수 없습니다.',
+    conflictSubmission:
+      '마감되었거나 업로드 요청이 만료·변경되었습니다. 과제 상태를 확인한 뒤 다시 시도해 주세요.',
+    tooLarge: '파일 크기가 50MiB 제한을 초과했습니다. 50MiB 이하의 PDF 파일을 선택해 주세요.',
+    storageUnavailable: '파일 저장소를 일시적으로 이용할 수 없습니다. 잠시 후 다시 시도해 주세요.',
+    serviceUnavailable: '서비스를 일시적으로 이용할 수 없습니다. 잠시 후 다시 시도해 주세요.',
+    unauthenticated: '인증 정보가 만료되었습니다. 다시 로그인해 주세요.',
+    network: '네트워크 연결을 확인한 후 다시 시도해 주세요.',
+    timeout: '응답 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.',
+    rateLimitedSeconds: (seconds: number) => `요청이 많습니다. ${seconds}초 후 다시 시도해 주세요.`,
+    rateLimitedMinutes: (minutes: number) => `요청이 많습니다. ${minutes}분 후 다시 시도해 주세요.`,
+  },
+} as const;

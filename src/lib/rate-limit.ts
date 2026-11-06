@@ -17,6 +17,8 @@ import {
   LOGIN_EMAIL_RATE_LIMIT,
   LOGIN_IP_RATE_LIMIT,
   LOGIN_RATE_LIMIT,
+  RESOURCE_READ_BURST_RATE_LIMIT,
+  RESOURCE_READ_HOURLY_RATE_LIMIT,
   UPLOAD_RATE_LIMIT,
   normalizeEmailForRateLimit,
 } from "@/lib/rate-limit-core";
@@ -41,6 +43,10 @@ const reservationRowSchema = z.object({
   retry_after_sec: z.coerce.number().int().nonnegative(),
   reservation_id: z.uuid().nullable(),
 });
+
+// 저장소 장애를 정책 차단(429)과 구분해 503으로 응답하는 호출자의 오류 범위입니다.
+// 이 범위도 장애 시 blocked=true(fail-closed)는 그대로이며 unavailable만 추가로 표시합니다.
+const storageAwareScopes = new Set(["rate-limit/reserve-login", "rate-limit/reserve-resource-read"]);
 
 // 축마다 해시 도메인을 분리해 같은 원본 키도 서로 연결되지 않게 합니다.
 function hashLimitKey(scope: string, key: string): string {
@@ -69,7 +75,7 @@ async function reserve(axes: LimitAxis[], errorScope: string): Promise<RateLimit
     logServerError(errorScope, error);
     return {
       blocked: true,
-      ...(errorScope === "rate-limit/reserve-login" ? { unavailable: true } : {}),
+      ...(storageAwareScopes.has(errorScope) ? { unavailable: true } : {}),
       retryAfterSec: Math.max(...axes.map((axis) => axis.windowMs / 1000)),
       reservationId: null,
     };
@@ -107,6 +113,18 @@ export async function releaseSuccessfulLogin(reservationId: string | null, requi
 /** 인증된 이미지 업로드 요청을 파일을 읽기 전에 예약합니다. */
 export function reserveUploadAttempt(ip: string): Promise<RateLimitReservation> {
   return reserve([{ scope: "upload-ip", key: ip, ...UPLOAD_RATE_LIMIT }], "rate-limit/reserve-upload");
+}
+
+/**
+ * 인증·역할 확인을 마친 사용자의 자료실 파일·메타데이터 조회 한 건을 예약합니다 (#444).
+ * Web 쿠키와 모바일 Bearer, Web 다운로드와 API v1 경로가 같은 사용자 id 키를 공유합니다.
+ * 키는 다른 축과 마찬가지로 범위별 SHA-256 해시로만 저장합니다.
+ */
+export function reserveResourceRead(userId: string): Promise<RateLimitReservation> {
+  return reserve([
+    { scope: "resource-read-user-minute", key: userId, ...RESOURCE_READ_BURST_RATE_LIMIT },
+    { scope: "resource-read-user-hour", key: userId, ...RESOURCE_READ_HOURLY_RATE_LIMIT },
+  ], "rate-limit/reserve-resource-read");
 }
 
 /** 공유 IP 상한을 완화하고 지원자 이메일별 일일 상한을 함께 예약합니다. */

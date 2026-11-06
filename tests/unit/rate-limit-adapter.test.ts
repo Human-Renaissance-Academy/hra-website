@@ -23,6 +23,7 @@ import {
   releaseSuccessfulLogin,
   reserveApplicationSubmission,
   reserveLoginAttempt,
+  reserveResourceRead,
   reserveUploadAttempt,
 } from "@/lib/rate-limit";
 
@@ -82,6 +83,23 @@ describe("요청 제한 DB 어댑터", () => {
     expect(await reserveUploadAttempt("203.0.113.3"))
       .toEqual({ blocked: true, retryAfterSec: 60, reservationId: null });
     expect(mocks.logServerError).toHaveBeenCalledTimes(1);
+  });
+
+  it("자료 조회는 사용자 id의 분·시간 두 축을 해시로만 예약한다 (#444)", async () => {
+    const userId = "61000000-0000-4000-8000-000000000001";
+    expect(await reserveResourceRead(userId)).toEqual({ blocked: false, retryAfterSec: 0, reservationId });
+    const query = dialect.sqlToQuery(mocks.execute.mock.calls[0][0]);
+    expect(query.params).toEqual(expect.arrayContaining([
+      "resource-read-user-minute", "resource-read-user-hour", 300, 2000, 60, 3600,
+    ]));
+    expect(query.params).not.toContain(userId);
+  });
+
+  it("자료 조회 제한 저장소 장애는 차단하면서 503 구분용 unavailable을 표시한다 (#444)", async () => {
+    mocks.execute.mockRejectedValueOnce(new Error("DB unavailable"));
+    expect(await reserveResourceRead("61000000-0000-4000-8000-000000000001"))
+      .toEqual({ unavailable: true, blocked: true, retryAfterSec: 3600, reservationId: null });
+    expect(mocks.logServerError).toHaveBeenCalledWith("rate-limit/reserve-resource-read", expect.any(Error));
   });
 
   it("성공한 로그인의 예약만 해제한다", async () => {
