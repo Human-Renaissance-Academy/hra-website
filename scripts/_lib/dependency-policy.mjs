@@ -101,7 +101,8 @@ export function verifyDependencyPolicy(audit, lock, policy, today = new Date().t
   // via의 개별 advisory range가 바뀌면 그대로 차단하며 누락·손상된 원장 range도 허용하지 않는다.
   const stableSnapshot = packages => packages.map(pkg => {
     if (!pkg || typeof pkg.range !== 'string' || !pkg.range.trim()) throw new Error('DEPENDENCY_TRIAGE_CHANGED');
-    const { range: observedRange, ...securityIdentity } = pkg;
+    const securityIdentity = { ...pkg };
+    delete securityIdentity.range;
     return securityIdentity;
   });
   if (canonical(stableSnapshot(snapshot)) !== canonical(stableSnapshot(policy.packages))) {
