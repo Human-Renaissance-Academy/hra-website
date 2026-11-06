@@ -15,8 +15,6 @@ on:
       - 'apps/mobile/src/features/files/**'
       - 'apps/mobile/src/features/submission/**'
       - 'apps/mobile/e2e/**'
-      - 'apps/mobile/package.json'
-      - 'apps/mobile/package-lock.json'
       - 'apps/mobile/jest.e2e.config.cjs'
       - 'scripts/verify-mobile-bearer-http.mjs'
       - 'scripts/migrate-mobile-sessions.sql'
@@ -38,8 +36,6 @@ on:
       - 'apps/mobile/src/features/files/**'
       - 'apps/mobile/src/features/submission/**'
       - 'apps/mobile/e2e/**'
-      - 'apps/mobile/package.json'
-      - 'apps/mobile/package-lock.json'
       - 'apps/mobile/jest.e2e.config.cjs'
       - 'scripts/verify-mobile-bearer-http.mjs'
       - 'scripts/migrate-mobile-sessions.sql'
@@ -53,9 +49,11 @@ on:
 permissions:
   contents: read
 
+# 앱 의존성만 변경된 PR은 모바일 CI에서 검증하고, 서버 실통합은 API 경계 변경에만 실행합니다.
+# 오래된 PR head 실행만 취소하며 main push의 검증은 유지합니다.
 concurrency:
   group: mobile-server-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   bearer:
