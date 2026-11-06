@@ -34,7 +34,7 @@ function dependencyChanges(snapshot, recorded) {
     const actual = actualPackages.get(name);
     const expected = recordedPackages.get(name);
     if (!actual || !expected) { add(actual ? 'PACKAGE_ONLY_IN_AUDIT' : 'PACKAGE_ONLY_IN_POLICY', name); continue; }
-    if (actual.severity !== expected.severity || actual.range !== expected.range) add('PACKAGE_METADATA_CHANGED', name);
+    if (actual.severity !== expected.severity) add('PACKAGE_METADATA_CHANGED', name);
     const actualNodes = new Map(actual.nodes.map(node => [node.path, node]));
     const recordedNodes = new Map(expected.nodes.map(node => [node.path, node]));
     for (const path of new Set([...actualNodes.keys(), ...recordedNodes.keys()])) {
@@ -96,7 +96,15 @@ export function verifyDependencyPolicy(audit, lock, policy, today = new Date().t
   const snapshot = dependencySnapshot(audit, lock);
   if (!policy || policy.schemaVersion !== 2 || !Array.isArray(policy.packages)
     || !Array.isArray(policy.contexts) || !Array.isArray(policy.assessments)) throw new Error('DEPENDENCY_TRIAGE_CHANGED');
-  if (canonical(snapshot) !== canonical(policy.packages)) {
+  // npm의 metavulnerability 분석이 만든 상위 패키지 range는 registry의 새 배포만으로 바뀔 수 있다.
+  // 실제 설치된 nodes, severity, via 권고·전이 링크는 정확 일치로 유지한다.
+  // via의 개별 advisory range가 바뀌면 그대로 차단하며 누락·손상된 원장 range도 허용하지 않는다.
+  const stableSnapshot = packages => packages.map(pkg => {
+    if (!pkg || typeof pkg.range !== 'string' || !pkg.range.trim()) throw new Error('DEPENDENCY_TRIAGE_CHANGED');
+    const { range: observedRange, ...securityIdentity } = pkg;
+    return securityIdentity;
+  });
+  if (canonical(stableSnapshot(snapshot)) !== canonical(stableSnapshot(policy.packages))) {
     const error = new Error('DEPENDENCY_TRIAGE_CHANGED');
     error.diagnostics = dependencyChanges(snapshot, policy.packages);
     throw error;
