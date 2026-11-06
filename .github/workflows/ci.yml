@@ -10,6 +10,12 @@ on:
 permissions:
   contents: read
 
+# 같은 PR이 갱신되면 이전 커밋의 긴 검증은 중단합니다.
+# main push 검증은 자동 취소하지 않습니다.
+concurrency:
+  group: web-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   ci:
     name: Lint · Typecheck · Test · Build
