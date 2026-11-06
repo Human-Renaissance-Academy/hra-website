@@ -13,9 +13,10 @@ on:
 permissions:
   contents: read
 
+# 이전 PR head의 Android 빌드만 취소하고 main 빌드는 유지합니다.
 concurrency:
   group: mobile-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
   run:
