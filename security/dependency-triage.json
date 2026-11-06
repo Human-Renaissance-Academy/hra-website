@@ -230,7 +230,7 @@
       "nodes": [
         {
           "path": "node_modules/eslint-config-next",
-          "version": "16.4.3",
+          "version": "16.4.5",
           "development": true
         }
       ],
@@ -544,9 +544,9 @@
       "contextId": "tooling-minimatch-glob",
       "priority": "P2",
       "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-05",
+      "reviewedOn": "2026-11-06",
       "reviewBy": "2026-12-03",
-      "attackCondition": "eslint-config-next 16.4.3이 typescript-eslint을 통해 minimatch 10.2.5(>=7.0.0 <11.0.1, GHSA-g3hv-75wg-m249)의 고정 저장소 린트 glob 매칭으로 이어지는 개발 도구 전이 경로다. 해당 패키지 항목의 공격 조건과 2026-12-03 기한을 함께 검토한다. 2026-11-05(UTC) 빈 캐시 registry audit 재확인에서 권고 범위가 >=7.0.0 <11.0.1로 정정된 뒤에도 이 경로의 minimatch 10.2.5가 영향 범위에 남고 10.x 백포트가 없음을 확인했다."
+      "attackCondition": "eslint-config-next 16.4.5이 typescript-eslint을 통해 minimatch 10.2.5(>=7.0.0 <11.0.1, GHSA-g3hv-75wg-m249)의 고정 저장소 린트 glob 매칭으로 이어지는 개발 도구 전이 경로다. 해당 패키지 항목의 공격 조건과 2026-12-03 기한을 함께 검토한다. 2026-11-05(UTC) 빈 캐시 registry audit 재확인에서 권고 범위가 >=7.0.0 <11.0.1로 정정된 뒤에도 이 경로의 minimatch 10.2.5가 영향 범위에 남고 10.x 백포트가 없음을 확인했다."
     },
     {
       "key": "hanspell:minimatch",
