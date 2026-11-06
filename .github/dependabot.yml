@@ -32,6 +32,10 @@ updates:
       - dependency-name: typescript
         update-types:
           - version-update:semver-major
+      # CI 런타임은 Node 24.x이므로 @types/node 26 major를 먼저 받지 않는다(#449, #468).
+      - dependency-name: "@types/node"
+        update-types:
+          - version-update:semver-major
   # 모바일 앱은 루트와 별도로 설치하는 독립 lockfile을 갖는다(#446). 같은 주간 검토·수동 병합 절차를 적용한다.
   # Expo SDK가 버전을 함께 고정하는 패키지는 한 PR로 묶어 SDK 호환성(expo-doctor)을 함께 검증한다.
   - package-ecosystem: npm
@@ -58,3 +62,11 @@ updates:
       - dependency-name: typescript
         update-types:
           - version-update:semver-major
+      # eslint-config-expo/react plugin이 ESLint 10 API와 호환되기 전에는 major를 보류한다(#460, #468).
+      - dependency-name: eslint
+        update-types:
+          - version-update:semver-major
+      # Expo SDK 58의 검증된 ~5.10.1 범위 이탈을 막되 같은 minor의 patch는 허용한다(#461, #468).
+      - dependency-name: react-native-safe-area-context
+        update-types:
+          - version-update:semver-minor
