@@ -108,7 +108,7 @@
     "@types/turndown": "^5.0.6",
     "@vitejs/plugin-react": "^6.0.1",
     "dotenv": "^18.0.6",
-    "drizzle-kit": "^0.31.10",
+    "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
     "hanspell": "^1.0.1",
