@@ -198,7 +198,10 @@ test('수정본으로 해소한 권고는 제거하고 남은 평가는 위험�
 // 범위 지정 overrides로 수정본 6.1.5에 올려 GHSA-rj75-hqrm-r3gf 평가 2건과 build-css-source-map 맥락을 제거한다.
 test('typography의 postcss-selector-parser는 수정본으로 고정하고 해소된 평가를 남기지 않는다', () => {
   const manifest = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url)));
-  assert.deepEqual(manifest.overrides, { '@tailwindcss/typography': { 'postcss-selector-parser': '^6.1.5' } });
+  assert.deepEqual(manifest.overrides, {
+    '@tailwindcss/typography': { 'postcss-selector-parser': '^6.1.5' },
+    '@vercel/cli-config': { zod: '^4.6.6' },
+  });
   assert.equal(lock.packages['node_modules/@tailwindcss/typography'].dependencies['postcss-selector-parser'], '6.0.10');
   assert.equal(lock.packages['node_modules/postcss-selector-parser'].version, '6.1.5');
   for (const name of ['postcss-selector-parser', '@tailwindcss/typography']) assert.equal(policy.packages.some(item => item.name === name), false);
