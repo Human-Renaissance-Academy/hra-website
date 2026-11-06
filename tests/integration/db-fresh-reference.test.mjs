@@ -51,7 +51,7 @@ test("전체 원본 fresh reference는 독립 prefix·변형·동작 계약을 �
     ensure(reference.checks.scopePrivate && reference.checks.physicalBackend, "FRESH_OWNED_OPERATOR_PINNED");
     ensure(Object.isFrozen(reference.contracts) && reference.contracts.every(item => Object.isFrozen(item) && Object.isFrozen(item.counts)), "FRESH_CONTRACTS_FROZEN");
     for (const value of [reference.provenance.schemaDigest, reference.provenance.exportDigest, baseline]) assert.match(value, /^[a-f0-9]{64}$/);
-    assert.equal(reference.provenance.toolVersion, "0.31.10");
+    assert.equal(reference.provenance.toolVersion, "0.31.11");
     assert.equal(reference.provenance.inventoryLegacySqlSourceCount, 18);
     assert.equal(reference.provenance.inventoryCandidateSqlSourceCount, 19);
     assert.equal(reference.provenance.inventoryTotalSqlSourceCount, 37);
