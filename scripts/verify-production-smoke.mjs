@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url';
 
 // 운영 대상·읽기 경로·응답 한도는 외부 입력이 아닌 이 계약으로 고정한다.
 export const productionSmokeOrigin = 'https://hra-website-theta.vercel.app';
-const paths = ['/', '/login', '/favicon.ico', '/api/health'];
+const paths = ['/', '/login', '/favicon.ico', '/api/health', '/robots.txt', '/sitemap.xml'];
 const bodyLimit = 2 * 1024 * 1024;
 const procedure = 'https://github.com/yeongseon/hra-website/blob/main/docs/operations/production-smoke.md';
 
@@ -79,6 +79,34 @@ function validHsts(value) {
   return maximumAge !== null && maximumAge >= 31536000;
 }
 
+
+// #413: 공개 색인 정책은 운영 Production 응답의 고정된 최소 계약으로 확인한다.
+// robots.txt는 접근 제어가 아니며, 정본 권한 정책은 애플리케이션에서 검사한다.
+function validRobots(value, origin) {
+  const lines = new Set(value.split(/\r?\n/).map(line => line.trim().toLowerCase()).filter(Boolean));
+  const required = [
+    'user-agent: *', 'allow: /', 'disallow: /admin', 'disallow: /member',
+    'disallow: /mypage', 'disallow: /resources', 'disallow: /login',
+    'disallow: /register', 'disallow: /pending', 'disallow: /system-error',
+    'disallow: /api/', 'sitemap: ' + origin.toLowerCase() + '/sitemap.xml',
+  ];
+  return required.every(line => lines.has(line)) && !lines.has('disallow: /');
+}
+
+// sitemap의 원문은 출력·저장하지 않고 origin과 보호 경로 누락 여부만 확인한다.
+function validSitemap(value, origin) {
+  if (!/<urlset(?:\s|>)/.test(value)) return false;
+  const locations = [...value.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]);
+  if (!locations.includes(origin + '/')) return false;
+  const privatePrefixes = ['/admin', '/member', '/mypage', '/resources', '/login', '/register', '/pending', '/system-error', '/api', '/academic'];
+  return locations.every(location => {
+    let url;
+    try { url = new URL(location); } catch { return false; }
+    return url.origin === origin && !url.search && !url.hash
+      && !privatePrefixes.some(prefix => url.pathname === prefix || url.pathname.startsWith(prefix + '/'));
+  });
+}
+
 // 각 검사는 응답 헤더·원문·예외 메시지를 외부로 내보내지 않는다.
 async function checkPath(origin, path, timeoutMs, requireHsts) {
   const started = performance.now();
@@ -112,6 +140,12 @@ async function checkPath(origin, path, timeoutMs, requireHsts) {
             code = value !== null && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 1 && value.status === 'ok' ? 'OK' : 'HEALTH_CONTENT';
           } catch { code = 'HEALTH_CONTENT'; }
         }
+      } else if (path === '/robots.txt') {
+        if (contentType !== 'text/plain') code = 'CONTENT_TYPE';
+        else code = validRobots(new TextDecoder().decode(bytes), origin) ? 'OK' : 'SEO_CONTENT';
+      } else if (path === '/sitemap.xml') {
+        if (!['application/xml', 'text/xml'].includes(contentType)) code = 'CONTENT_TYPE';
+        else code = validSitemap(new TextDecoder().decode(bytes), origin) ? 'OK' : 'SEO_CONTENT';
       } else if (contentType !== 'text/html') code = 'CONTENT_TYPE';
       else {
         const html = new TextDecoder().decode(bytes);
@@ -123,7 +157,7 @@ async function checkPath(origin, path, timeoutMs, requireHsts) {
   return { path, status, ok: code === 'OK', code, durationMs: Math.round(performance.now() - started) };
 }
 
-/** 고정된 네 경로를 최대 두 개씩 검사하고 민감 정보가 없는 결과만 반환한다. */
+/** 고정된 여섯 경로를 최대 두 개씩 검사하고 민감 정보가 없는 결과만 반환한다. */
 export async function runProductionSmoke({ origin = productionSmokeOrigin, sha, shaKind = 'main', fixture = false, timeoutMs = 15000 } = {}) {
   validateOptions({ origin, sha, shaKind, fixture, timeoutMs });
   const startedAt = new Date().toISOString();
