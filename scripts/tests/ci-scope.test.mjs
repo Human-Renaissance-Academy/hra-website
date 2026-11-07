@@ -21,8 +21,15 @@ test("문서/기여 안내만 바꾼 PR은 Web CI를 생략한다", () => {
   assert.equal(pr(["AGENTS.md", "mkdocs.yml", ".github/ISSUE_TEMPLATE/config.yml"]).web, false);
 });
 
-test("모바일 워크플로만 바꾸면 별도 모바일 CI에 맡기고 기존 Web CI를 생략한다", () => {
-  assert.equal(pr([".github/workflows/mobile.yml", ".github/workflows/mobile-eas-build.yml"]).web, false);
+test("모바일 workflow 자체의 권한·트리거 변경은 웹 계약/보안 검증도 수행한다", () => {
+  assert.equal(pr([".github/workflows/mobile.yml", ".github/workflows/mobile-eas-build.yml"]).web, true);
+});
+
+test("생성 환경변수 계약과 비문서 데이터 파일은 전체 CI를 유지한다", () => {
+  assert.equal(pr(["docs/developer/environment-inventory.md"]).web, true);
+  assert.equal(pr(["docs/developer/site-route-audit-results.json"]).web, true);
+  assert.equal(pr(["docs/scripts/unsafe.mjs"]).web, true);
+  assert.equal(pr(["docs/developer/site-route-audit.md"]).web, false);
 });
 
 test("Web/공용 API 계약/설정/보안/웹 워크플로 변경은 전체 CI를 계속 실행한다", () => {
