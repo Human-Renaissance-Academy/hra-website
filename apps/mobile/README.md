@@ -118,6 +118,8 @@ APK: `android/app/build/outputs/apk/debug/app-debug.apk`, 약 235MB, application
 
 ## 출시 전 소유자 결정과 미검증 범위
 
+Android·iOS EAS 빌드 프로필, 수동 실행 보호 조건과 아직 완료되지 않은 계정·출시 승인은 [EAS 빌드 운영 절차](../../docs/developer/mobile-eas-release.md)에서 관리합니다. 설정 파일·워크플로 존재만으로 실제 출시가 완료된 것은 아닙니다.
+
 1. **`ANDROID_PACKAGE_PLACEHOLDER = com.hra.mobile` 승인**: 최초 Play 업로드 뒤 패키지 ID 변경 불가. iOS bundle ID도 출시 전에 별도 확정해야 합니다.
 2. 정식 아이콘/브랜딩과 운영 HTTPS API URL, 서명키 보관/릴리스 배포 정책이 필요합니다.
 3. 현재 수동 `android.versionCode = 1`; 매 Play 업로드마다 반드시 단조 증가시킵니다. 첫 배포 전 수동 관리 또는 EAS remote version 자동 증가 중 하나를 정해야 하며 이 작업은 EAS 계정/키를 만들지 않습니다.

@@ -4,10 +4,10 @@ name: 모바일 Android
 on:
   pull_request:
     branches: [main]
-    paths: ['apps/mobile/**', 'packages/contracts/openapi.json', '.github/workflows/mobile.yml']
+    paths: ['apps/mobile/**', 'packages/contracts/openapi.json', '.github/workflows/mobile.yml', '.github/workflows/mobile-eas-build.yml']
   push:
     branches: [main]
-    paths: ['apps/mobile/**', 'packages/contracts/openapi.json', '.github/workflows/mobile.yml']
+    paths: ['apps/mobile/**', 'packages/contracts/openapi.json', '.github/workflows/mobile.yml', '.github/workflows/mobile-eas-build.yml']
   workflow_dispatch:
 
 permissions:
@@ -43,6 +43,10 @@ jobs:
           cache-dependency-path: apps/mobile/package-lock.json
       - run: npm ci --no-audit --no-fund
       - run: npm run api:check
+      - name: EAS 설정과 릴리스 거부 경로 회귀
+        run: node --test scripts/tests/check-eas-config.test.mjs
+      - name: EAS 정적 프로필 검사 (계정 연결 없이)
+        run: node scripts/check-eas-config.mjs --config
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test

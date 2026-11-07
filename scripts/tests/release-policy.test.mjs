@@ -20,6 +20,7 @@ const workflowPermissions = {
   "expanded-e2e.yml": [{ contents: "read" }],
   "production-smoke.yml": [{ contents: "read" }],
   "mobile.yml": [{ contents: "read" }],
+  "mobile-eas-build.yml": [{ contents: "read" }],
   "mobile-server-e2e.yml": [{ contents: "read" }],
   "process-format.yml": [
     { contents: "read" },

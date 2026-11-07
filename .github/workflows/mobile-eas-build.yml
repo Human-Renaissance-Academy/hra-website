@@ -1,0 +1,82 @@
+# 수동 실행만 허용하며 Production 앱의 자동 업로드·자동 서명을 시작하지 않습니다.
+# 실행 전 GitHub environments mobile-preview / mobile-production의 보호·변수/시크릿을 운영자가 설정해야 합니다.
+name: 모바일 EAS 수동 빌드
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "배포 목적 (운영은 별도 보호 환경 승인 필수)"
+        required: true
+        type: choice
+        options: [preview, production]
+      platform:
+        description: "앱 플랫폼"
+        required: true
+        type: choice
+        options: [android, ios]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-eas-${{ inputs.profile }}-${{ inputs.platform }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    # PR HEAD를 운영 빌드에 투입하지 않습니다.
+    if: github.ref == 'refs/heads/main'
+    name: ${{ inputs.platform }} · ${{ inputs.profile }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: mobile-${{ inputs.profile }}
+    defaults:
+      run:
+        working-directory: apps/mobile
+    env:
+      CI: '1'
+      EXPO_NO_DOTENV: '1'
+      EXPO_NO_TELEMETRY: '1'
+      EXPO_PROJECT_ID: ${{ vars.EXPO_PROJECT_ID }}
+      EXPO_PUBLIC_API_BASE_URL: ${{ vars.EXPO_PUBLIC_API_BASE_URL }}
+      HRA_ANDROID_APPLICATION_ID: ${{ vars.HRA_ANDROID_APPLICATION_ID }}
+      HRA_IOS_BUNDLE_IDENTIFIER: ${{ vars.HRA_IOS_BUNDLE_IDENTIFIER }}
+      HRA_MOBILE_PRODUCTION_RELEASE_ENABLED: ${{ vars.HRA_MOBILE_PRODUCTION_RELEASE_ENABLED }}
+      HRA_EAS_PROFILE: ${{ inputs.profile }}
+      HRA_EAS_PLATFORM: ${{ inputs.platform }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - name: EAS 프로필·대상 검증
+        run: node scripts/check-eas-config.mjs --release "$HRA_EAS_PLATFORM" "$HRA_EAS_PROFILE"
+      - run: npm ci --no-audit --no-fund
+      - run: npm run api:check
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - name: 모바일 EAS 계약 회귀
+        run: node --test scripts/tests/check-eas-config.test.mjs
+      - name: 설치된 Expo SDK 호환성 검사
+        env:
+          EXPO_OFFLINE: '1'
+        run: npm run doctor
+      - name: 대상 플랫폼 번들 검증
+        run: npm run "export:$HRA_EAS_PLATFORM"
+      - name: EAS 빌드 실행 (스토어 제출 없음)
+        # 인증 토큰은 npm 설치·테스트 단계에 노출하지 않고 실제 EAS 호출 단계에서만 전달합니다.
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        # 고정 버전 EAS CLI를 사용하며 자동 스토어 제출·OTA 업데이트는 실행하지 않습니다.
+        run: |
+          if test -z "$EXPO_TOKEN"; then
+            echo 'EAS_TOKEN_REQUIRED'
+            exit 1
+          fi
+          npm exec --yes --package=eas-cli@24.12.1 -- eas build --non-interactive --platform "$HRA_EAS_PLATFORM" --profile "$HRA_EAS_PROFILE"
