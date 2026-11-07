@@ -81,10 +81,10 @@ for (const [name, expectedPermissions] of Object.entries(workflowPermissions)) {
 test("조직 이전 후에도 release-please와 보안 신고가 현재 저장소만 가리킨다", () => {
   const workflow = readFileSync(new URL("../../.github/workflows/release-please.yml", import.meta.url), "utf8");
   const issues = readFileSync(new URL("../../.github/ISSUE_TEMPLATE/config.yml", import.meta.url), "utf8");
-  assert.match(workflow, /github\\.repository == 'Human-Renaissance-Academy\\/hra-website'/);
-  assert.doesNotMatch(workflow, /github\\.repository == 'yeongseon\\/hra-website'/);
-  assert.match(issues, /Human-Renaissance-Academy\\/hra-website\\/security\\/advisories\\/new/);
-  assert.doesNotMatch(issues, /yeongseon\\/hra-website/);
+  assert.ok(workflow.includes("github.repository == 'Human-Renaissance-Academy/hra-website'"));
+  assert.equal(workflow.includes("github.repository == 'yeongseon/hra-website'"), false);
+  assert.ok(issues.includes("Human-Renaissance-Academy/hra-website/security/advisories/new"));
+  assert.equal(issues.includes("yeongseon/hra-website"), false);
 });
 test("릴리스 workflow는 명시적으로 활성화하고 별도 토큰만 사용한다", () => {
   const workflow = readFileSync(new URL("../../.github/workflows/release-please.yml", import.meta.url), "utf8");
