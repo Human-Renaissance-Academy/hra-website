@@ -26,6 +26,18 @@ async function reports(directory) {
   const server = createServer((req, res) => {
     if (req.url === '/api/health') { res.writeHead(503, { 'content-type': 'application/json' }); res.end('{"status":"error"}'); }
     else if (req.url === '/favicon.ico') { res.writeHead(200, { 'content-type': 'image/x-icon' }); res.end(Buffer.from([0, 0, 1, 0, 1, 0])); }
+    else if (req.url === '/robots.txt') {
+      res.writeHead(200, { 'content-type': 'text/plain' });
+      res.end([
+        'User-agent: *', 'Allow: /', 'Disallow: /admin', 'Disallow: /member',
+        'Disallow: /mypage', 'Disallow: /resources', 'Disallow: /login',
+        'Disallow: /register', 'Disallow: /pending', 'Disallow: /system-error',
+        'Disallow: /api/', `Sitemap: http://${req.headers.host}/sitemap.xml`,
+      ].join('\n'));
+    } else if (req.url === '/sitemap.xml') {
+      res.writeHead(200, { 'content-type': 'application/xml' });
+      res.end(`<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>http://${req.headers.host}/</loc></url></urlset>`);
+    }
     else { res.writeHead(200, { 'content-type': 'text/html' }); res.end('<html lang="ko">HRA</html>'); }
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -72,6 +84,19 @@ for (const value of [null, false, 0, '']) {
     assert.throws(() => validatePublicArtifact('authentication-measurement', report), /PUBLIC_ARTIFACT_SCHEMA_INVALID/);
   });
 }
+test('SEO 상태 오류는 허용하지만 임의 경로·비공개 값은 차단', () => {
+  const report = structuredClone(fixtures['production-smoke']);
+  report.checks[4].ok = false;
+  report.checks[4].code = 'SEO_CONTENT';
+  report.ok = false;
+  assert.equal(validatePublicArtifact('production-smoke', report), true);
+  const paths = structuredClone(report);
+  paths.checks[4].path = '/member/sensitive-id';
+  assert.throws(() => validatePublicArtifact('production-smoke', paths), /PUBLIC_ARTIFACT_SCHEMA_INVALID/);
+  const extra = structuredClone(report);
+  extra.checks.push({ path: '/admin', status: 200, ok: true, code: 'OK', durationMs: 1 });
+  assert.throws(() => validatePublicArtifact('production-smoke', extra), /PUBLIC_ARTIFACT_SCHEMA_INVALID/);
+});
 test('HSTS 고정 오류도 공개 상태 보고서로 허용', () => {
   const report = structuredClone(fixtures['production-smoke']); report.checks[0].ok = false; report.checks[0].code = 'HSTS_INVALID'; report.ok = false;
   assert.equal(validatePublicArtifact('production-smoke', report), true);
