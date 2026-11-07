@@ -10,7 +10,7 @@ import { pathToFileURL } from 'node:url';
 export const productionSmokeOrigin = 'https://hra-website-theta.vercel.app';
 const paths = ['/', '/login', '/favicon.ico', '/api/health'];
 const bodyLimit = 2 * 1024 * 1024;
-const procedure = 'https://github.com/yeongseon/hra-website/blob/main/docs/operations/production-smoke.md';
+const procedure = 'https://github.com/Human-Renaissance-Academy/hra-website/blob/main/docs/operations/production-smoke.md';
 
 // 시험 서버도 숫자형 루프백 주소만 허용하여 외부 목적지로 전환하지 못하게 한다.
 function validateOptions({ origin, sha, shaKind, fixture, timeoutMs }) {
