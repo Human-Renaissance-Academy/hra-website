@@ -2,18 +2,15 @@ import type { Metadata } from "next";
 import { formatKstDate as formatDate } from "@/lib/date-time";
 import Link from "next/link";
 import { ArrowLeft, CalendarDays, Download, Printer } from "lucide-react";
-import { asc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { z } from "zod/v4";
 import { MarkdownViewer } from "@/components/markdown/markdown-viewer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { canReadSharedResource } from "@/features/resources/access";
 import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { cohorts, weeklyTextImages, weeklyTexts } from "@/lib/db/schema";
 import { requireSharedResourceReader } from "@/lib/resource-access";
+import { getWebWeeklyTextDetail, getWebWeeklyTextTitle } from "@/features/weekly-texts/web/service";
 
 export const dynamic = "force-dynamic";
 
@@ -21,43 +18,6 @@ type WeeklyTextViewerPageProps = {
   params: Promise<{ id: string }>;
 };
 
-
-const getWeeklyText = async (id: string) => {
-  const session = await auth();
-  if (!canReadSharedResource(session?.user?.role)) return null;
-  const [text] = await db
-    .select({
-      id: weeklyTexts.id,
-      title: weeklyTexts.title,
-      body: weeklyTexts.body,
-      fileUrl: weeklyTexts.fileUrl,
-      fileName: weeklyTexts.fileName,
-      cohortName: cohorts.name,
-      textType: weeklyTexts.textType,
-      createdAt: weeklyTexts.createdAt,
-    })
-    .from(weeklyTexts)
-    .leftJoin(cohorts, eq(weeklyTexts.cohortId, cohorts.id))
-    .where(eq(weeklyTexts.id, id))
-    .limit(1);
-
-  if (!text) {
-    return null;
-  }
-
-  const images = await db
-    .select({
-      id: weeklyTextImages.id,
-      url: weeklyTextImages.url,
-      alt: weeklyTextImages.alt,
-      order: weeklyTextImages.order,
-    })
-    .from(weeklyTextImages)
-    .where(eq(weeklyTextImages.weeklyTextId, id))
-    .orderBy(asc(weeklyTextImages.order), asc(weeklyTextImages.createdAt));
-
-  return { ...text, images };
-};
 
 export async function generateMetadata({ params }: WeeklyTextViewerPageProps): Promise<Metadata> {
   const { id } = await params;
@@ -68,17 +28,13 @@ export async function generateMetadata({ params }: WeeklyTextViewerPageProps): P
     return { title: "주차별 텍스트" };
   }
 
-  const text = await getWeeklyText(parsedId.data);
-
-  if (!text) {
-    return { title: "주차별 텍스트" };
-  }
-
-  return { title: text.title };
+  const session = await auth();
+  const title = await getWebWeeklyTextTitle(session?.user?.role, parsedId.data);
+  return { title: title ?? "주차별 텍스트" };
 }
 
 export default async function WeeklyTextViewerPage({ params }: WeeklyTextViewerPageProps) {
-  await requireSharedResourceReader();
+  const session = await requireSharedResourceReader();
 
   const { id } = await params;
 
@@ -88,7 +44,7 @@ export default async function WeeklyTextViewerPage({ params }: WeeklyTextViewerP
     notFound();
   }
 
-  const text = await getWeeklyText(parsedId.data);
+  const text = await getWebWeeklyTextDetail(session.user.role, parsedId.data);
 
   if (!text) {
     notFound();
@@ -145,7 +101,7 @@ export default async function WeeklyTextViewerPage({ params }: WeeklyTextViewerP
             </section>
           ) : null}
 
-          {text.fileUrl ? (
+          {text.hasFile ? (
             <section className="space-y-3">
               <h2 className="text-base font-semibold text-[#1a1a1a]">첨부 문서</h2>
               <a
