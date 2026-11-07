@@ -182,9 +182,9 @@ test('수정본으로 해소한 권고는 제거하고 남은 평가는 위험�
   // 2026-11-04(UTC)에 다시 검토한 shadcn CLI 평가와 2026-11-05(UTC) 권고 범위 정정 후 다시 검토한
   // tooling-minimatch-glob 평가만 검토일이 바뀌고, 나머지는 2026-11-03 검토일을 유지한다.
   const reviewedOn = { 'shadcn-registry-cli': '2026-11-04', 'tooling-minimatch-glob': '2026-11-05' };
-  // drizzle-kit 0.31.11의 설치 노드만 다시 검토하고 다른 권고의 검토 날짜는 변경하지 않는다.
+  // drizzle-kit과 eslint-config-next의 설치 노드만 재검토하고 다른 권고 검토 날짜는 보존한다.
   assert.ok(policy.assessments.every(item => item.reviewedOn ===
-    (item.key === 'drizzle-kit:@esbuild-kit/esm-loader' ? '2026-11-06' : (reviewedOn[item.contextId] ?? '2026-11-03'))));
+    (['drizzle-kit:@esbuild-kit/esm-loader', 'eslint-config-next:typescript-eslint'].includes(item.key) ? '2026-11-06' : (reviewedOn[item.contextId] ?? '2026-11-03'))));
   // dev=false이거나 수정본이 있는데 적용되지 못한 사용면은 2주, dev=false CLI DoS는 3주, 개발 도구 전용은 4주다.
   // shadcn-registry-cli는 dev=true가 되어 검토일(2026-11-04)부터 4주를 넘지 않는 2026-12-02다.
   const deadlines = { 'shadcn-registry-cli': '2026-12-02', 'shadcn-ts-morph-glob': '2026-11-26', 'build-esbuild': '2026-12-03', 'tooling-minimatch-glob': '2026-12-03' };
@@ -261,6 +261,15 @@ test('Blob SDK는 cli-config의 Zod 취약 버전을 수정본으로만 해석�
   assert.equal(manifest.overrides['@vercel/cli-config']?.zod, '^4.6.6');
   assert.equal(lock.packages['node_modules/@vercel/cli-config/node_modules/zod'], undefined);
   assert.equal(lock.packages['node_modules/zod']?.version, '4.6.7');
+});
+
+test('Next 16.4.5 린트 패키지의 설치 노드와 권고별 재검토 기록을 유지한다', () => {
+  const affected = policy.packages.find(item => item.name === 'eslint-config-next');
+  assert.deepEqual(affected?.nodes, [{ path: 'node_modules/eslint-config-next', version: '16.4.5', development: true }]);
+  assert.deepEqual(affected?.via, [{ dependency: 'typescript-eslint' }]);
+  const review = policy.assessments.find(item => item.key === 'eslint-config-next:typescript-eslint');
+  assert.equal(review?.reviewedOn, '2026-11-06');
+  assert.equal(review?.reviewBy, '2026-12-03');
 });
 
 test('현재 lock의 모든 resolved는 공식 npm registry를 가리킨다', () => { assert.deepEqual(lockRegistryViolations(lock), []); });
