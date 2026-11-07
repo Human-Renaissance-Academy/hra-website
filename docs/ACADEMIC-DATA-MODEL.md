@@ -179,7 +179,7 @@
 - 어드바이저·조교의 명부 접근은 **해당 기수의 출결 대상 학생 최소 정보**로 제한한다. 과제 평가·개인 제출 파일·다른 기수 학적은 기본 열람 대상으로 삼지 않는다.
 - 교수/교수 프로필(`faculty`)과 운영 인력 배정은 별도 정본이다. 양자를 동일한 ID나 로그인 역할로 통합하지 않는다.
 
-관련 작업: [#165 수업 Advisor 배정 및 권한](https://github.com/yeongseon/hra-website/issues/165), [#159 출결 모델](https://github.com/yeongseon/hra-website/issues/159), [#160 출결 UI](https://github.com/yeongseon/hra-website/issues/160).
+관련 작업: [#165 수업 Advisor 배정 및 권한](https://github.com/Human-Renaissance-Academy/hra-website/issues/165), [#159 출결 모델](https://github.com/Human-Renaissance-Academy/hra-website/issues/159), [#160 출결 UI](https://github.com/Human-Renaissance-Academy/hra-website/issues/160).
 
 - `attendance_records(enrollment_id, schedule_event_id, state, recorded_by_user_id, updated_at)` 제안: `UNIQUE(enrollment_id, schedule_event_id)`. 실제 기록 행 부재(`UNMARKED`/미입력에 해당)와 명시적 `ABSENT`/결석은 다르다. 학생의 기수는 수업 기수와 일치해야 한다. `recorded_by_user_id`가 교수의 `facultyId`와 같다고 추정하지 않는다.
 - `attendance_change_history(attendance_record_id, previous_state, next_state, changed_by_user_id, reason, changed_at)` 또는 공통 감사 로그: 최초 입력·정정·취소의 주체/사유/시간을 보존하고 당시 어드바이저·조교 배정의 유효 여부를 검증한다. 세션별 출석 필요성은 미확정이다.
