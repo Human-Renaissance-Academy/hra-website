@@ -30,8 +30,8 @@ theme:
   icon:
     repo: fontawesome/brands/github
 
-repo_url: https://github.com/yeongseon/hra-website
-repo_name: yeongseon/hra-website
+repo_url: https://github.com/Human-Renaissance-Academy/hra-website
+repo_name: Human-Renaissance-Academy/hra-website
 
 nav:
   - 개발 가이드: index.md
@@ -144,7 +144,7 @@ markdown_extensions:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/yeongseon/hra-website
+      link: https://github.com/Human-Renaissance-Academy/hra-website
     - icon: fontawesome/brands/instagram
       link: https://instagram.com/hra_official_
 
