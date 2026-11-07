@@ -1,6 +1,6 @@
 # Android·iOS 공용 디바이스 및 Push 알림 서비스
 
-> 상태: **순수 NotificationService 계약·단위 테스트 구현** (#275). DB 테이블, API, OAuth/Bearer 인증 연결, 실제 FCM/APNs/Expo Push 공급자, 큐·스케줄러와 모바일 OS 알림 권한은 **아직 구현되지 않았습니다**. 이 문서가 앱에서 푸시를 실제 발송한다는 뜻은 아닙니다.
+> 상태: **순수 NotificationService 및 기기 등록·해제 계약·단위 테스트 구현** (#275). DB 테이블, API, OAuth/Bearer 인증 연결, 실제 FCM/APNs/Expo Push 공급자, 큐·스케줄러와 모바일 OS 알림 권한은 **아직 구현되지 않았습니다**. 이 문서가 앱에서 푸시를 실제 발송한다는 뜻은 아닙니다.
 
 ## 목표와 범위
 
@@ -9,6 +9,8 @@
 현재 구현 위치:
 
 - `src/features/notifications/service.ts`: SDK/DB에 의존하지 않는 DeviceInstallation·NotificationEvent·NotificationProvider·NotificationDeliveryStore 계약, `dispatchNotification` 순수 오케스트레이션
+- `src/features/notifications/installations.ts`: 현재 서버에서 검증된 사용자 주체만 받는 기기 등록·토큰 교체·해제 정책과 원자 소유권 저장소 포트(실제 API/DB 어댑터는 미구현)
+- `tests/unit/notification-installations.test.ts`: Android/iOS, 설치 소유자 변경 거부, 승인 대기·동의 거부, 유효하지 않은 입력, 토큰 회전, 로그아웃 후 재활성화 금지, 저장소 실패 경로
 - `tests/unit/notification-delivery.test.ts`: Android·iOS 동시 등록, 서로 다른 사용자 차단, 중복 입력/재실행, 만료·해제 토큰, 공급자 실패·영구 장애·재시도 제한, 저장소 장애·원문 누출 방지 검증
 
 ## 저장소 모델 — 설계안, 아직 migration 아님
@@ -49,6 +51,14 @@ notification_deliveries
 2. Android·iOS 플랫폼과 Expo/FCM/APNs push token 형식을 서버에서 검증합니다. 필요하면 동일 사용자·동일 설치의 token rotation을 원자 업데이트하며 다른 사용자의 설치로 토큰을 옮기지 않습니다.
 3. 로그아웃, refresh token revoke, 장기간 미사용, 공급자의 `invalid-token` 결과에 기기 해제를 연결합니다. 세션 무효화가 과거 수신된 OS 알림을 되돌리지는 못합니다.
 4. 푸시 권한이 거부된 디바이스에도 과제 열람/제출은 계속 가능해야 하며, 앱 화면에 읽기 가능한 알림 대안은 후속 UX 결정입니다.
+
+## 서버 기기 등록과 토큰 교체 (계약만 구현)
+
+- `registerDevice`는 검증된 `InstallationPrincipal`에서 사용자 ID를 가져오며 요청 본문에 사용자 ID를 받지 않습니다. MEMBER/ADMIN/FACULTY 승인 계정만 통과하고 PENDING/미로그인 계정은 저장소 전에 거부합니다. **이 구조 자체가 Principal의 실제 DB/세션 검증을 대신하지 않으며 HTTP 경로 연결 전 #273에 대한 실제 검증이 필요합니다.**
+- `consentGranted`가 `true`일 때만 등록합니다. 앱 OS 권한 확인·동의 UX는 미구현이며, 클라이언트가 보낸 동의 플래그만으로 OS 권한까지 검증된 것으로 간주하지 않습니다.
+- `InstallationRegistry.upsertForOwner`는 설치 UUID의 소유자를 처음 등록한 사용자로 고정하고, 같은 사용자의 token rotation과 버전/플랫폼 갱신만 허용합니다. 다른 사용자 소유 ID는 `owner-mismatch`, 해제된 ID는 `revoked`로 거부해야 합니다. 실제 DB의 UNIQUE 제약과 원자 트랜잭션은 #280의 migration이 선행돼야 합니다.
+- `unregisterDevice`는 현재 사용자 ID와 설치 ID를 DB에 **동시에 조건으로 넣어** 해제해야 합니다. 다른 사용자에게 해당 UUID가 존재하는지 알려주지 않도록 결과는 일정한 `revoked`로 반환하고, 재호출은 멱등하게 처리합니다.
+- 응답에는 `created / updated / unchanged / revoked / forbidden / invalid / unavailable` 같은 고정 코드만 사용하며 push token, DB 오류 원문, URI, 이메일을 기록·출력하지 않습니다. token 저장 시에는 별도 암호화 저장소를 사용해야 합니다. 호출자가 `InstallationRegistry`를 잘못 구현해 교차 계정을 허용하는 문제는 현재 단위 테스트만으로 방지할 수 없습니다.
 
 ## 알림 전송과 장애 정책
 
