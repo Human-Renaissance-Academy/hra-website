@@ -63,7 +63,8 @@ function prepareSources() {
   const schemaFiles = readdirSync(join(repository, "src/lib/db")).filter(name => name.endsWith(".ts")).sort();
   const schemaDigest = digest(JSON.stringify(schemaFiles.map(name => [name, digest(readFileSync(join(repository, "src/lib/db", name)))])));
   const tool = JSON.parse(readFileSync(join(repository, "node_modules/drizzle-kit/package.json"), "utf8"));
-  ensure(tool.version === "0.31.10", "FRESH_EXPORT_TOOL_REVIEW_REQUIRED");
+  // Drizzle CLI 0.31.11은 실제 schema export·비슈퍼유저 신규 설치·카탈로그/동작 회귀까지 통과해야 승인한다.
+  ensure(tool.version === "0.31.11", "FRESH_EXPORT_TOOL_REVIEW_REQUIRED");
   return { installation, steps: [
     { id: "schema-export", path: "schema-export", sql, authorityDigest: schemaDigest, repeats: 1 }, ...sources,
     // 기본행만 원본 효과대로 재현하며 관리자가 편집할 콘텐츠는 만들지 않는다.

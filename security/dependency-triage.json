@@ -192,7 +192,7 @@
       "nodes": [
         {
           "path": "node_modules/drizzle-kit",
-          "version": "0.31.10",
+          "version": "0.31.11",
           "development": true
         }
       ],
@@ -358,7 +358,7 @@
   "contexts": [
     {
       "id": "build-esbuild",
-      "usedApi": "drizzle-kit 0.31.10이 drizzle.config.ts 로드에 쓰는 @esbuild-kit/esm-loader 2.6.5 → @esbuild-kit/core-utils 3.3.2의 esbuild 0.18.20 transform API다. 운영 Next 서버의 외부 요청 처리나 esbuild serve 개발 서버가 아니다.",
+      "usedApi": "drizzle-kit 0.31.11이 drizzle.config.ts 로드에 쓰는 @esbuild-kit/esm-loader 2.6.5 → @esbuild-kit/core-utils 3.3.2의 esbuild 0.18.20 transform API다. 운영 Next 서버의 외부 요청 처리나 esbuild serve 개발 서버가 아니다.",
       "callLocations": "package.json db:* 명령; drizzle.config.ts; node_modules/@esbuild-kit/core-utils/node_modules/esbuild. 루트 esbuild는 2026-11-04(KST) 0.28.2로 갱신되어 이 맥락의 영향 경로가 아니다.",
       "assessment": "남은 공격 조건(GHSA-67mh-4wv8-2f99)은 esbuild serve 개발 서버가 임의 origin의 요청에 응답을 노출하는 것이다. drizzle-kit 경로는 serve를 열지 않고 transform만 호출하므로 브라우저 요청이 도달하지 않는다. Windows 개발 서버 파일 읽기 권고(GHSA-g7r4-m6w7-qqqr)는 0.28.2 갱신으로 해소됐다.",
       "residualAssumptions": "2026-11-04(KST) 기준 drizzle-kit 최신 0.31.11과 @esbuild-kit/core-utils 최신 3.3.2도 esbuild ~0.18.20을 고정해 범위 내 수정본이 없다. 개발 도구 전용이므로 2026-12-03까지 drizzle-kit의 @esbuild-kit 제거·상위 갱신을 재검토하고, 누군가 이 esbuild로 serve를 실행하면 즉시 재분류한다."
@@ -409,7 +409,7 @@
       "contextId": "build-esbuild",
       "priority": "P2",
       "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-03",
+      "reviewedOn": "2026-11-06",
       "reviewBy": "2026-12-03",
       "attackCondition": "@esbuild-kit/esm-loader 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04(KST) 재확인 결과 경로가 그대로이며 2026-12-03까지 함께 재검토한다."
     },

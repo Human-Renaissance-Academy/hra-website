@@ -182,8 +182,9 @@ test('수정본으로 해소한 권고는 제거하고 남은 평가는 위험�
   // 2026-11-04(UTC)에 다시 검토한 shadcn CLI 평가와 2026-11-05(UTC) 권고 범위 정정 후 다시 검토한
   // tooling-minimatch-glob 평가만 검토일이 바뀌고, 나머지는 2026-11-03 검토일을 유지한다.
   const reviewedOn = { 'shadcn-registry-cli': '2026-11-04', 'tooling-minimatch-glob': '2026-11-05' };
+  // drizzle-kit과 eslint-config-next의 설치 노드만 재검토하고 다른 권고 검토 날짜는 보존한다.
   assert.ok(policy.assessments.every(item => item.reviewedOn ===
-    (item.key === 'eslint-config-next:typescript-eslint' ? '2026-11-06' : (reviewedOn[item.contextId] ?? '2026-11-03'))));
+    (['drizzle-kit:@esbuild-kit/esm-loader', 'eslint-config-next:typescript-eslint'].includes(item.key) ? '2026-11-06' : (reviewedOn[item.contextId] ?? '2026-11-03'))));
   // dev=false이거나 수정본이 있는데 적용되지 못한 사용면은 2주, dev=false CLI DoS는 3주, 개발 도구 전용은 4주다.
   // shadcn-registry-cli는 dev=true가 되어 검토일(2026-11-04)부터 4주를 넘지 않는 2026-12-02다.
   const deadlines = { 'shadcn-registry-cli': '2026-12-02', 'shadcn-ts-morph-glob': '2026-11-26', 'build-esbuild': '2026-12-03', 'tooling-minimatch-glob': '2026-12-03' };
@@ -246,7 +247,15 @@ test('YAML 예외를 제거해도 다른 평가의 만료는 계속 차단한다
   assert.throws(() => verifyDependencyPolicy(audit, lock, input, '2026-11-07'), /DEPENDENCY_TRIAGE_INVALID/);
 });
 
-// @vercel/cli-config의 정확히 고정된 구버전 Zod가 다시 설치되면 실제 npm audit와 별개로 회귀를 차단한다.
+test('drizzle-kit 0.31.11은 설치 버전·개발용 전이 경로·재검토 기한을 명시적으로 유지한다', () => {
+  const tool = policy.packages.find(item => item.name === 'drizzle-kit');
+  assert.deepEqual(tool?.nodes, [{ path: 'node_modules/drizzle-kit', version: '0.31.11', development: true }]);
+  assert.deepEqual(tool?.via, [{ dependency: '@esbuild-kit/esm-loader' }]);
+  const review = policy.assessments.find(item => item.key === 'drizzle-kit:@esbuild-kit/esm-loader');
+  assert.equal(review?.reviewedOn, '2026-11-06');
+  assert.equal(review?.reviewBy, '2026-12-03');
+});
+
 test('Blob SDK는 cli-config의 Zod 취약 버전을 수정본으로만 해석한다', () => {
   const manifest = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url)));
   assert.equal(manifest.overrides['@vercel/cli-config']?.zod, '^4.6.6');
