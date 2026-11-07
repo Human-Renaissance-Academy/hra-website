@@ -2,7 +2,7 @@
 
 이 문서는 개발한 웹사이트를 검증 환경에 올리고, 확인한 버전을 운영에 반영하는 순서를 설명합니다. **배포 성공은 코드가 실행된다는 뜻이며, DB 변경·파일 보호·로그인 설정까지 완료됐다는 뜻은 아닙니다.**
 
-운영 환경 분리의 **목표 정책**은 [환경 분리 및 배포 전략](developer/environment-strategy.md)을 따릅니다. 목표 흐름은 **Local Development → PR Preview/Test → Production**이며, 모바일 내부 테스트 목적이 생기기 전에는 상시 Staging을 기본으로 두지 않습니다. Preview/Test는 Production DB·Blob·개인정보·운영 세션과 토큰을 사용하지 않아야 합니다. **현재 Preview 자원과 환경변수의 실제 격리 상태는 미확인입니다.** Preview 사용 전 [환경 분리 #279](https://github.com/yeongseon/hra-website/issues/279)에 따라 연결 대상을 확인합니다.
+운영 환경 분리의 **목표 정책**은 [환경 분리 및 배포 전략](developer/environment-strategy.md)을 따릅니다. 목표 흐름은 **Local Development → PR Preview/Test → Production**이며, 모바일 내부 테스트 목적이 생기기 전에는 상시 Staging을 기본으로 두지 않습니다. Preview/Test는 Production DB·Blob·개인정보·운영 세션과 토큰을 사용하지 않아야 합니다. **현재 Preview 자원과 환경변수의 실제 격리 상태는 미확인입니다.** Preview 사용 전 [환경 분리 #279](https://github.com/Human-Renaissance-Academy/hra-website/issues/279)에 따라 연결 대상을 확인합니다.
 
 문서 확인일: 2026-10-18. 현재 앱은 저장소 루트의 `package.json`과 `src/`를 사용합니다. `apps/web` 전환과 자동 migration gate는 [환경 분리 및 배포 전략](developer/environment-strategy.md)의 목표이며, 실제 구축 여부는 각각의 이슈에서 확인합니다.
 
@@ -64,7 +64,7 @@ Blob은 사진·PDF 같은 파일의 실제 내용을 보관하는 저장소입�
 
 저장소를 새로 만드는 것만으로 앱과 연결이 끝나지 않습니다. 토큰이 속한 저장소와 앱이 허용하는 호스트 설정이 일치하는지 확인합니다. 공개 이미지 호스트는 현재 `src/lib/blob-host.ts`와 이미지 설정에서도 사용하므로 다른 개발 저장소를 연결할 때 함께 검토합니다.
 
-보호 자료는 설정 등록뿐 아니라 기존 파일의 전환까지 확인해야 합니다. 전환 완료 여부는 [#268](https://github.com/yeongseon/hra-website/issues/268)의 운영 증거로 판단하며, 이 문서는 운영 환경의 현재 상태를 보증하지 않습니다.
+보호 자료는 설정 등록뿐 아니라 기존 파일의 전환까지 확인해야 합니다. 전환 완료 여부는 [#268](https://github.com/Human-Renaissance-Academy/hra-website/issues/268)의 운영 증거로 판단하며, 이 문서는 운영 환경의 현재 상태를 보증하지 않습니다.
 
 ### 학사 기능과 예약 작업
 
@@ -103,7 +103,7 @@ npm run build
 | `test` | 자동 테스트 | 실패와 건너뜀을 구분하고 필요한 DB 테스트 환경 확인 |
 | `build` | 배포 가능한 앱 생성 | 빌드 로그의 첫 원인부터 확인 |
 
-DB 변경이 필요하면 **앱 배포보다 먼저 적용해야 할 항목**을 [DB 변경 절차](developer/database-change-procedure.md)에서 확인합니다. `npm run db:push`는 현재 모든 대상에서 접속 없이 실패 종료합니다. 기본 Drizzle 설정에도 DB 자격정보가 없으며, SQL 생성과 실제 적용 승인은 위 절차에서 구분합니다. 자동 적용 이력·배포 차단 장치의 구축은 [#280](https://github.com/yeongseon/hra-website/issues/280)에서 진행할 작업입니다.
+DB 변경이 필요하면 **앱 배포보다 먼저 적용해야 할 항목**을 [DB 변경 절차](developer/database-change-procedure.md)에서 확인합니다. `npm run db:push`는 현재 모든 대상에서 접속 없이 실패 종료합니다. 기본 Drizzle 설정에도 DB 자격정보가 없으며, SQL 생성과 실제 적용 승인은 위 절차에서 구분합니다. 자동 적용 이력·배포 차단 장치의 구축은 [#280](https://github.com/Human-Renaissance-Academy/hra-website/issues/280)에서 진행할 작업입니다.
 
 ## 5. Preview에서 확인한 뒤 운영 반영하기
 
