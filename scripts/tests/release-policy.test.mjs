@@ -86,6 +86,26 @@ test("조직 이전 후에도 release-please와 보안 신고가 현재 저장�
   assert.ok(issues.includes("Human-Renaissance-Academy/hra-website/security/advisories/new"));
   assert.equal(issues.includes("yeongseon/hra-website"), false);
 });
+test("문서·운영 설정에서 이전 계정의 저장소 주소로 돌아가지 않는다", () => {
+  const docsRoot = new URL("../../docs/", import.meta.url);
+  const visited = [];
+  const visit = (directory, prefix = "docs") => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const relative = prefix + "/" + entry.name;
+      const url = new URL(entry.name + (entry.isDirectory() ? "/" : ""), directory);
+      if (entry.isDirectory()) visit(url, relative);
+      else if (entry.isFile() && entry.name.endsWith(".md")) visited.push(relative);
+    }
+  };
+  visit(docsRoot);
+  const fixed = ["README.md", "AGENTS.md", "mkdocs.yml",
+    ".github/ISSUE_TEMPLATE/config.yml", ".github/workflows/release-please.yml",
+    "scripts/verify-production-smoke.mjs"];
+  const stale = [...visited, ...fixed].filter((path) =>
+    readFileSync(new URL("../../" + path, import.meta.url), "utf8").includes("yeongseon/hra-website"));
+  assert.deepEqual(stale, []);
+});
+
 test("릴리스 workflow는 명시적으로 활성화하고 별도 토큰만 사용한다", () => {
   const workflow = readFileSync(new URL("../../.github/workflows/release-please.yml", import.meta.url), "utf8");
   assert.match(workflow, /vars\.RELEASE_PLEASE_ENABLED == 'true'/);
