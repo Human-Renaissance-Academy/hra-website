@@ -18,6 +18,17 @@ const server = createServer((request, response) => {
   } else if (request.url === "/favicon.ico") {
     response.writeHead(200, { "Content-Type": "image/x-icon" });
     response.end(Buffer.from([0, 0, 1, 0, 1, 0]));
+  } else if (request.url === "/robots.txt") {
+    response.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+    response.end([
+      "User-agent: *", "Allow: /", "Disallow: /admin", "Disallow: /member",
+      "Disallow: /mypage", "Disallow: /resources", "Disallow: /login",
+      "Disallow: /register", "Disallow: /pending", "Disallow: /system-error",
+      "Disallow: /api/", `Sitemap: http://${request.headers.host}/sitemap.xml`,
+    ].join("\n"));
+  } else if (request.url === "/sitemap.xml") {
+    response.writeHead(200, { "Content-Type": "application/xml; charset=utf-8" });
+    response.end(`<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>http://${request.headers.host}/</loc></url></urlset>`);
   } else {
     response.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
     response.end('<!doctype html><html lang="ko"><title>HRA 합성 점검</title></html>');
@@ -62,7 +73,7 @@ try {
   });
   const report = JSON.parse(output);
   if (interrupted || code !== 1 || report.environment !== "fixture" || report.ok ||
-      report.checks.length !== 4 || report.checks.filter(check => !check.ok).length !== 1 ||
+      report.checks.length !== 6 || report.checks.filter(check => !check.ok).length !== 1 ||
       !report.checks.some(check => check.path === "/api/health" && check.status === 503 && check.code === "HTTP_STATUS")) {
     throw new Error("SMOKE_FIXTURE_RESULT");
   }
