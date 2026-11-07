@@ -29,6 +29,17 @@ async function fixture(t, overrides = {}) {
     } else if (req.url === '/api/health') {
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end('{"status":"ok"}');
+    } else if (req.url === '/robots.txt') {
+      res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end([
+        'User-agent: *', 'Allow: /', 'Disallow: /admin', 'Disallow: /member',
+        'Disallow: /mypage', 'Disallow: /resources', 'Disallow: /login',
+        'Disallow: /register', 'Disallow: /pending', 'Disallow: /system-error',
+        'Disallow: /api/', 'Sitemap: http://' + req.headers.host + '/sitemap.xml',
+      ].join('\n'));
+    } else if (req.url === '/sitemap.xml') {
+      res.writeHead(200, { 'content-type': 'application/xml; charset=utf-8' });
+      res.end('<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>http://' + req.headers.host + '/</loc></url></urlset>');
     } else {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       res.end('<html lang="ko"><title>HRA</title></html>');
@@ -46,12 +57,12 @@ async function fixture(t, overrides = {}) {
 }
 
 // 정상 계약과 인증 정보가 없는 읽기 전용 요청을 함께 확인한다.
-test('네 공개 경로가 성공하고 두 요청 이하로 실행된다', async (t) => {
+test('여섯 공개 경로가 성공하고 두 요청 이하로 실행된다', async (t) => {
   const app = await fixture(t);
   const report = await app.run();
   assert.equal(report.ok, true);
   assert.equal(report.environment, 'fixture');
-  assert.equal(report.checks.length, 4);
+  assert.equal(report.checks.length, 6);
   assert.ok(app.peak() <= 2);
   assert.equal(app.peak(), 2);
   for (const request of app.requests) {
@@ -73,6 +84,10 @@ for (const [name, path, status, type, body, code] of [
   ['아이콘 서명 오류', '/favicon.ico', 200, 'image/x-icon', secret, 'CONTENT'],
   ['아이콘 유형 오류', '/favicon.ico', 200, 'text/html', secret, 'CONTENT_TYPE'],
   ['건강 유형 오류', '/api/health', 200, 'text/plain', '{"status":"ok"}', 'CONTENT_TYPE'],
+  ['robots 크롤링 정책 오류', '/robots.txt', 200, 'text/plain', 'User-agent: *\nDisallow: /', 'SEO_CONTENT'],
+  ['robots 응답 유형 오류', '/robots.txt', 200, 'text/html', '<html lang="ko">HRA</html>', 'CONTENT_TYPE'],
+  ['sitemap 비공개 경로 오류', '/sitemap.xml', 200, 'application/xml', '<urlset><url><loc>http://127.0.0.1/admin</loc></url></urlset>', 'SEO_CONTENT'],
+  ['sitemap 응답 유형 오류', '/sitemap.xml', 200, 'text/plain', 'not xml', 'CONTENT_TYPE'],
   ['본문 제한', '/', 200, 'text/html', secret.repeat(100000), 'BODY_LIMIT'],
 ]) {
   test(name, async (t) => {
@@ -150,6 +165,18 @@ function mockProduction(t, { hsts = 'max-age=63072000; includeSubDomains; preloa
     let body;
     if (currentPath === '/favicon.ico') { headers.set('content-type', 'image/x-icon'); body = Buffer.from([0, 0, 1, 0, 1, 0]); }
     else if (currentPath === '/api/health') { headers.set('content-type', 'application/json'); body = '{"status":"ok"}'; }
+    else if (currentPath === '/robots.txt') {
+      headers.set('content-type', 'text/plain');
+      body = [
+        'User-agent: *', 'Allow: /', 'Disallow: /admin', 'Disallow: /member',
+        'Disallow: /mypage', 'Disallow: /resources', 'Disallow: /login',
+        'Disallow: /register', 'Disallow: /pending', 'Disallow: /system-error',
+        'Disallow: /api/', 'Sitemap: https://hra-website-theta.vercel.app/sitemap.xml',
+      ].join('\n');
+    } else if (currentPath === '/sitemap.xml') {
+      headers.set('content-type', 'application/xml');
+      body = '<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://hra-website-theta.vercel.app/</loc></url></urlset>';
+    }
     else { headers.set('content-type', 'text/html'); body = '<html lang="ko">HRA</html>'; }
     const response = new Response(body, { status: currentPath === path ? status : 200, headers });
     if (rawHsts) {
@@ -171,7 +198,7 @@ for (const header of [
   test(`Production HSTS 정상 문법 ${header}`, async t => {
     const calls = mockProduction(t, { hsts: header });
     const report = await runProductionSmoke({ sha });
-    assert.equal(report.ok, true); assert.equal(calls.length, 4);
+    assert.equal(report.ok, true); assert.equal(calls.length, 6);
     assert.ok(calls.every(call => call.url.startsWith('https://hra-website-theta.vercel.app/')));
     assert.ok(!JSON.stringify(report).includes(header));
   });
@@ -205,7 +232,7 @@ for (const [label, header] of [
     assert.deepEqual(Object.keys(report.checks[0]).sort(), ['code', 'durationMs', 'ok', 'path', 'status']);
   });
 }
-for (const path of ['/', '/login', '/favicon.ico', '/api/health']) {
+for (const path of ['/', '/login', '/favicon.ico', '/api/health', '/robots.txt', '/sitemap.xml']) {
   test(`Production ${path} 응답 각각 HSTS를 검사하고 상태 코드를 유지`, async t => {
     mockProduction(t, { hsts: null, path, status: 503 });
     const report = await runProductionSmoke({ sha }); const result = report.checks.find(check => check.path === path);
