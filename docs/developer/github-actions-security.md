@@ -24,6 +24,16 @@
 
 release-please의 활성화 조건과 별도 `RELEASE_PLEASE_TOKEN` 전달을 유지합니다. 해당 Action은 checkout을 사용하지 않으며 API 인증에 지정 토큰을 사용합니다. 이 변경은 토큰 자체의 권한이나 저장소 설정을 바꾸지 않습니다. [기존 릴리스 운영](../contributing/releasing.md)의 토큰 발급·활성화 절차를 따릅니다.
 
+## 문서·모바일 전용 PR의 웹 CI 경계
+
+`.github/workflows/ci.yml`의 `scope` job은 PR의 **GitHub merge ref와 첫 번째 부모(base)** 를 비교합니다. 변경된 파일이 `apps/mobile/**`, `docs/**`, 저장소 설명 문서, 모바일 전용 workflow, 이슈 템플릿에만 있으면 웹의 PostgreSQL 설치·전체 Vitest·브라우저·Next.js 빌드 job을 생략합니다. 별도 `mobile.yml`의 Android 빌드·타입·Jest·Expo 검증은 계속 실행되며 PR 형식·보안/CSP 검사도 독립적으로 실행됩니다.
+
+`src/**`, `packages/contracts/**`, `scripts/**`, 웹 CI/보안 workflow, `package*.json`, `vercel.json`, 환경변수/설정처럼 웹에 영향을 줄 수 있는 파일이 **하나라도 포함되면 전체 웹 CI**를 실행합니다. 공용 API 계약이 바뀐 모바일 PR은 Web과 Mobile을 함께 검사합니다. `push`/`main`은 변함없이 전체 CI를 수행합니다.
+
+범위를 판독할 수 없거나, merge parent가 없거나, 파일명이 손상되거나, 검출 job의 테스트가 실패해도 전체 Web CI가 실행되도록 `always()` 기반 job 조건을 사용합니다. *탐지 실패를 검사 성공으로 취급해 건너뛰지 않습니다.* 기존 `Lint · Typecheck · Test · Build` job 이름을 유지하여 브랜치 보호 확인 이름을 임의 변경하지 않습니다. 운영 DB나 배포를 호출하는 workflow를 새로 만들지 않았습니다.
+
+재현 가능한 독립 검증은 `node --test scripts/tests/ci-scope.test.mjs`이며 실제 PR에서는 merge ref의 SHA/파일 범위까지 확인합니다. 이 분기는 **GitHub Actions의 웹 CI 비용/범위만 조정**합니다. Vercel 프로젝트의 Ignored Build Step이나 Root Directory를 변경하지 않았으며, 두 설정의 운영 적용은 #281과 조직 이전 연결 문제 #408에서 별도 확인해야 합니다.
+
 ## 검증한 태그와 commit
 
 2026-10-21에 각 공식 저장소의 Git refs API로 기존 태그를 조회하고 대상이 `commit`인지 확인했습니다. checkout과 setup-node는 기존 `v4` 범위를 유지했고 release-please의 고정 commit은 그대로 보존했습니다.
