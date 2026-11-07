@@ -11,12 +11,13 @@ import { fileURLToPath } from "node:url";
 const SHA = /^[a-f0-9]{40}$/;
 
 function isIndependentPath(path) {
-  return path.startsWith("apps/mobile/") ||
-    path.startsWith("docs/") ||
-    path.startsWith(".github/ISSUE_TEMPLATE/") ||
+  // 자동 생성된 환경 계약은 문서 변경만으로도 기존 검사와 어긋날 수 있습니다.
+  if (path === "docs/developer/environment-inventory.md") return false;
+  if (path.startsWith("docs/")) return /\.(?:md|mdx|png|jpe?g|webp|svg)$/.test(path);
+  // 네이티브 앱 소스만 독립적으로 검증합니다. 모바일 워크플로 자체는 보안 경계이므로 Web CI도 유지합니다.
+  if (path.startsWith("apps/mobile/")) return true;
+  return path.startsWith(".github/ISSUE_TEMPLATE/") ||
     path === ".github/PULL_REQUEST_TEMPLATE.md" ||
-    path === ".github/workflows/mobile.yml" ||
-    path === ".github/workflows/mobile-eas-build.yml" ||
     path === "README.md" || path === "AGENTS.md" || path === "mkdocs.yml";
 }
 
