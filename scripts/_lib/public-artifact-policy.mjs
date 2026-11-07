@@ -79,11 +79,11 @@ function smoke(report) {
   object(report, ['environment', 'sha', 'shaKind', 'startedAt', 'completedAt', 'ok', 'checks', 'limitations']); choice(report.environment, ['Production', 'fixture']); digest(report.sha, 40); choice(report.shaKind, report.environment === 'fixture' ? ['fixture'] : ['main', 'deployment']); bool(report.ok);
   for (const key of ['startedAt', 'completedAt']) if (typeof report[key] !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(report[key]) || new Date(report[key]).toISOString() !== report[key]) reject();
   if (report.completedAt < report.startedAt) reject();
-  if (!Array.isArray(report.checks) || report.checks.length !== 4) reject();
+  if (!Array.isArray(report.checks) || report.checks.length !== 6) reject();
   report.checks.forEach((check, index) => {
-    object(check, ['path', 'status', 'ok', 'code', 'durationMs']); exact(check.path, ['/', '/login', '/favicon.ico', '/api/health'][index]);
+    object(check, ['path', 'status', 'ok', 'code', 'durationMs']); exact(check.path, ['/', '/login', '/favicon.ico', '/api/health', '/robots.txt', '/sitemap.xml'][index]);
     if (check.status !== null) { number(check.status, 599, true); if (check.status < 100) reject(); }
-    bool(check.ok); choice(check.code, ['NETWORK', 'HTTP_STATUS', 'BODY_LIMIT', 'CONTENT_TYPE', 'CONTENT', 'OK', 'HEALTH_CONTENT', 'TIMEOUT', 'HSTS_INVALID']); if (check.ok !== (check.code === 'OK') || check.ok && check.status !== 200) reject(); number(check.durationMs);
+    bool(check.ok); choice(check.code, ['NETWORK', 'HTTP_STATUS', 'BODY_LIMIT', 'CONTENT_TYPE', 'CONTENT', 'OK', 'HEALTH_CONTENT', 'SEO_CONTENT', 'TIMEOUT', 'HSTS_INVALID']); if (check.ok !== (check.code === 'OK') || check.ok && check.status !== 200) reject(); number(check.durationMs);
   });
   if (report.ok !== report.checks.every(check => check.ok)) reject();
   exact(report.limitations, ['소스 SHA는 실제 서비스 중인 배포 버전의 증거가 아닙니다.', '공개 HTTP 응답만 검사하며 OAuth 로그인과 쓰기 작업은 수행하지 않습니다.', '알림은 실행 결과와 작업 요약에만 기록하며 개인 이메일 전달을 보장하지 않습니다.']);
