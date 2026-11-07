@@ -45,7 +45,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@base-ui/react": "^1.5.0",
+    "@base-ui/react": "^1.9.0",
     "@hra/contracts": "file:packages/contracts",
     "@neondatabase/serverless": "^1.2.0",
     "@radix-ui/react-checkbox": "^1.4.1",
@@ -70,7 +70,7 @@
     "@tiptap/pm": "^3.32.2",
     "@tiptap/react": "^3.32.2",
     "@tiptap/starter-kit": "^3.32.2",
-    "@vercel/blob": "^2.3.1",
+    "@vercel/blob": "^2.8.2",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -108,7 +108,7 @@
     "@types/turndown": "^5.0.6",
     "@vitejs/plugin-react": "^6.0.1",
     "dotenv": "^18.0.6",
-    "drizzle-kit": "^0.31.10",
+    "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
     "hanspell": "^1.0.1",
@@ -129,6 +129,9 @@
   "overrides": {
     "@tailwindcss/typography": {
       "postcss-selector-parser": "^6.1.5"
+    },
+    "@vercel/cli-config": {
+      "zod": "^4.6.6"
     }
   },
   "engines": {
