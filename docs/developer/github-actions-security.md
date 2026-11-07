@@ -1,6 +1,6 @@
 # GitHub Actions 권한과 외부 Action 고정
 
-관련: [#269](https://github.com/yeongseon/hra-website/issues/269). 이 문서는 CI 권한·도구 무결성 경계를 설명합니다. [저장소 secret·dependency 게이트](repository-security-gates.md), [공개 artifact 검사](public-artifact-safety.md), [CSP·HSTS](browser-security-policy.md), [LICENSE·noreply 운영 확인표](../operations/public-repository-security.md)의 구체 범위와 함께 확인합니다.
+관련: [#269](https://github.com/Human-Renaissance-Academy/hra-website/issues/269). 이 문서는 CI 권한·도구 무결성 경계를 설명합니다. [저장소 secret·dependency 게이트](repository-security-gates.md), [공개 artifact 검사](public-artifact-safety.md), [CSP·HSTS](browser-security-policy.md), [LICENSE·noreply 운영 확인표](../operations/public-repository-security.md)의 구체 범위와 함께 확인합니다.
 
 ## 권한 경계
 
