@@ -7,7 +7,7 @@
 - `apps/mobile/eas.json`: 내부 검증용 `preview`와 배포 후보용 `production` 프로필. 운영 프로필은 스토어용 바이너리를 **빌드할 뿐 자동 제출하지 않습니다**.
 - `apps/mobile/app.config.ts`: 명시된 `EXPO_PROJECT_ID`, `HRA_ANDROID_APPLICATION_ID`, `HRA_IOS_BUNDLE_IDENTIFIER`를 앱 설정에 연결. 값이 없으면 기존 Android 임시 `com.hra.mobile`로 로컬 debug는 유지하고 iOS 앱 식별자는 구성하지 않습니다.
 - `scripts/check-eas-config.mjs`: 원격 빌드 전 프로젝트 UUID, 승인한 플랫폼별 앱 식별자, HTTPS API origin, Preview/Production 범위, 운영 빌드의 추가 활성화 값을 검사. **시크릿 원문을 로그에 출력하지 않습니다**.
-- `--remote` 검사는 **Expo 서버의 선택된 `preview`/`production` 환경**에서 로드한 공개 프로젝트 UUID·API origin·플랫폼 앱 식별자가 GitHub 보호 환경의 기대값과 일치해야만 빌드를 시작합니다. GitHub 변수 검증만으로 EAS 원격 빌더에 반영됐다고 가정하지 않습니다.
+- `--remote` 검사는 GitHub의 승인된 Expo 프로젝트 UUID로 선택한 **Expo 서버의 `preview`/`production` 환경**에서 로드한 API origin·플랫폼 앱 식별자가 GitHub 보호 환경의 기대값과 일치해야만 빌드를 시작합니다. GitHub 변수 검증만으로 EAS 원격 빌더에 반영됐다고 가정하지 않습니다.
 - `.github/workflows/mobile-eas-build.yml`: `main`에서만 수동 호출하며 플랫폼·프로필을 입력받습니다. 기존 모바일 CI 안에서 별도 계약 테스트가 실행됩니다. 자동 PR 빌드나 자동 스토어 제출은 하지 않습니다.
 - 원격 `appVersionSource=remote`, 운영 빌드 `autoIncrement=true`, `requireCommit=true`. 처음 원격 버전 동기화를 검증해야 하며 기존 출시 버전이 있다면 EAS CLI의 `build:version:set`으로 먼저 맞춥니다. 앱 버전을 임의로 초기화하지 않습니다.
 
