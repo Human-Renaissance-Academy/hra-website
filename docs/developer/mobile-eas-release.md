@@ -34,7 +34,7 @@ EAS 빌드가 성공했다고 운영 DB/Blob 또는 OAuth 환경 분리가 검�
 3. Production을 승인한 시점에만 GitHub `mobile-production` 환경 변수 `HRA_MOBILE_PRODUCTION_RELEASE_ENABLED=true`를 설정합니다. 이는 **추가 기술 게이트**이며 GitHub 실제 리뷰 승인이나 운영 승인 자체를 대체하지 않습니다. Preview에는 필요 없습니다.
 4. `main` 최신 HEAD에서 기존 모바일 `CI` 및 `모바일 Android` 워크플로를 확인한 뒤 `모바일 EAS 수동 빌드`를 `workflow_dispatch`로 실행합니다. `profile`은 `preview` 또는 `production`, `platform`은 `android` 또는 `ios`입니다.
 5. 실행은 `npm ci`, API 타입 최신성·typecheck·lint·Jest·SDK doctor·플랫폼 JS bundle을 다시 통과해야만 EAS CLI를 호출합니다. EAS에서 실제 빌드 결과, 서명, 아티팩트와 ID를 확인하고, Android/iOS 별도 승인 후 스토어 등록을 수행합니다.
-   - EAS CLI 호출 전 GitHub 값의 1차 정적 검사와, **`eas env:exec <profile>`로 실제 Expo 서버 환경을 다시 로드한 상태의 2차 일치 검사**를 수행합니다. 이때 GitHub에서 같은 이름으로 주입한 변수는 별도 프로세스에서 `unset`하므로 Expo 원격 값의 누락을 GitHub 값이 가릴 수 없습니다. 값이 다르면 `EAS_REMOTE_ENVIRONMENT_MISMATCH` 등 고정 코드로 실패하고 빌드하지 않습니다.
+   - EAS CLI 호출 전 GitHub 값의 1차 정적 검사와, **`eas env:exec <profile>`로 실제 Expo 서버 환경을 다시 로드한 상태의 2차 일치 검사**를 수행합니다. 이때 GitHub에서 주입한 **API 주소·선택 플랫폼 식별자**는 별도 프로세스에서 `unset`하므로 Expo 원격 값의 누락을 GitHub 값이 가릴 수 없습니다. `EXPO_PROJECT_ID`는 EAS CLI의 원격 프로젝트 조회에 필요해 유지하며, CLI가 이를 이용해 선택된 Expo 프로젝트 환경을 읽습니다. 동일 프로젝트에 연결됐다는 사실과 앱 런타임 환경변수 검증은 서로 다른 조건입니다. 값이 다르면 `EAS_REMOTE_ENVIRONMENT_MISMATCH` 등 고정 코드로 실패하고 빌드하지 않습니다.
 
 로컬 정적 설정과 거부 테스트:
 
