@@ -80,14 +80,15 @@ jobs:
             exit 1
           fi
           # GitHub Environment 검증만으로 EAS 클라우드의 실제 번들 변수를 확인한 것으로 간주하지 않습니다.
-          # 예상 값은 별도 이름에 보존하고 기존 이름을 완전히 제거한 subshell에서 EAS 원격 환경만 로드합니다.
+          # 예상 값은 별도 이름에 보존하고 앱에 포함되는 공개 설정을 제거한 subshell에서 EAS 원격 환경을 로드합니다.
           # 모든 오류는 고정 코드만 출력합니다. 운영 값·시크릿은 stdout에 노출하지 않습니다.
           (
             export HRA_EXPECTED_EXPO_PROJECT_ID="$EXPO_PROJECT_ID"
             export HRA_EXPECTED_EXPO_PUBLIC_API_BASE_URL="$EXPO_PUBLIC_API_BASE_URL"
             export HRA_EXPECTED_HRA_ANDROID_APPLICATION_ID="$HRA_ANDROID_APPLICATION_ID"
             export HRA_EXPECTED_HRA_IOS_BUNDLE_IDENTIFIER="$HRA_IOS_BUNDLE_IDENTIFIER"
-            unset EXPO_PROJECT_ID EXPO_PUBLIC_API_BASE_URL HRA_ANDROID_APPLICATION_ID HRA_IOS_BUNDLE_IDENTIFIER
+            # EXPO_PROJECT_ID는 CLI가 원격 환경을 조회할 프로젝트를 특정해야 하므로 유지합니다.
+            unset EXPO_PUBLIC_API_BASE_URL HRA_ANDROID_APPLICATION_ID HRA_IOS_BUNDLE_IDENTIFIER
             npm exec --yes --package=eas-cli@24.12.1 -- eas env:exec "$HRA_EAS_PROFILE" "node scripts/check-eas-config.mjs --remote $HRA_EAS_PLATFORM $HRA_EAS_PROFILE" --non-interactive
           )
           # 서버 환경과 GitHub 보호 환경 값의 일치가 확인된 경우에만 빌드를 시작합니다.
