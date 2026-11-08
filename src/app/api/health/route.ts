@@ -38,7 +38,7 @@ function isAuthorizedForDetails(providedSecret: string | null): boolean {
  *   - 익명 요청: HTTP status (200/503) + `{ status: "ok" | "error" }` 만 반환.
  *     Vercel/UptimeRobot 등 일반 모니터는 status code 로 충분히 동작한다.
  *   - `x-health-check-secret` 헤더 값이 서버 HEALTH_CHECK_SECRET 환경변수와 일치하는 요청:
- *     database 상태, timestamp 를 포함한 상세 응답. 운영자가 장애 원인을 빠르게 파악 가능.
+ *     database 상태, 실행 중인 Node.js major, timestamp 를 포함한 상세 응답. 운영자가 장애 원인을 빠르게 파악 가능.
  *
  * 목적: DB 장애 시점 등 인프라 상태가 외부 정찰에 사용되지 않도록 하되,
  *   secret 을 아는 운영자는 기존 상세 정보를 그대로 얻을 수 있게 한다.
@@ -70,6 +70,9 @@ export async function GET(request: Request) {
       {
         status,
         database: dbStatus,
+        // 운영자가 배포 런타임의 실제 Node LTS major를 확인하는 용도 (#294).
+        // 상세 요청 인증에 성공한 경우에만 반환하고 공개 스모크 응답은 변경하지 않습니다.
+        nodeMajor: Number(process.versions.node.split(".")[0]),
         timestamp: new Date().toISOString(),
       },
       { status: httpStatus },
