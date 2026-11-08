@@ -145,8 +145,9 @@ test('수동 빌드 workflow는 main, environment 보호, 검증 후 EAS 실행�
   assert.match(workflow, /npm run api:check/);
   assert.match(workflow, /npm run doctor/);
   assert.match(workflow, /eas env:exec "\$HRA_EAS_PROFILE" "node scripts\/check-eas-config\.mjs --remote/);
-  assert.match(workflow, /unset EXPO_PROJECT_ID EXPO_PUBLIC_API_BASE_URL HRA_ANDROID_APPLICATION_ID HRA_IOS_BUNDLE_IDENTIFIER/);
+  assert.match(workflow, /unset EXPO_PUBLIC_API_BASE_URL HRA_ANDROID_APPLICATION_ID HRA_IOS_BUNDLE_IDENTIFIER/);
   assert.match(workflow, /HRA_EXPECTED_EXPO_PUBLIC_API_BASE_URL/);
+  assert.match(workflow, /EXPO_PROJECT_ID는 CLI가 원격 환경을 조회할 프로젝트/);
   assert.ok(workflow.indexOf('eas env:exec') < workflow.indexOf('eas build --non-interactive'));
   assert.match(workflow, /eas build --non-interactive/);
   assert.doesNotMatch(workflow, /--auto-submit|eas submit|eas update/);
