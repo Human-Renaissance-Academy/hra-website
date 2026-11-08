@@ -4,18 +4,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, CalendarDays, Eye, User, Printer } from "lucide-react";
 import { notFound } from "next/navigation";
-import { asc, eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MarkdownViewer } from "@/components/markdown/markdown-viewer";
-import { canReadSharedResource } from "@/features/resources/access";
 import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { classLogImages, classLogs, users } from "@/lib/db/schema";
-import { logServerError } from "@/lib/errors";
 import { requireSharedResourceReader } from "@/lib/resource-access";
+import { getWebClassLogDetail, getWebClassLogTitle, recordWebClassLogRead } from "@/features/class-logs/web/service";
 
 export const dynamic = "force-dynamic";
 
@@ -23,42 +19,6 @@ type ResourceDetailPageProps = {
   params: Promise<{ id: string }>;
 };
 
-
-const getClassLogDetail = async (id: string) => {
-  // 메타데이터 경로에서도 본문과 같은 역할 검사를 DB 조회보다 먼저 수행한다.
-  const session = await auth();
-  if (!canReadSharedResource(session?.user?.role)) return null;
-  const [log] = await db
-    .select({
-      id: classLogs.id,
-      title: classLogs.title,
-      content: classLogs.content,
-      classDate: classLogs.classDate,
-      viewCount: classLogs.viewCount,
-      authorName: users.name,
-    })
-    .from(classLogs)
-    .leftJoin(users, eq(classLogs.authorId, users.id))
-    .where(eq(classLogs.id, id))
-    .limit(1);
-
-  if (!log) {
-    return null;
-  }
-
-  const images = await db
-    .select({
-      id: classLogImages.id,
-      url: classLogImages.url,
-      alt: classLogImages.alt,
-      order: classLogImages.order,
-    })
-    .from(classLogImages)
-    .where(eq(classLogImages.classLogId, id))
-    .orderBy(asc(classLogImages.order), asc(classLogImages.createdAt));
-
-  return { log, images };
-};
 
 export async function generateMetadata({ params }: ResourceDetailPageProps): Promise<Metadata> {
   const { id } = await params;
@@ -71,17 +31,13 @@ export async function generateMetadata({ params }: ResourceDetailPageProps): Pro
     return { title: "자료실" };
   }
 
-  const data = await getClassLogDetail(parsedId.data);
-
-  if (!data) {
-    return { title: "자료실" };
-  }
-
-  return { title: data.log.title };
+  const session = await auth();
+  const title = await getWebClassLogTitle(session?.user?.role, parsedId.data);
+  return { title: title ?? "자료실" };
 }
 
 export default async function ResourceDetailPage({ params }: ResourceDetailPageProps) {
-  await requireSharedResourceReader();
+  const session = await requireSharedResourceReader();
   const { id } = await params;
 
   // Oracle Phase D BLOCK 수정 — 라우트 파라미터의 UUID 형식을 먼저 검증하여
@@ -91,7 +47,7 @@ export default async function ResourceDetailPage({ params }: ResourceDetailPageP
     notFound();
   }
 
-  const data = await getClassLogDetail(parsedId.data);
+  const data = await getWebClassLogDetail(session.user.role, parsedId.data);
 
   if (!data) {
     notFound();
@@ -99,13 +55,7 @@ export default async function ResourceDetailPage({ params }: ResourceDetailPageP
 
   const { log, images } = data;
 
-  void db
-    .update(classLogs)
-    .set({ viewCount: sql`${classLogs.viewCount} + 1` })
-    .where(eq(classLogs.id, log.id))
-    .catch((err: unknown) => {
-      logServerError("member/resources/viewCount", err, { id: log.id });
-    });
+  recordWebClassLogRead(session.user.role, log.id);
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12 sm:py-20 md:py-32">
