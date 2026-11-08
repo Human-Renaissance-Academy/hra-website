@@ -11,7 +11,7 @@
 - `src/features/notifications/service.ts`: SDK/DB에 의존하지 않는 DeviceInstallation·NotificationEvent·NotificationProvider·NotificationDeliveryStore 계약, `dispatchNotification` 순수 오케스트레이션
 - `src/features/notifications/installations.ts`: 현재 서버에서 검증된 사용자 주체만 받는 기기 등록·토큰 교체·해제 정책과 원자 소유권 저장소 포트(실제 API/DB 어댑터는 미구현)
 - `tests/unit/notification-installations.test.ts`: Android/iOS, 설치 소유자 변경 거부, 승인 대기·동의 거부, 유효하지 않은 입력, 토큰 회전, 로그아웃 후 재활성화 금지, 저장소 실패 경로
-- `tests/unit/notification-delivery.test.ts`: Android·iOS 동시 등록, 서로 다른 사용자 차단, 중복 입력/재실행, 만료·해제 토큰, 공급자 실패·영구 장애·재시도 제한, 저장소 장애·원문 누출 방지 검증
+- `tests/unit/notification-delivery.test.ts`: Android·iOS 동시 등록, 서로 다른 사용자 차단, 중복 입력/재실행, 만료·해제 토큰, 공급자 실패·영구 장애·재시도 제한, **invalid token 해제/종료 중 한 저장소 장애** 및 원문 누출 방지 검증
 
 ## 저장소 모델 — 설계안, 아직 migration 아님
 
@@ -65,7 +65,7 @@ notification_deliveries
 - **원자성 분리:** 과제 공개/마감 처리 트랜잭션은 원장(outbox) 이벤트만 commit합니다. 비동기 전송 worker는 커밋된 이벤트만 읽습니다. 현재는 outbox/worker가 없으므로 실제 알림은 발생하지 않습니다.
 - **원자 claim:** DB의 `(event_id, installation_id)` 고유 키와 lease 또는 동등한 DB 경쟁 제어로 각 worker의 중복 claim을 차단합니다. 메모리 mock 검증만으로 실 DB 원자성을 증명하지 못합니다.
 - **Idempotency:** 서비스가 `eventId:installationId` UUID 기반 키를 공급자에 전달합니다. 공급자가 동일 키를 지원하지 않거나 전송 후 DB 성공 기록이 실패하면 **정확히 한 번 전달은 보장할 수 없습니다**. at-least-once 가능성과 사용자 중복 수신 위험을 인정하고 관측합니다.
-- **재시도:** `transient-failure` 또는 예외 시 1회 후 60초, 2회 후 300초, 총 3회까지만 시도하고 terminal 처리합니다. 예약 시간 이전 재시도는 DB adapter 책임입니다. `invalid-token`은 기기를 revoke하고 terminal, `permanent-failure`은 즉시 terminal합니다.
+- **재시도:** `transient-failure` 또는 예외 시 1회 후 60초, 2회 후 300초, 총 3회까지만 시도하고 terminal 처리합니다. 예약 시간 이전 재시도는 DB adapter 책임입니다. `invalid-token`은 기기 revoke와 delivery terminal을 **각각 시도**하여, revoke 영속 저장이 실패해도 같은 무효 토큰에 대한 자동 전송을 종료합니다. 둘 중 한 저장이 실패하면 성공 집계하지 않고 정수 `failures`로 보고하며, 실제 재실행·기기 정리의 원자성은 DB adapter/운영 worker에서 검증해야 합니다. `permanent-failure`는 즉시 terminal합니다.
 - **안전성:** 공급자 원문 오류, 요청/응답, push token, 과제 본문, 사용자 이메일을 서버 일반 로그·메트릭·리포트에 포함하지 않습니다. 서비스 결과는 정수 집계만 돌려줍니다. 현재 서비스 자체는 로깅하지 않습니다.
 - **보존:** 실패 이벤트의 재실행/보관 기간, 로그 접근자, 토큰 삭제 기준 및 배포 시 원격 전송 금지는 #142 정책을 따릅니다.
 
