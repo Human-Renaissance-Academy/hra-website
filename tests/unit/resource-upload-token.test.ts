@@ -10,7 +10,7 @@ vi.mock("@/lib/resource-upload-server", () => ({ recordResourceUpload: mocks.rec
 vi.mock("@/lib/db", () => ({ db: { select: () => ({ from: () => ({ where: () => ({ limit: mocks.userLimit }) }) }) } }));
 vi.mock("@/lib/errors", () => ({ logServerError: vi.fn() }));
 
-import { POST } from "@/app/api/resource-uploads/route";
+import { GET, POST } from "@/app/api/resource-uploads/route";
 import { projectBlobHost } from "@/lib/blob-host";
 import { resourceUploadPath, type ResourceUploadKind } from "@/lib/resource-upload-contract";
 
@@ -109,6 +109,43 @@ describe("자료실 직접 업로드 토큰", () => {
     mocks.head.mockResolvedValue({ url: validUrl, pathname });
     expect((await invoke(validUrl)).status).toBe(200);
     expect(mocks.recordResourceUpload).toHaveBeenCalledExactlyOnceWith(validUrl, userId);
+  });
+
+  it("운영 Private Blob 전환 누락 시 공개 업로드 안내와 토큰 발급을 모두 차단", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("RESOURCE_PRIVATE_BLOB_ENABLED", "false");
+    const get = await GET();
+    expect(get.status).toBe(503);
+    expect(await get.json()).toEqual({ error: "업로드 저장소를 사용할 수 없습니다." });
+
+    const response = await issueToken({
+      kind: "guidebooks", fileName: "합성.pdf", size: 100,
+      contentType: "application/pdf", uploadId,
+    });
+    expect(response.status).toBe(400);
+    expect(mocks.handleUpload).not.toHaveBeenCalled();
+    expect(mocks.recordResourceUpload).not.toHaveBeenCalled();
+  });
+
+  it("운영 Private Blob 전환 후에는 브라우저 업로드 설정과 토큰이 private만 제공", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("RESOURCE_PRIVATE_BLOB_ENABLED", "true");
+    vi.stubEnv("RESOURCE_PRIVATE_BLOB_HOST", "private123.private.blob.vercel-storage.com");
+    vi.stubEnv("RESOURCE_PRIVATE_READ_WRITE_TOKEN", "synthetic-protected-token");
+    const get = await GET();
+    expect(get.status).toBe(200);
+    expect(await get.json()).toEqual({ access: "private" });
+    const token = await issueToken({
+      kind: "guidebooks", fileName: "합성.pdf", size: 100,
+      contentType: "application/pdf", uploadId,
+    });
+    expect(token.status).toBe(200);
+    expect(mocks.handleUpload).toHaveBeenCalledWith(
+      expect.objectContaining({ token: "synthetic-protected-token" }),
+    );
+    expect(mocks.recordResourceUpload.mock.calls[0][0]).toMatch(
+      /^https:\/\/private123\.private\.blob\.vercel-storage\.com\//,
+    );
   });
 
   it("비공개 전환 후 전용 토큰으로 발급하고 공개 완료 URL을 거부한다", async () => {
