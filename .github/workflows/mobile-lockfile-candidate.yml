@@ -30,6 +30,12 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: apps/mobile/package-lock.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: expo-sdk-lock-committed-before-467
+          path: apps/mobile/package-lock.json
+          if-no-files-found: error
+          retention-days: 1
       - name: 공식 npm registry에서 scripts 없이 package-lock 재생성
         env:
           npm_config_registry: https://registry.npmjs.org
