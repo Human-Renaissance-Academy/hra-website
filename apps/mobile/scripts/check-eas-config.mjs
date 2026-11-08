@@ -61,6 +61,22 @@ export function validateEasBuild({ config, profile, platform, variables }) {
   return [...new Set(errors)];
 }
 
+/**
+ * EAS cloud builder에 적용되는 환경 값의 별도 정합성 확인.
+ * GitHub-hosted runner의 동일 이름 환경 변수는 workflow가 제거한 채 호출해야 합니다.
+ * expected/remote 값 자체를 반환하거나 기록하지 않고 고정 실패 코드만 사용합니다.
+ */
+export function validateEasRemoteBuild({ config, profile, platform, expected, remote }) {
+  const errors = validateEasBuild({ config, profile, platform, variables: remote });
+  const required = ['EXPO_PROJECT_ID', 'EXPO_PUBLIC_API_BASE_URL',
+    platform === 'android' ? 'HRA_ANDROID_APPLICATION_ID' : 'HRA_IOS_BUNDLE_IDENTIFIER'];
+  if (required.some(name => typeof expected?.[name] !== 'string' || !expected[name] ||
+      typeof remote?.[name] !== 'string' || remote[name] !== expected[name])) {
+    errors.push('EAS_REMOTE_ENVIRONMENT_MISMATCH');
+  }
+  return [...new Set(errors)];
+}
+
 function run() {
   const args = process.argv.slice(2);
   const config = JSON.parse(readFileSync(new URL('../eas.json', import.meta.url), 'utf8'));
@@ -68,6 +84,14 @@ function run() {
   if (args.length === 1 && args[0] === '--config') errors = validateEasConfig(config);
   else if (args.length === 3 && args[0] === '--release') {
     errors = validateEasBuild({ config, platform: args[1], profile: args[2], variables: process.env });
+  } else if (args.length === 3 && args[0] === '--remote') {
+    const expected = Object.fromEntries([
+      'EXPO_PROJECT_ID', 'EXPO_PUBLIC_API_BASE_URL',
+      'HRA_ANDROID_APPLICATION_ID', 'HRA_IOS_BUNDLE_IDENTIFIER',
+    ].map(name => [name, process.env['HRA_EXPECTED_' + name]]));
+    errors = validateEasRemoteBuild({
+      config, platform: args[1], profile: args[2], expected, remote: process.env,
+    });
   } else errors = ['EAS_ARGUMENTS_INVALID'];
   if (errors.length) {
     for (const error of errors) console.error(error);
