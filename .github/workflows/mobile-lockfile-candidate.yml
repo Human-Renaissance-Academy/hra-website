@@ -63,3 +63,23 @@ jobs:
           path: apps/mobile/package-lock.json
           if-no-files-found: error
           retention-days: 1
+      - name: 최신 npm 감사 스냅샷을 허용 필드로만 추출
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { spawnSync } from 'node:child_process';
+          import { dependencySnapshot } from '../../scripts/_lib/dependency-policy.mjs';
+          const run = spawnSync('npm', ['audit','--json','--package-lock-only','--ignore-scripts','--registry=https://registry.npmjs.org','--fetch-retries=0','--fetch-timeout=30000'], {encoding:'utf8',maxBuffer:16*1024*1024,timeout:60000,stdio:['ignore','pipe','pipe']});
+          if (run.error || ![0,1].includes(run.status)) throw new Error('MOBILE_AUDIT_FAILED');
+          let report; try { report=JSON.parse(run.stdout); } catch { throw new Error('MOBILE_AUDIT_FAILED'); }
+          if (report.error) throw new Error('MOBILE_AUDIT_FAILED');
+          const snapshot=dependencySnapshot(report,JSON.parse(readFileSync('package-lock.json','utf8')));
+          writeFileSync('mobile-audit-snapshot-467.json',JSON.stringify(snapshot,null,2)+'\n');
+          console.log('MOBILE_AUDIT_SNAPSHOT_PACKAGES='+snapshot.length);
+          NODE
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: expo-sdk-audit-snapshot-467
+          path: apps/mobile/mobile-audit-snapshot-467.json
+          if-no-files-found: error
+          retention-days: 1
