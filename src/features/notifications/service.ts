@@ -157,9 +157,22 @@ export async function dispatchNotification(input: {
         await store.markSent(key);
         summary.sent++;
       } else if (result === "invalid-token") {
-        await store.revokeInstallation(installation.id);
+        // 토큰 등록 해제가 실패해도 이 전송은 terminal로 확정 시도합니다.
+        // 한쪽 실패가 다른 쪽 호출을 막으면 이미 invalid로 판정한 토큰을 재발송할 수 있습니다.
+        // 두 영속 작업 모두 성공했다고 확인할 때만 정상 정리로 집계합니다.
+        let revokeFailed = false;
+        try {
+          await store.revokeInstallation(installation.id);
+        } catch {
+          revokeFailed = true;
+        }
+        // 해제 실패와 독립적으로 중복 전송을 막는 terminal 기록을 시도합니다.
         await store.markTerminal(key);
-        summary.invalidTokens++;
+        if (revokeFailed) {
+          summary.failures++;
+        } else {
+          summary.invalidTokens++;
+        }
       } else if (result === "permanent-failure" || claim.attempt === maxAttempts) {
         await store.markTerminal(key);
         summary.terminal++;
