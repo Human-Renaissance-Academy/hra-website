@@ -11,14 +11,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { and, eq } from "drizzle-orm";
-import { z } from "zod/v4";
 import { ArrowLeft, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { db } from "@/lib/db";
-import { classMaterials } from "@/lib/db/schema";
 import { requireMember } from "@/lib/member";
-import { classMaterialReadFilter } from "@/features/class-materials/access";
+import { getWebClassMaterialDetail, getWebClassMaterialTitle } from "@/features/class-materials/web/service";
 
 export const dynamic = "force-dynamic";
 
@@ -26,33 +22,17 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
-// 페이지와 메타데이터 모두 동일한 인가 경로를 통과합니다. 전역 캐시는 사용하지 않습니다.
-async function getVisibleMaterial(id: string) {
-  const session = await requireMember();
-  const parsedId = z.uuid().safeParse(id);
-  if (!parsedId.success) return null;
-  if (!session?.user?.id) return null;
-
-  const [material] = await db
-    .select()
-    .from(classMaterials)
-    .where(and(eq(classMaterials.id, parsedId.data), classMaterialReadFilter(session.user)))
-    .limit(1);
-  return material ?? null;
-}
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const session = await requireMember();
   const { id } = await params;
-  const material = await getVisibleMaterial(id);
-  return {
-    title: material ? `${material.title} — 강의 자료` : "강의 자료",
-  };
+  const title = await getWebClassMaterialTitle(session.user, id);
+  return { title: title ? `${title} — 강의 자료` : "강의 자료" };
 }
 
 export default async function ClassMaterialViewerPage({ params }: Props) {
+  const session = await requireMember();
   const { id } = await params;
-
-  const material = await getVisibleMaterial(id);
+  const material = await getWebClassMaterialDetail(session.user, id);
 
   if (!material) {
     notFound();
