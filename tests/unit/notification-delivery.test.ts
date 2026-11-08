@@ -136,6 +136,27 @@ describe("Android/iOS 공용 알림 전송 계약", () => {
     expect(provider.send).toHaveBeenCalledTimes(1);
   });
 
+  it("토큰 해제 DB가 실패해도 영구 invalid 전송 기록은 terminal로 확정해 재발송을 차단", async () => {
+    const { store, provider, run } = setup("invalid-token");
+    vi.spyOn(store, "revokeInstallation").mockRejectedValueOnce(new Error("synthetic-private-token-in-error"));
+    const result = await run();
+    expect(result).toMatchObject({ failures: 1, invalidTokens: 0, sent: 0 });
+    expect(store.state.get(eventId + ":" + androidId)?.status).toBe("terminal");
+    expect((await run()).skipped).toBe(1);
+    expect(provider.send).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(result)).not.toContain("synthetic-private-token");
+  });
+
+  it("invalid token 종료 기록 실패는 발송 성공으로 처리하지 않고 실패를 보고", async () => {
+    const { store, provider, run } = setup("invalid-token");
+    vi.spyOn(store, "markTerminal").mockRejectedValueOnce(new Error("synthetic-DB-secret"));
+    const result = await run();
+    expect(result).toMatchObject({ failures: 1, invalidTokens: 0, sent: 0 });
+    expect(store.revoked).toEqual([androidId]);
+    expect(provider.send).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(result)).not.toContain("synthetic-DB-secret");
+  });
+
   it("일시 장애는 1분, 5분으로 재시도하고 세 번째 뒤 영구 종료한다", async () => {
     const start = new Date("2026-11-08T00:00:00Z");
     const { provider, store, run, setDate } = setup("transient-failure", start);
