@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { validateEasConfig, validateEasBuild } from '../check-eas-config.mjs';
+import { validateEasConfig, validateEasBuild, validateEasRemoteBuild } from '../check-eas-config.mjs';
 
 const config = JSON.parse(readFileSync(new URL('../../eas.json', import.meta.url), 'utf8'));
 const inputs = Object.freeze({
@@ -80,6 +80,54 @@ test('CLI 환경 입력 실패는 비밀값이나 URL을 출력하지 않는다'
   assert.equal(out.stderr.includes('secret'), false);
 });
 
+test('GitHub 보호 환경과 Expo 클라우드 환경 값이 모두 일치해야 원격 빌드 허용', () => {
+  assert.deepEqual(validateEasRemoteBuild({
+    config, platform: 'android', profile: 'preview', expected: inputs, remote: { ...inputs },
+  }), []);
+  assert.deepEqual(validateEasRemoteBuild({
+    config, platform: 'ios', profile: 'production', expected: inputs, remote: { ...inputs },
+  }), []);
+});
+
+test('Expo 환경의 API origin, 프로젝트 UUID, 플랫폼 식별자 차이는 고정 오류 코드만 반환', () => {
+  for (const field of ['EXPO_PUBLIC_API_BASE_URL', 'EXPO_PROJECT_ID', 'HRA_ANDROID_APPLICATION_ID']) {
+    const remote = { ...inputs, [field]: field === 'EXPO_PUBLIC_API_BASE_URL' ?
+      'https://different.invalid' : field === 'EXPO_PROJECT_ID' ?
+      '223e4567-e89b-42d3-a456-426614174000' : 'org.other.app' };
+    const failures = validateEasRemoteBuild({ config, platform: 'android', profile: 'production', expected: inputs, remote });
+    assert.ok(failures.includes('EAS_REMOTE_ENVIRONMENT_MISMATCH'), field);
+    assert.equal(JSON.stringify(failures).includes('different.invalid'), false);
+    assert.equal(JSON.stringify(failures).includes('org.other.app'), false);
+  }
+});
+
+test('GitHub 환경이 남아 있거나 Expo 빌더에 선택 플랫폼 필드가 없다면 원격 검증 차단', () => {
+  const missing = { ...inputs };
+  delete missing.EXPO_PUBLIC_API_BASE_URL;
+  assert.ok(validateEasRemoteBuild({
+    config, platform: 'ios', profile: 'preview', expected: inputs, remote: missing,
+  }).includes('EAS_REMOTE_ENVIRONMENT_MISMATCH'));
+  assert.ok(validateEasRemoteBuild({
+    config, platform: 'android', profile: 'preview',
+    expected: { ...inputs, EXPO_PROJECT_ID: '' }, remote: inputs,
+  }).includes('EAS_REMOTE_ENVIRONMENT_MISMATCH'));
+});
+
+test('EAS --remote CLI 오류는 원격 URL·토큰을 출력하지 않고 실패 코드만 남긴다', () => {
+  const env = { PATH: process.env.PATH, HRA_EAS_PROFILE: 'preview',
+    HRA_EXPECTED_EXPO_PROJECT_ID: inputs.EXPO_PROJECT_ID,
+    HRA_EXPECTED_EXPO_PUBLIC_API_BASE_URL: inputs.EXPO_PUBLIC_API_BASE_URL,
+    HRA_EXPECTED_HRA_ANDROID_APPLICATION_ID: inputs.HRA_ANDROID_APPLICATION_ID,
+    EXPO_PUBLIC_API_BASE_URL: 'https://api.remote-sensitive.invalid' };
+  const out = spawnSync(process.execPath, ['scripts/check-eas-config.mjs', '--remote', 'android', 'preview'], {
+    cwd: new URL('../../', import.meta.url), env, encoding: 'utf8',
+  });
+  assert.equal(out.status, 1);
+  assert.match(out.stderr, /EAS_REMOTE_ENVIRONMENT_MISMATCH/);
+  assert.equal(out.stderr.includes('remote-sensitive.invalid'), false);
+  assert.equal(out.stderr.includes(inputs.EXPO_PROJECT_ID), false);
+});
+
 test('수동 빌드 workflow는 main, environment 보호, 검증 후 EAS 실행만 허용', () => {
   const workflow = readFileSync(new URL('../../../../.github/workflows/mobile-eas-build.yml', import.meta.url), 'utf8');
   assert.match(workflow, /^\s{2}workflow_dispatch:\s*$/m);
@@ -96,6 +144,10 @@ test('수동 빌드 workflow는 main, environment 보호, 검증 후 EAS 실행�
   assert.match(workflow, /node scripts\/check-eas-config\.mjs --release/);
   assert.match(workflow, /npm run api:check/);
   assert.match(workflow, /npm run doctor/);
+  assert.match(workflow, /eas env:exec "\$HRA_EAS_PROFILE" "node scripts\/check-eas-config\.mjs --remote/);
+  assert.match(workflow, /unset EXPO_PROJECT_ID EXPO_PUBLIC_API_BASE_URL HRA_ANDROID_APPLICATION_ID HRA_IOS_BUNDLE_IDENTIFIER/);
+  assert.match(workflow, /HRA_EXPECTED_EXPO_PUBLIC_API_BASE_URL/);
+  assert.ok(workflow.indexOf('eas env:exec') < workflow.indexOf('eas build --non-interactive'));
   assert.match(workflow, /eas build --non-interactive/);
   assert.doesNotMatch(workflow, /--auto-submit|eas submit|eas update/);
   assert.match(workflow, /cancel-in-progress: false/);
