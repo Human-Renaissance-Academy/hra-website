@@ -58,6 +58,23 @@ describe("서버 업로드 의도 예약", () => {
     expect(owned.size).toBe(2); expect(objects).toEqual(owned);
   });
 
+  it("운영 보호 자료가 공개 fallback 설정이면 의도 예약·객체 업로드 모두 시작하지 않는다", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("RESOURCE_PRIVATE_BLOB_ENABLED", "false");
+    await expect(uploadWithOwnedIntent(input)).rejects.toThrow(
+      "운영 보호 자료 저장소가 비활성화되어 있습니다.",
+    );
+    expect(mocks.reserve).not.toHaveBeenCalled();
+    expect(mocks.put).not.toHaveBeenCalled();
+
+    // 같은 Production에서도 공개 포스터는 자료실의 보호 대상이 아닙니다.
+    const poster = await uploadWithOwnedIntent({
+      ...input, protectedResource: false, namespace: "recruitment",
+    });
+    expect(poster).toContain(projectBlobHost);
+    expect(mocks.put.mock.calls[0][2].access).toBe("public");
+  });
+
   it("보호 자료는 비공개 저장소 URL을 예약하고 해당 토큰을 사용한다", async () => {
     vi.stubEnv("RESOURCE_PRIVATE_BLOB_ENABLED", "true");
     vi.stubEnv("RESOURCE_PRIVATE_BLOB_HOST", "example.private.blob.vercel-storage.com");
