@@ -167,10 +167,13 @@ export function validateWorkflowCheckBoundaries(workflows) {
         const acceptedCommands = allowed?.commands ?? (allowed ? [allowed.command] : []);
         const commandMatched = acceptedCommands.some((command) => run.includes(command));
         // 새 env 기반 커밋 검사는 PR 범위를 계산하는 --pr-history 계약도 유지해야 합니다.
+        // YAML의 step 수준 설정 객체이며 프로세스 환경변수를 읽지 않습니다.
+        const stepEnvironment = Object.entries(step).find(([key]) => key === "env")?.[1];
         const validHistoryEnv = !run.includes("$HISTORY_MODE") ||
-          (String(step.env?.HISTORY_MODE).includes("--pr-history") &&
-           String(step.env?.HISTORY_MODE).includes("--history") &&
-           typeof step.env?.BASE_SHA === "string" && typeof step.env?.HEAD_SHA === "string");
+          (String(stepEnvironment?.HISTORY_MODE).includes("--pr-history") &&
+           String(stepEnvironment?.HISTORY_MODE).includes("--history") &&
+           typeof stepEnvironment?.BASE_SHA === "string" &&
+           typeof stepEnvironment?.HEAD_SHA === "string");
         if (key !== "process-format.yml:contracts" ||
             !allowed || step.if !== allowed.condition || !commandMatched || !validHistoryEnv) {
           errors.push(key + ": unauthorized conditional step or executable command: " + String(step.name ?? "unnamed"));
