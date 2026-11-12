@@ -71,9 +71,18 @@ const JOB_IF = {
   "process-format.yml:contracts": "github.event_name != 'issues'",
 };
 const CONDITIONAL_STEPS = {
-  "node scripts/check-openapi-compat.mjs --base-sha": "github.event_name == 'push' || github.event_name == 'pull_request'",
-  "node scripts/check-openapi-compat.mjs --self": "github.event_name == 'workflow_dispatch'",
-  "node scripts/check-commit-messages.mjs --history": "github.event_name == 'push' || github.event_name == 'pull_request'",
+  "OpenAPI 기존 계약 추가 전용 검사": {
+    command: "node scripts/check-openapi-compat.mjs --base-sha",
+    condition: "github.event_name == 'push' || github.event_name == 'pull_request'",
+  },
+  "OpenAPI 현재 문서·Route 검사": {
+    command: "node scripts/check-openapi-compat.mjs --self",
+    condition: "github.event_name == 'workflow_dispatch'",
+  },
+  "새 커밋 메시지 검사": {
+    command: "node scripts/check-commit-messages.mjs --history",
+    condition: "github.event_name == 'push' || github.event_name == 'pull_request'",
+  },
 };
 
 // 단계 이름, 주석, 여러 줄 문자열의 인용문이 아니라 실제 실행 줄에 있는지를 확인합니다.
@@ -153,10 +162,10 @@ export function validateWorkflowCheckBoundaries(workflows) {
         continue;
       }
       if (step.if !== undefined) {
-        const run = typeof step.run === "string" ? step.run.trim() : "";
-        const allowed = Object.entries(CONDITIONAL_STEPS).find(([cmd]) => run.startsWith(cmd));
+        const run = typeof step.run === "string" ? step.run.replace(/\\s+/g, " ").trim() : "";
+        const allowed = CONDITIONAL_STEPS[step.name];
         if (key !== "process-format.yml:contracts" ||
-            !allowed || step.if !== allowed[1]) {
+            !allowed || step.if !== allowed.condition || !run.includes(allowed.command)) {
           errors.push(key + ": a required step is conditionally skipped: " + String(step.name ?? run.slice(0,70)) + " (" + String(step.if) + ").");
         }
       }
