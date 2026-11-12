@@ -80,7 +80,7 @@ const CONDITIONAL_STEPS = {
     condition: "github.event_name == 'workflow_dispatch'",
   },
   "새 커밋 메시지 검사": {
-    command: "node scripts/check-commit-messages.mjs --history",
+    commands: ["node scripts/check-commit-messages.mjs --history", 'node scripts/check-commit-messages.mjs "$HISTORY_MODE" "$BASE_SHA" "$HEAD_SHA"'],
     condition: "github.event_name == 'push' || github.event_name == 'pull_request'",
   },
 };
@@ -164,9 +164,16 @@ export function validateWorkflowCheckBoundaries(workflows) {
       if (step.if !== undefined) {
         const run = typeof step.run === "string" ? step.run.replace(/\s+/g, " ").trim() : "";
         const allowed = CONDITIONAL_STEPS[step.name];
+        const acceptedCommands = allowed?.commands ?? (allowed ? [allowed.command] : []);
+        const commandMatched = acceptedCommands.some((command) => run.includes(command));
+        // 새 env 기반 커밋 검사는 PR 범위를 계산하는 --pr-history 계약도 유지해야 합니다.
+        const validHistoryEnv = !run.includes("$HISTORY_MODE") ||
+          (String(step.env?.HISTORY_MODE).includes("--pr-history") &&
+           String(step.env?.HISTORY_MODE).includes("--history") &&
+           typeof step.env?.BASE_SHA === "string" && typeof step.env?.HEAD_SHA === "string");
         if (key !== "process-format.yml:contracts" ||
-            !allowed || step.if !== allowed.condition || !run.includes(allowed.command)) {
-          errors.push(key + ": unexpected conditional step " + JSON.stringify({ name: step.name ?? null, condition: step.if, expectedCondition: allowed?.condition ?? null, allowed: Boolean(allowed), commandMatched: allowed ? run.includes(allowed.command) : false, runStart: run.slice(0,120) }));
+            !allowed || step.if !== allowed.condition || !commandMatched || !validHistoryEnv) {
+          errors.push(key + ": unauthorized conditional step or executable command: " + String(step.name ?? "unnamed"));
         }
       }
       if (typeof step.uses === "string" && step.uses.startsWith("actions/checkout@") &&

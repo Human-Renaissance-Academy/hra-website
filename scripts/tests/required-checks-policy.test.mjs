@@ -130,3 +130,11 @@ test("CLI는 보호 JSON 스냅샷 대조를 명시적으로 요청할 때만 �
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("커밋 메시지 검사가 비활성 명령으로 바뀌면 차단한다", () => {
+  const files = baseline();
+  const name = "process-format.yml";
+  assert.match(files[name], /node scripts\/check-commit-messages\.mjs/);
+  files[name] = files[name].replace(/node scripts\/check-commit-messages\.mjs[^\n]*/, "echo bypass");
+  assert.notDeepEqual(validateWorkflowCheckBoundaries(files), []);
+});
