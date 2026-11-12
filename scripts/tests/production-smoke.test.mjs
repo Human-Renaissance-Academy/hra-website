@@ -74,6 +74,78 @@ test('여섯 공개 경로가 성공하고 두 요청 이하로 실행된다', a
   }
 });
 
+/** 색인 정책의 정상 본문에서 한 가지 그룹·문법 오류만 바꿉니다. */
+function robotsPolicy(origin) {
+  return [
+    'User-agent: *', 'Allow: /', 'Disallow: /admin', 'Disallow: /member',
+    'Disallow: /mypage', 'Disallow: /resources', 'Disallow: /login',
+    'Disallow: /register', 'Disallow: /pending', 'Disallow: /system-error',
+    'Disallow: /api/', `Sitemap: ${origin}/sitemap.xml`,
+  ].join('\n');
+}
+
+/** 전체 문서 검증으로 XML 주석·잘린 태그의 URL을 실제 항목으로 오인하지 않는지 확인합니다. */
+function sitemapPolicy(origin) {
+  return `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${origin}/</loc></url></urlset>`;
+}
+
+for (const [label, path, change] of [
+  ['robots 다른 그룹의 거부 규칙', '/robots.txt', body => body.replace('Allow: /', 'Allow: /\nUser-agent: OtherCrawler')],
+  ['robots 보호 경로 대문자', '/robots.txt', body => body.replace('/admin', '/Admin')],
+  ['robots 특정 그룹의 보호 경로 허용', '/robots.txt', body => body + '\nUser-agent: OtherCrawler\nAllow: /'],
+  ['sitemap 닫히지 않은 루트', '/sitemap.xml', body => body.replace('</urlset>', '')],
+  ['sitemap 닫히지 않은 항목', '/sitemap.xml', body => body.replace('</url>', '')],
+  ['sitemap 주석 속 홈 URL', '/sitemap.xml', body => body.replace('<url>', '<!--<url>').replace('</url>', '</url>-->')],
+  ['sitemap 중복 루트', '/sitemap.xml', body => body + body],
+  ['sitemap 잘못된 namespace', '/sitemap.xml', body => body.replace('http://www.sitemaps.org/schemas/sitemap/0.9', 'https://fixture.invalid/not-sitemap')],
+  ['sitemap loc 중복', '/sitemap.xml', body => body.replace('</loc>', '</loc><loc>http://127.0.0.1/</loc>')],
+  ['sitemap XML 주석으로만 닫힌 태그', '/sitemap.xml', body => body.replace('</urlset>', '<!--</urlset>-->')],
+  ['sitemap 태그 안의 잘못된 주석', '/sitemap.xml', body => body.replace('<url>', '<ur<!-- 잘못된 위치 -->l>')],
+  ['sitemap 선언 앞의 주석', '/sitemap.xml', body => '<!-- 선언은 처음이어야 함 -->' + body],
+  ['sitemap 문자 참조로 숨긴 보호 경로', '/sitemap.xml', body => body.replace('</urlset>', '<url><loc>http://ORIGIN/%61dmin</loc></url></urlset>')],
+  ['sitemap 자격정보 포함 URL', '/sitemap.xml', body => body.replace('</urlset>', '<url><loc>http://fixture@ORIGIN/notices</loc></url></urlset>')],
+  ['sitemap 중복 슬래시 보호 경로', '/sitemap.xml', body => body.replace('</urlset>', '<url><loc>http://ORIGIN//admin</loc></url></urlset>')],
+  ['sitemap 역슬래시 보호 경로', '/sitemap.xml', body => body.replace('</urlset>', '<url><loc>http://ORIGIN/\\admin</loc></url></urlset>')],
+]) {
+  test(`${label}은 SEO_CONTENT로 거부한다`, async t => {
+    const app = await fixture(t, { [path]: (req, res) => {
+      const origin = `http://${req.headers.host}`;
+      const body = path === '/robots.txt' ? robotsPolicy(origin) : sitemapPolicy(origin);
+      res.writeHead(200, { 'content-type': path === '/robots.txt' ? 'text/plain' : 'application/xml' });
+      res.end(change(body).replaceAll('http://ORIGIN', origin).replaceAll('@ORIGIN', `@${req.headers.host}`));
+    } });
+    const report = await app.run();
+    assert.equal(report.ok, false);
+    assert.equal(report.checks.find(check => check.path === path).code, 'SEO_CONTENT');
+  });
+}
+
+for (const [label, path, change] of [
+  ['robots 주석·키워드 대소문자', '/robots.txt', body => '# 공개 정책\n' + body.replaceAll('User-agent', 'USER-AGENT').replaceAll('Disallow:', 'dIsAlLoW:').replace('Allow: /', 'Allow: / # 공개 영역')],
+  ['robots 별도 그룹 전체 차단', '/robots.txt', body => 'User-agent: OtherCrawler\nDisallow: /\n\n' + body],
+  ['sitemap 실제 요소 밖 주석', '/sitemap.xml', body => body.replace('<url>', '<!-- 정상 주석 --><url>')],
+  ['sitemap XML entity와 마지막 변경일', '/sitemap.xml', body => body.replace('</urlset>', '<url><loc>http://ORIGIN/notices/a&amp;b</loc><lastmod>2026-11-12T00:00:00.000Z</lastmod></url></urlset>')],
+]) {
+  test(`${label}의 정상 정책은 통과한다`, async t => {
+    const app = await fixture(t, { [path]: (req, res) => {
+      const origin = `http://${req.headers.host}`;
+      const body = path === '/robots.txt' ? robotsPolicy(origin) : sitemapPolicy(origin);
+      res.writeHead(200, { 'content-type': path === '/robots.txt' ? 'text/plain' : 'application/xml' });
+      res.end(change(body).replaceAll('http://ORIGIN', origin));
+    } });
+    assert.equal((await app.run()).ok, true);
+  });
+}
+
+test('sitemap의 entity로 구분한 쿼리 URL도 거부한다', async t => {
+  const app = await fixture(t, { '/sitemap.xml': (req, res) => {
+    const origin = `http://${req.headers.host}`;
+    res.writeHead(200, { 'content-type': 'application/xml' });
+    res.end(sitemapPolicy(origin).replace('</urlset>', `<url><loc>${origin}/notices?one=1&amp;two=2</loc></url></urlset>`));
+  } });
+  assert.equal((await app.run()).checks.find(check => check.path === '/sitemap.xml').code, 'SEO_CONTENT');
+});
+
 for (const [name, path, status, type, body, code] of [
   ['상태 실패', '/api/health', 503, 'application/json', secret, 'HTTP_STATUS'],
   ['진단 필드 누출', '/api/health', 200, 'application/json', JSON.stringify({ status: 'ok', detail: secret }), 'HEALTH_CONTENT'],
