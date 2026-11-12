@@ -50,9 +50,10 @@ async function main() {
     if (info.ignored || !info.inferredParser) continue;
 
     // --staged는 작업 트리가 아니라 Git index의 실제 커밋 대상 바이트를 검사합니다.
-    const source = git("show", mode === "--staged" ? ":" + file : head + ":" + file).toString(
-      "utf8",
-    );
+    const source = git(
+      "show",
+      mode === "--staged" ? ":" + file : head + ":" + file,
+    ).toString("utf8");
     const config = (await resolveConfig(absolute)) ?? {};
     checked++;
     if (!(await check(source, { ...config, filepath: absolute }))) {
