@@ -78,6 +78,11 @@ jobs:
         # 삭제 전용 push만 빌드를 생략하고 코드 ref·손상된 입력은 계속 차단합니다.
         run: node --test scripts/tests/pre-push-hook.test.mjs
 
+      - name: 임시 포맷 차이 진단
+        run: |
+          ./node_modules/.bin/prettier --write scripts/check-code-format.mjs
+          git --no-pager diff -- scripts/check-code-format.mjs
+
       - name: 변경 소스 포맷 검사
         run: |
           node --test scripts/tests/code-format-scope.test.mjs
