@@ -13,13 +13,7 @@ describe("변경 파일 포맷 검사 범위", () => {
   });
 
   it("소스 확장자만 대상으로 삼고 경로 이탈·lockfile은 거부한다", () => {
-    for (const file of [
-      "src/a.ts",
-      "src/a.tsx",
-      "scripts/check.mjs",
-      "src/a.cts",
-      "src/a.jsx",
-    ]) {
+    for (const file of ["src/a.ts", "src/a.tsx", "scripts/check.mjs", "src/a.cts", "src/a.jsx"]) {
       assert.equal(isFormatTarget(file), true, file);
     }
     for (const file of [
