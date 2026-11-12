@@ -11,7 +11,7 @@ test("secret·audit 게이트는 모든 PR과 main·예약에서 운영 비밀 �
   assert.match(workflow, /npm run verify:repository-secrets -- --gitleaks "\$scanner_dir\/gitleaks"/);
   assert.match(workflow, /npm run verify:dependencies/);
   assert.match(workflow, /npm run verify:public-sources/);
-  assert.match(workflow, /node scripts\\/check-required-checks-config\\.mjs/);
+  assert.ok(workflow.includes("node scripts/check-required-checks-config.mjs"));
 });
 test("공식 scanner archive를 고정 검증하고 실제 canary 및 소유 경로 정리를 실행한다", () => {
   assert.ok(workflow.includes("https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz"));

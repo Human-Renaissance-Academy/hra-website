@@ -20,6 +20,8 @@ export const REQUIRED_MAIN_STATUS_CHECKS = Object.freeze([
 export const NON_REQUIRED_WORKFLOWS = Object.freeze([
   "authentication-measurement.yml",
   "expanded-e2e.yml",
+  "mobile-server-e2e.yml",
+  "mobile.yml",
   "production-smoke.yml",
   "release-please.yml",
 ]);
@@ -155,7 +157,7 @@ export function validateWorkflowCheckBoundaries(workflows) {
         const allowed = Object.entries(CONDITIONAL_STEPS).find(([cmd]) => run.startsWith(cmd));
         if (key !== "process-format.yml:contracts" ||
             !allowed || step.if !== allowed[1]) {
-          errors.push(key + ": a required step is conditionally skipped.");
+          errors.push(key + ": a required step is conditionally skipped: " + String(step.name ?? run.slice(0,70)) + " (" + String(step.if) + ").");
         }
       }
       if (typeof step.uses === "string" && step.uses.startsWith("actions/checkout@") &&
@@ -165,7 +167,10 @@ export function validateWorkflowCheckBoundaries(workflows) {
     }
     const commands = activeLines(job.steps);
     for (const required of CHECK_COMMANDS[key] || []) {
-      if (!commands.some((line) => line.startsWith(required))) {
+      const found = required.startsWith("scripts/tests/")
+        ? commands.some((line) => line.startsWith("node --test ") && (" " + line + " ").includes(" " + required + " "))
+        : commands.some((line) => line.startsWith(required));
+      if (!found) {
         errors.push(key + ": required executable command missing: " + required);
       }
     }

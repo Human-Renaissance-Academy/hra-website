@@ -38,7 +38,7 @@ function protection() {
   };
 }
 
-test("승인된 7개 workflow와 모든 필수 PR 검사 경계가 유지된다", () => {
+test("승인된 9개 workflow와 모든 필수 PR 검사 경계가 유지된다", () => {
   const files = baseline();
   assert.deepEqual(Object.keys(files).sort(), [...EXPECTED_WORKFLOW_FILES]);
   assert.deepEqual(validateWorkflowCheckBoundaries(files), []);
