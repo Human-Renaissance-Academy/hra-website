@@ -79,9 +79,6 @@ jobs:
         run: node --test scripts/tests/pre-push-hook.test.mjs
 
       - name: 변경 소스 포맷 검사
-        env:
-          FORMAT_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          FORMAT_HEAD_SHA: ${{ github.sha }}
         run: |
           node --test scripts/tests/code-format-scope.test.mjs
           npm run format:check
