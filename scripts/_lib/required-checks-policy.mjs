@@ -162,7 +162,7 @@ export function validateWorkflowCheckBoundaries(workflows) {
         continue;
       }
       if (step.if !== undefined) {
-        const run = typeof step.run === "string" ? step.run.replace(/\\s+/g, " ").trim() : "";
+        const run = typeof step.run === "string" ? step.run.replace(/\s+/g, " ").trim() : "";
         const allowed = CONDITIONAL_STEPS[step.name];
         if (key !== "process-format.yml:contracts" ||
             !allowed || step.if !== allowed.condition || !run.includes(allowed.command)) {
