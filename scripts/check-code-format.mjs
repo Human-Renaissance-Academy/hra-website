@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { check, getFileInfo, resolveConfig } from "prettier";
@@ -24,10 +25,14 @@ async function main() {
   let files;
   let head;
   if (mode === "--changed") {
-    const base = process.env.FORMAT_BASE_SHA;
-    head = process.env.FORMAT_HEAD_SHA;
+    // runner의 공식 event JSON만 사용하고 별도 앱 환경변수는 추가하지 않습니다.
+    const eventPath = process.env.GITHUB_EVENT_PATH;
+    if (!eventPath) throw new Error("GitHub Actions 이벤트 파일 경로가 필요합니다.");
+    const event = JSON.parse(readFileSync(eventPath, "utf8"));
+    const base = event.pull_request?.base?.sha ?? event.before;
+    head = git("rev-parse", "HEAD").toString("utf8").trim();
     if (!isCommitSha(base) || !isCommitSha(head)) {
-      throw new Error("FORMAT_BASE_SHA와 FORMAT_HEAD_SHA에 유효한 Git SHA가 필요합니다.");
+      throw new Error("GitHub 이벤트 또는 검증 HEAD에서 유효한 SHA를 찾지 못했습니다.");
     }
     files = parseGitPaths(git("diff", "--name-only", "-z", "--diff-filter=ACMR", base, head, "--"));
   } else {
