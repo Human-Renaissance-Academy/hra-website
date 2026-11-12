@@ -15,6 +15,8 @@
 | 저장소 보안·브라우저 CSP | `contents: read` | fetched history·추적 소스·dependency 원장·격리 production CSP 검사. scanner 원문 artifact 없음 |
 | 인증 비용·권한 회수 | `contents: read` | 같은 의존성의 합성 계정 전후 비교와 업로드 직전 검사한 JSON 보관 |
 | 운영 가용성 점검 | `contents: read` | 공개 GET·비운영 알림 검증과 정제 JSON만 기록 |
+| 모바일 Android | `contents: read` | `apps/mobile`의 계약·타입·린트·Jest·JS 번들과 debug APK 컴파일. 비밀값을 쓰지 않으며 debug APK를 7일 보관 |
+| 모바일 서버 실통합 | `contents: read` | 환경을 비운 production 빌드와 격리 PostgreSQL의 Bearer HTTP 여정. 실패 때만 고정 코드 위주의 로그를 7일 보관 |
 | 이슈 형식 | `contents: read`, `issues: write` | 기존 형식 위반 알림 댓글 관리 |
 | PR 형식 | `contents: read`, `pull-requests: read` | 신뢰된 base 코드로 PR 메타데이터 조회 |
 | 수동 일괄 검사 | `contents: read`, `issues: read`, `pull-requests: read` | 이슈·PR 조회 |

@@ -165,10 +165,13 @@ export default async function WeeklyTextViewerPage({ params }: WeeklyTextViewerP
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {text.images.map((image) => (
                   <div key={image.id} className="overflow-hidden rounded-2xl border border-[#D9D9D9] bg-white shadow-[var(--shadow-soft)]">
+                    {/* 사진은 최대 100장이고 각 요청이 사용자별 자료 조회 예산(#444)을 쓰므로 화면에 가까워질 때만 불러옵니다. */}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={`/api/resources/weekly-text-images/${image.id}/download`}
                       alt={image.alt?.trim() || `${text.title} 사진`}
+                      loading="lazy"
+                      decoding="async"
                       className="h-44 w-full object-cover sm:h-52"
                     />
                   </div>

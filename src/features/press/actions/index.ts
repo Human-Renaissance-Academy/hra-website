@@ -1,13 +1,15 @@
 "use server";
 
-import { eq, max, sql } from "drizzle-orm";
+/**
+ * 언론보도 웹 서버 액션입니다.
+ * FormData·UUID·세션 검증과 기존 캐시·이동·오류 기록을 유지하고 저장은 서비스에 맡깁니다.
+ */
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod/v4";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { reorderByCase } from "@/lib/db/reorder";
-import { pressArticles } from "@/lib/db/schema";
+import { createItem, updateItem, deleteItem, reorderItems } from "@/features/press/admin/service";
+import { recordPressView } from "@/features/press/view-service";
 import { logServerError } from "@/lib/errors";
 
 const pressArticleFormSchema = z.object({
@@ -65,7 +67,7 @@ function revalidatePressPaths() {
 }
 
 export async function createPressArticle(formData: FormData): Promise<PressArticleActionState> {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const parsed = parsePressArticleFormData(formData);
   if (!parsed.success) {
@@ -77,26 +79,15 @@ export async function createPressArticle(formData: FormData): Promise<PressArtic
     };
   }
 
-  // 새 항목은 목록 맨 아래에 추가: 기존 최대 order + 1
-  const [{ maxOrder }] = await db.select({ maxOrder: max(pressArticles.order) }).from(pressArticles);
-  const nextOrder = (maxOrder ?? 0) + 1;
-
-  await db.insert(pressArticles).values({
-    title: parsed.data.title,
-    source: parsed.data.source,
-    url: parsed.data.url,
-    publishedAt: new Date(parsed.data.publishedAt),
-    description: parsed.data.description ?? null,
-    imageUrl: parsed.data.imageUrl ?? null,
-    order: nextOrder,
-  });
+  // 생성 순서와 저장 형식 변환은 관리자 서비스가 기존 정책으로 처리합니다.
+  await createItem({ userId: session.user.id, role: session.user.role }, parsed.data);
 
   revalidatePressPaths();
   redirect("/admin/press");
 }
 
 export async function updatePressArticle(id: string, formData: FormData): Promise<PressArticleActionState> {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const parsedId = z.uuid().safeParse(id);
   if (!parsedId.success) {
@@ -116,21 +107,10 @@ export async function updatePressArticle(id: string, formData: FormData): Promis
     };
   }
 
-  const updated = await db
-    .update(pressArticles)
-    .set({
-      title: parsed.data.title,
-      source: parsed.data.source,
-      url: parsed.data.url,
-      publishedAt: new Date(parsed.data.publishedAt),
-      description: parsed.data.description ?? null,
-      imageUrl: parsed.data.imageUrl ?? null,
-    })
-    .where(eq(pressArticles.id, parsedId.data))
-    .returning({ id: pressArticles.id });
+  const updated = await updateItem({ userId: session.user.id, role: session.user.role }, parsedId.data, parsed.data);
 
   // 저장 직전 다른 관리자가 삭제했더라도 UPDATE 결과로 확인해 성공 처리를 막습니다.
-  if (updated.length === 0) {
+  if (!updated) {
     return { success: false, message: "언론보도를 찾을 수 없습니다." };
   }
 
@@ -139,7 +119,7 @@ export async function updatePressArticle(id: string, formData: FormData): Promis
 }
 
 export async function deletePressArticle(id: string): Promise<void> {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const parsedId = z.uuid().safeParse(id);
   if (!parsedId.success) {
@@ -148,7 +128,7 @@ export async function deletePressArticle(id: string): Promise<void> {
 
   // imageUrl은 관리자가 입력한 참조 URL일 뿐 이 기사가 업로드한 파일의 소유권 증거가 아닙니다.
   // 다른 콘텐츠가 공유하는 파일을 지우지 않도록 기사 레코드만 삭제합니다 (#88).
-  await db.delete(pressArticles).where(eq(pressArticles.id, parsedId.data));
+  await deleteItem({ userId: session.user.id, role: session.user.role }, parsedId.data);
   revalidatePressPaths();
 }
 
@@ -159,7 +139,7 @@ export async function deletePressArticle(id: string): Promise<void> {
 export async function reorderPressArticles(
   orderedIds: string[]
 ): Promise<{ success: boolean; message: string }> {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   // Oracle Phase D 5라운드 BLOCK 수정 — orderedIds 각 원소를 UUID 로 사전 검증한다.
   // 이 배열은 reorderByCase 헬퍼의 `${a.id}::uuid` raw SQL 캐스트로 흘러가는데
@@ -172,16 +152,10 @@ export async function reorderPressArticles(
   const validIds = parsedIds.data;
 
   try {
-    const { affected } = await reorderByCase({
-      table: pressArticles,
-      idColumn: pressArticles.id,
-      targetColumn: pressArticles.order,
-      // 기존 로직 유지: order 는 1-based (1, 2, 3, ...)
-      assignments: validIds.map((id, index) => ({ id, value: index + 1 })),
-    });
+    const { matched, affected } = await reorderItems({ userId: session.user.id, role: session.user.role }, validIds);
 
     // 존재하지 않는 ID 또는 중복 ID 로 인해 일부만 갱신된 경우 방어
-    if (affected !== validIds.length) {
+    if (!matched) {
       logServerError(
         "press/reorder",
         new Error("update count mismatch"),
@@ -207,8 +181,5 @@ export async function trackPressView(id: string) {
   const parsedId = z.uuid().safeParse(id);
   if (!parsedId.success) return;
 
-  await db
-    .update(pressArticles)
-    .set({ viewCount: sql`${pressArticles.viewCount} + 1` })
-    .where(eq(pressArticles.id, parsedId.data));
+  await recordPressView(parsedId.data);
 }

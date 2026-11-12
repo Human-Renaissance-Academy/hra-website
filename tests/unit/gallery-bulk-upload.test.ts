@@ -37,7 +37,7 @@ describe("갤러리 직접 업로드 저장", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mocks.findGallery.mockResolvedValue({ id: galleryId, coverImageUrl: null, images: [] });
-    mocks.requireAdmin.mockResolvedValue({ user: { id: galleryId } });
+    mocks.requireAdmin.mockResolvedValue({ user: { id: galleryId, role: "ADMIN" } });
     mocks.validateReference.mockResolvedValue(true);
     mocks.selectWhere.mockResolvedValue([]);
     mocks.insertValues.mockResolvedValue([]);

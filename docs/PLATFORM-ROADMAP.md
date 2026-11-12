@@ -4,7 +4,9 @@
 
 ## 현재 구현과 이 계획의 관계
 
-이 문서는 앞으로의 Web·Android·iOS 전환 순서를 읽으려는 개발자를 위한 목표 문서다. 현재 Next.js 앱은 저장소 루트에 있고 순수 계약은 `packages/contracts` workspace에 있으며 `GET /api/v1/notices`, Web 세션 기반 `GET /api/v1/me`, `GET /api/v1/schedule`을 제공한다. [현재 API v1 범위](developer/api-v1.md)와 OpenAPI 정본에서 구현 상태를 확인한다. `apps/web`, `apps/mobile`, 나머지 공용 API와 OpenAPI 완성은 이 계획의 후속 경계다.
+이 문서는 앞으로의 Web·Android·iOS 전환 순서를 읽으려는 개발자를 위한 목표 문서다. 현재 Next.js 앱은 저장소 루트에 있고 순수 계약은 `packages/contracts` workspace에 있으며 `GET /api/v1/notices`, Web 세션 기반 `GET /api/v1/me`, `GET /api/v1/schedule`을 제공한다. 모바일 Bearer 인증 서버 로직(#273)과 `apps/mobile` MVP 화면(#274)도 코드에 있다. [현재 API v1 범위](developer/api-v1.md), OpenAPI 정본, [모바일 앱 개발 안내](developer/mobile-app.md)에서 구현 상태를 확인한다. `apps/web`, 나머지 공용 API와 OpenAPI 완성은 이 계획의 후속 경계다.
+
+이 구현은 로컬 개발 환경과 실제 서버 하네스에서 검증한 상태다. 모바일 세션 DB 변경은 실제 DB에 적용하지 않았고, `apps/mobile`은 미출시 상태이며 독립 보안 검토, 실기기 E2E, 릴리스 빌드 게이트가 아직 남아 있다.
 
 API-first는 화면 종류가 달라도 같은 요청·응답 약속을 사용한다는 뜻이다. 모듈러 모놀리스는 기능을 나누되 서버는 하나의 배포 단위로 유지한다는 뜻이고, monorepo는 여러 앱과 공용 코드를 한 저장소에서 관리한다는 뜻이다. 세부 용어는 [용어집](getting-started/glossary.md)에 있다.
 
@@ -82,20 +84,24 @@ Phase 0은 새 구조가 취약한 dependency를 그대로 확대하지 않기 �
 
 ### #274 React Native + Expo / Android MVP
 
-MVP:
+구현 상태: `apps/mobile` MVP 화면 구현, 미출시 상태.
 
-- 로그인
-- 홈
-- 공지
-- 일정
-- 자료실
-- 마이페이지
-- 내 과제
-- 과제 제출
+MVP 화면:
+
+- 로그인 (`app/(auth)/login.tsx`)
+- 홈 (`app/(app)/(tabs)/index.tsx`)
+- 공지 (`app/(app)/(tabs)/notices.tsx`, 상세 `app/(app)/notices/[id].tsx`)
+- 일정 (`app/(app)/(tabs)/schedule.tsx`)
+- 자료실 (`app/(app)/(tabs)/resources.tsx`, 가이드북 목록과 보호 PDF 다운로드)
+- 내 정보 (`app/(app)/(tabs)/profile.tsx`)
+- 내 과제 (`app/(app)/assignments/index.tsx`, 상세 `[id].tsx`)
+- 과제 제출 (`app/(app)/assignments/[id]/submit.tsx`)
 
 운영 기능은 Web Admin에 유지한다.
 
 Android 전용 코드를 먼저 만들고 iOS를 나중에 재작성하지 않는다. 앱 코드는 처음부터 `apps/mobile` 공통 codebase이고 Android만 먼저 Store에 공개한다.
+
+검증 범위와 미검증 범위는 [모바일 앱 개발 안내](developer/mobile-app.md)를 정본으로 한다.
 
 ### #275 Device / Push
 
@@ -107,11 +113,14 @@ Android 전용 코드를 먼저 만들고 iOS를 나중에 재작성하지 않�
 
 ### Phase 2 종료 게이트
 
+상태: 게이트 열려 있음 (실기기 검증, 독립 보안 검토, 릴리스 빌드 대기).
+
 - Android 실기기 핵심 E2E
+- 보조기술(TalkBack) 음성 출력과 접근성 실기기 검증
 - 보호 자료 직접 URL 우회 불가
 - 과제 private upload/finalize 복구 흐름 통과
 - mobile token logout/revoke 통과
-- Android release build
+- Android release build (현재는 debug APK만 CI에서 빌드)
 - iOS build/compile check도 계속 통과
 - Play Store 공개 준비 완료
 

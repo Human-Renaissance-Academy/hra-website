@@ -1,13 +1,15 @@
+/**
+ * 관리자 공지 편집의 Web adapter입니다.
+ * UUID 사전 검증과 기존 누락 안내·폼 props를 유지하며 조회는 서비스에 위임합니다.
+ */
 import Link from "next/link";
-import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { NoticeForm } from "@/app/(admin)/admin/notices/_components/notice-form";
 import { updateNotice } from "@/features/notices/actions";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { notices } from "@/lib/db/schema";
+import { getAdminNotice } from "@/features/notices/admin/service";
 
 type NoticeEditPageProps = {
   params: Promise<{ id: string }>;
@@ -16,7 +18,7 @@ type NoticeEditPageProps = {
 export const dynamic = "force-dynamic";
 
 export default async function NoticeEditPage({ params }: NoticeEditPageProps) {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const { id } = await params;
   const parsedId = z.uuid().safeParse(id);
@@ -32,15 +34,7 @@ export default async function NoticeEditPage({ params }: NoticeEditPageProps) {
     );
   }
 
-  const notice = await db.query.notices.findFirst({
-    where: eq(notices.id, noticeId),
-    columns: {
-      title: true,
-      status: true,
-      pinned: true,
-      content: true,
-    },
-  });
+  const notice = await getAdminNotice({ userId: session.user.id, role: session.user.role }, noticeId);
 
   if (!notice) {
     return (

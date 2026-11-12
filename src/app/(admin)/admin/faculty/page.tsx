@@ -1,5 +1,5 @@
+/** 교수진 관리자 목록은 서비스의 표시 DTO로 기존 분류별 화면을 구성합니다. */
 import Link from "next/link";
-import { asc } from "drizzle-orm";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button-variants";
@@ -14,8 +14,7 @@ import {
 } from "@/components/ui/table";
 import { deleteFaculty } from "@/features/faculty/actions";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { faculty } from "@/lib/db/schema";
+import { listAdminFaculty } from "@/features/faculty/admin/service";
 
 export const metadata = { title: "교수진 관리" };
 
@@ -30,13 +29,10 @@ const categoryLabels = {
 const categoryOrder = ["CLASSICS", "BUSINESS", "LECTURE"] as const;
 
 export default async function AdminFacultyPage() {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   // 카테고리 내에서 관리자가 지정한 순서를 먼저 적용하고 이름순으로 정렬
-  const facultyMembers = await db
-    .select()
-    .from(faculty)
-    .orderBy(asc(faculty.order), asc(faculty.name));
+  const facultyMembers = await listAdminFaculty({ userId: session.user.id, role: session.user.role });
 
   const categorizedFacultyMembers = categoryOrder.map((category) => ({
     category,

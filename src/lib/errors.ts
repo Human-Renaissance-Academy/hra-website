@@ -26,7 +26,7 @@
 // 서버 로그는 키뿐 아니라 값도 고정 집합으로 검증한다. 입력 객체를 펼치거나 직렬화하지 않는다.
 const LOG_UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const LOG_SCOPE_PATTERN = /^[A-Za-z][A-Za-z0-9-]*(?:\/[A-Za-z0-9-]+){1,3}$/;
-const LOG_ID_KEYS = ["id", "eventId", "galleryId", "cohortId", "formId", "submissionId", "adminUserId", "userId", "requestId", "resourceId", "actorUserId", "correlationId"] as const;
+const LOG_ID_KEYS = ["id", "eventId", "galleryId", "cohortId", "formId", "submissionId", "adminUserId", "userId", "requestId", "resourceId", "actorUserId", "correlationId", "sessionId"] as const;
 const LOG_COUNT_KEYS = ["count", "candidateCount", "expected", "actual", "orderedIdsCount", "issueCount", "oldImageCount", "newImageCount", "questionCount", "sessionCount", "retryCount"] as const;
 const LOG_FLAG_KEYS = ["active", "published", "isPublished", "hasBody", "hasCohortId", "hasFile", "hasImages", "hasNewFile", "hasNewImages", "hasReportCategory", "hasUploadedBlob"] as const;
 const LOG_SQL_STATES = new Set(["22023", "22P02", "23502", "23503", "23505", "23514", "40001", "40P01", "42501", "42P01", "42703", "P0001", "XX000", "HRA01", "HRA02", "HRA03", "HRA04", "HRA05", "HRA06", "HRA07", "HRA08", "HRA09"]);

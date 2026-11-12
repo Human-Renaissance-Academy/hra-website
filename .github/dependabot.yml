@@ -26,3 +26,47 @@ updates:
           - react-dom
           - "@types/react"
           - "@types/react-dom"
+    # TypeScript 7 major는 Next.js 16·eslint 도구와의 호환성이 확인되기 전까지 자동 제안하지 않는다.
+    # minor/patch 갱신은 계속 받는다. 호환성 검증 후 이 항목을 제거한다.
+    ignore:
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
+      # CI 런타임은 Node 24.x이므로 @types/node 26 major를 먼저 받지 않는다(#449, #468).
+      - dependency-name: "@types/node"
+        update-types:
+          - version-update:semver-major
+  # 모바일 앱은 루트와 별도로 설치하는 독립 lockfile을 갖는다(#446). 같은 주간 검토·수동 병합 절차를 적용한다.
+  # Expo SDK가 버전을 함께 고정하는 패키지는 한 PR로 묶어 SDK 호환성(expo-doctor)을 함께 검증한다.
+  - package-ecosystem: npm
+    directory: /apps/mobile
+    schedule:
+      interval: weekly
+    groups:
+      expo-sdk:
+        patterns:
+          - expo
+          - "expo-*"
+          - "@expo/*"
+          - jest-expo
+          - eslint-config-expo
+          - react-native
+          - react
+          - react-dom
+          - "@types/react"
+    # Expo SDK major 제안은 SDK 업그레이드 절차(expo-doctor·Android 빌드)로 검토한다.
+    # TypeScript major만 루트(#436)와 같은 이유로 자동 제안하지 않는다. 모바일은 Expo SDK 58 요구(~6.0.3)에 맞춰
+    # typescript 6.0.3을 고정하고, peer가 ^5.x인 openapi-typescript에 override로 같은 버전을 쓰므로
+    # major 상승은 doctor·생성기 호환성 검증이 먼저 필요하다. minor/patch 갱신은 계속 받는다.
+    ignore:
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
+      # eslint-config-expo/react plugin이 ESLint 10 API와 호환되기 전에는 major를 보류한다(#460, #468).
+      - dependency-name: eslint
+        update-types:
+          - version-update:semver-major
+      # Expo SDK 58의 검증된 ~5.10.1 범위 이탈을 막되 같은 minor의 patch는 허용한다(#461, #468).
+      - dependency-name: react-native-safe-area-context
+        update-types:
+          - version-update:semver-minor

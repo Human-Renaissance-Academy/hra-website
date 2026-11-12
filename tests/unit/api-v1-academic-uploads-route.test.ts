@@ -61,7 +61,7 @@ function request(path: string, value: unknown, options: { origin?: string | null
 /** 성공과 오류 모두 다른 쿠키의 결과로 재사용하지 않으며 상관 ID는 응답 헤더로 제공합니다. */
 function expectPrivate(response: Response) {
   expect(response.headers.get("cache-control")).toBe("private, no-store");
-  expect(response.headers.get("vary")).toBe("Cookie");
+  expect(response.headers.get("vary")?.split(",").map((token) => token.trim().toLowerCase())).toEqual(expect.arrayContaining(["cookie", "authorization"]));
   expect(response.headers.get("x-request-id")).toMatch(/^[0-9a-f-]{36}$/);
 }
 

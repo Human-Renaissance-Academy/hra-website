@@ -1,0 +1,92 @@
+# 독립 모바일 설치·계약 생성·네이티브 컴파일을 운영 자격 증명 없이 검증합니다.
+name: 모바일 Android
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ['apps/mobile/**', 'packages/contracts/openapi.json', '.github/workflows/mobile.yml']
+  push:
+    branches: [main]
+    paths: ['apps/mobile/**', 'packages/contracts/openapi.json', '.github/workflows/mobile.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# 이전 PR head의 Android 빌드만 취소하고 main 빌드는 유지합니다.
+concurrency:
+  group: mobile-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    working-directory: apps/mobile
+
+env:
+  CI: '1'
+  EXPO_NO_DOTENV: '1'
+  EXPO_NO_TELEMETRY: '1'
+
+jobs:
+  checks:
+    name: 계약 · 타입 · 린트 · 테스트 · 번들
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run api:check
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - name: Expo doctor (설치된 SDK 기준)
+        # 온라인 최신 패치 목록과 비교하면 업스트림 배포만으로 결과가 바뀝니다.
+        # lockfile로 설치한 SDK의 bundledNativeModules.json 기준으로 재현 가능하게 검사합니다.
+        env:
+          EXPO_OFFLINE: '1'
+        run: npm run doctor
+      - run: npm run export:android
+      # Linux에서는 iOS 네이티브 컴파일을 할 수 없으므로 공통 코드가 iOS 번들로도 만들어지는지(JS 번들링)만 확인합니다.
+      - run: npm run export:ios
+
+  android-build:
+    name: 실제 debug APK 컴파일
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - name: JDK 17 선택
+        # ubuntu runner에 포함된 JDK를 선택하므로 추가 설치 action 권한이 필요하지 않습니다.
+        run: |
+          test -d "$JAVA_HOME_17_X64"
+          printf 'JAVA_HOME=%s\n' "$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
+          printf '%s/bin\n' "$JAVA_HOME_17_X64" >> "$GITHUB_PATH"
+      - name: SDK 패키지 설치
+        # 라이선스는 runner의 사전 승인분만 사용하며 yes 파이프로 새 약관을 승인하지 않습니다.
+        # ubuntu runner의 PATH에는 sdkmanager가 없으므로 사전 설치된 cmdline-tools의 전체 경로를 사용합니다.
+        run: |
+          test -x "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-37.0' 'build-tools;37.0.0' 'build-tools;36.0.0' 'ndk;27.1.12297006' 'cmake;3.22.1' < /dev/null
+      - run: npm ci --no-audit --no-fund
+      - run: npm run prebuild:android
+      - run: npm run build:android:debug
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: hra-android-debug
+          path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7

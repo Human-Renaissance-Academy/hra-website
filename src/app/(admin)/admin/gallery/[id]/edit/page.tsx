@@ -8,7 +8,6 @@
  */
 
 import Link from "next/link";
-import { asc, eq } from "drizzle-orm";
 import { ArrowLeft } from "lucide-react";
 import { z } from "zod/v4";
 import { buttonVariants } from "@/components/ui/button-variants";
@@ -21,8 +20,7 @@ import {
   updateGallery,
 } from "@/features/gallery/actions";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { galleries, galleryImages } from "@/lib/db/schema";
+import { getAdminGallery } from "@/features/gallery/admin/service";
 
 type EditGalleryPageProps = {
   params: Promise<{
@@ -59,26 +57,7 @@ export default async function EditGalleryPage({ params }: EditGalleryPageProps) 
     );
   }
 
-  const gallery = await db.query.galleries.findFirst({
-    columns: {
-      id: true,
-      title: true,
-      description: true,
-      coverImageUrl: true,
-    },
-    where: eq(galleries.id, parsedId.data),
-    with: {
-      images: {
-        columns: {
-          id: true,
-          url: true,
-          alt: true,
-          order: true,
-        },
-        orderBy: [asc(galleryImages.order), asc(galleryImages.createdAt)],
-      },
-    },
-  });
+  const gallery = await getAdminGallery({ userId: session.user.id, role: session.user.role }, parsedId.data);
 
   if (!gallery) {
     return (

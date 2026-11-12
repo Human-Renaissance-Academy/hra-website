@@ -1,5 +1,8 @@
+/**
+ * 관리자 공지 목록의 Web adapter입니다.
+ * 세션 확인 뒤 서비스 목록을 기존 미리보기와 클라이언트 props로 표시합니다.
+ */
 import Link from "next/link";
-import { desc } from "drizzle-orm";
 import { NoticePinButton } from "@/app/(admin)/admin/notices/_components/notice-pin-button";
 import { NoticeRowActions } from "@/app/(admin)/admin/notices/_components/notice-row-actions";
 import { Button } from "@/components/ui/button";
@@ -13,8 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { notices } from "@/lib/db/schema";
+import { listAdminNotices } from "@/features/notices/admin/service";
 import { formatKstDate } from "@/lib/date-time";
 
 // 마크다운 기호를 제거해 본문 미리보기용 평문으로 변환
@@ -33,19 +35,9 @@ function stripMarkdown(md: string): string {
 export const dynamic = "force-dynamic";
 
 export default async function AdminNoticesPage() {
-  await requireAdmin();
+  const session = await requireAdmin();
 
-  const noticeList = await db
-    .select({
-      id: notices.id,
-      title: notices.title,
-      content: notices.content,
-      status: notices.status,
-      pinned: notices.pinned,
-      createdAt: notices.createdAt,
-    })
-    .from(notices)
-    .orderBy(desc(notices.createdAt));
+  const noticeList = await listAdminNotices({ userId: session.user.id, role: session.user.role });
 
   return (
     <section className="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-10">

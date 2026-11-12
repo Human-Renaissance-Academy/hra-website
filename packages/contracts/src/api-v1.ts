@@ -588,3 +588,258 @@ export type ApiV1UploadVerifiedResponse = z.infer<typeof apiV1UploadVerifiedResp
 /** 취소는 원장 종료를 나타내며 실제 객체의 즉시 삭제를 의미하지 않습니다. */
 export const apiV1UploadCancelledResponseSchema = z.object({ state: z.literal("CANCELLED") }).strict();
 export type ApiV1UploadCancelledResponse = z.infer<typeof apiV1UploadCancelledResponseSchema>;
+
+/**
+ * 모바일 로그인 시 선택적으로 보내는 기기 표시 정보입니다.
+ * Android·iOS 공용 클라이언트가 사용하며 플랫폼만 필수이고 버전·기기명은 빈 값과 추가 키를 거부합니다.
+ */
+export const apiV1MobileDeviceSchema = z.object({
+  platform: z.enum(["ANDROID", "IOS"]),
+  appVersion: z.string().min(1).max(32).optional(),
+  deviceName: z.string().min(1).max(64).optional(),
+}).strict();
+export type ApiV1MobileDevice = z.infer<typeof apiV1MobileDeviceSchema>;
+
+/**
+ * 이메일·비밀번호 모바일 로그인 요청의 유일한 입력 경계입니다.
+ * 이메일은 앞뒤 공백 제거 후 3~320자 이메일 형식, 비밀번호는 변형 없이 1~256자이며 계정·역할 주입을 거부합니다.
+ */
+export const apiV1MobileLoginInputSchema = z.object({
+  email: z.string().trim().min(3).max(320).email(),
+  password: z.string().min(1).max(256),
+  device: apiV1MobileDeviceSchema.optional(),
+}).strict();
+export type ApiV1MobileLoginInput = z.infer<typeof apiV1MobileLoginInputSchema>;
+
+/**
+ * 모바일 세션 갱신 요청은 비어 있지 않은 불투명 refresh token 하나만 받습니다.
+ * 클라이언트는 토큰 내부 구조를 해석하지 않으며 HTTP 계층의 본문 크기 제한은 별도로 적용합니다.
+ */
+export const apiV1MobileRefreshInputSchema = z.object({ refreshToken: z.string().min(1) }).strict();
+export type ApiV1MobileRefreshInput = z.infer<typeof apiV1MobileRefreshInputSchema>;
+
+/**
+ * 모바일 단일 세션 로그아웃은 갱신과 동일한 토큰 입력 제약을 사용합니다.
+ * 서버는 알 수 없거나 이미 폐기된 토큰도 204로 처리하며 사용자 ID 등 추가 키는 허용하지 않습니다.
+ */
+export const apiV1MobileLogoutInputSchema = apiV1MobileRefreshInputSchema.clone();
+export type ApiV1MobileLogoutInput = z.infer<typeof apiV1MobileLogoutInputSchema>;
+
+/**
+ * 로그인·갱신 성공 시 모바일 클라이언트가 교체 저장하는 엄격한 세션 DTO입니다.
+ * 두 토큰은 불투명한 비어 있지 않은 문자열이고 만료 시각은 기존 UTC 밀리초 계약을 재사용합니다.
+ */
+export const apiV1MobileSessionSchema = z.object({
+  tokenType: z.literal("Bearer"),
+  accessToken: z.string().min(1),
+  accessTokenExpiresAt: apiV1TimestampSchema,
+  refreshToken: z.string().min(1),
+  refreshTokenExpiresAt: apiV1TimestampSchema,
+}).strict();
+export type ApiV1MobileSession = z.infer<typeof apiV1MobileSessionSchema>;
+
+/**
+ * 모바일 로그인 성공 응답은 세션과 기존 본인 프로필의 공개 사용자 DTO만 제공합니다.
+ * PENDING도 표현하지만 비밀번호 해시·세션 버전 등 내부 인증 필드는 기존 사용자 스키마로 차단합니다.
+ */
+export const apiV1MobileLoginResponseSchema = z.object({
+  session: apiV1MobileSessionSchema,
+  user: apiV1MeResponseSchema.shape.user,
+}).strict();
+export type ApiV1MobileLoginResponse = z.infer<typeof apiV1MobileLoginResponseSchema>;
+
+/**
+ * 모바일 갱신 성공 응답은 회전된 세션만 반환합니다.
+ * 프로필이나 이전 토큰을 덧붙이지 않아 클라이언트가 두 토큰을 함께 교체하도록 경계를 고정합니다.
+ */
+export const apiV1MobileRefreshResponseSchema = z.object({ session: apiV1MobileSessionSchema }).strict();
+export type ApiV1MobileRefreshResponse = z.infer<typeof apiV1MobileRefreshResponseSchema>;
+
+/**
+ * 모바일 인증의 429 응답은 기존 RATE_LIMITED 코드와 1~900초 재시도 값을 사용합니다.
+ * 로그인 IP·이메일·조합 제한의 15분 창을 표현하며 60초 상한인 학사 오류와 분리합니다.
+ */
+export const apiV1MobileRateLimitedErrorSchema = z.object({
+  error: z.object({
+    code: z.literal("RATE_LIMITED"),
+    message: z.string().min(1),
+    requestId: apiV1UuidSchema,
+    retryAfterSeconds: z.number().int().min(1).max(900),
+  }).strict(),
+}).strict();
+export type ApiV1MobileRateLimitedError = z.infer<typeof apiV1MobileRateLimitedErrorSchema>;
+
+/**
+ * 자료실 파일·메타데이터 조회의 사용자별 빈도 제한(#444) 429 응답입니다.
+ * 가장 긴 제한 창(1시간)에 맞춰 1~3600초 재시도 값을 항상 포함하며 `Retry-After` 헤더와 같은 값입니다.
+ */
+export const apiV1ResourceRateLimitedErrorSchema = z.object({
+  error: z.object({
+    code: z.literal("RATE_LIMITED"),
+    message: z.string().min(1),
+    requestId: apiV1UuidSchema,
+    retryAfterSeconds: z.number().int().min(1).max(3600),
+  }).strict(),
+}).strict();
+export type ApiV1ResourceRateLimitedError = z.infer<typeof apiV1ResourceRateLimitedErrorSchema>;
+
+/**
+ * 승인 회원 자료 목록(강의자료·주차별 텍스트)은 page와 pageSize만 허용합니다.
+ * 가이드북 목록과 같은 기본값·상한이며 안전한 OFFSET 범위는 Route와 서비스에서 추가 검증합니다.
+ */
+export const apiV1ResourceListQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(API_V1_MAX_PAGE_SIZE).default(API_V1_DEFAULT_PAGE_SIZE),
+  })
+  .strict();
+export type ApiV1ResourceListQuery = z.infer<typeof apiV1ResourceListQuerySchema>;
+
+/** 강의자료 대상은 학생용·교수용 두 값뿐이며 MEMBER에게는 학생용만 조회됩니다. */
+export const API_V1_CLASS_MATERIAL_AUDIENCES = ["STUDENT", "FACULTY"] as const;
+
+/**
+ * 강의자료 목록 항목입니다. 수업일은 한국 달력 날짜이며 시간대 없는 작성 시각은 보내지 않습니다.
+ * 원본 파일 URL·파일명·업로더 계정과 이름·Blob 토큰은 포함하지 않습니다.
+ */
+export const apiV1ClassMaterialSummarySchema = z
+  .object({
+    id: apiV1UuidSchema,
+    title: z.string().min(1),
+    audience: z.enum(API_V1_CLASS_MATERIAL_AUDIENCES),
+    weekNumber: z.number().int().nullable(),
+    lectureTitle: z.string().nullable(),
+    classDate: apiV1CalendarDateSchema.nullable(),
+  })
+  .strict();
+export type ApiV1ClassMaterialSummary = z.infer<typeof apiV1ClassMaterialSummarySchema>;
+
+/** 강의자료 상세는 목록 필드에 다운로드 표시용 원본 파일명만 추가합니다. */
+export const apiV1ClassMaterialDetailSchema = apiV1ClassMaterialSummarySchema
+  .extend({ fileName: z.string().min(1) })
+  .strict();
+export type ApiV1ClassMaterialDetail = z.infer<typeof apiV1ClassMaterialDetailSchema>;
+
+type ClassMaterialSummaryInput = {
+  id: string;
+  title: string;
+  audience: string;
+  weekNumber: number | null;
+  lectureTitle: string | null;
+  classDate: string | null;
+};
+
+/** 저장소 결과에서 강의자료 목록 DTO의 허용 필드만 선택합니다. */
+export function toApiV1ClassMaterialSummary(input: ClassMaterialSummaryInput): ApiV1ClassMaterialSummary {
+  return apiV1ClassMaterialSummarySchema.parse({
+    id: input.id,
+    title: input.title,
+    audience: input.audience,
+    weekNumber: input.weekNumber,
+    lectureTitle: input.lectureTitle,
+    classDate: input.classDate,
+  });
+}
+
+/** 강의자료 목록 GET 응답은 최대 50건과 공통 페이지 정보만 포함합니다. */
+export const apiV1ClassMaterialListResponseSchema = z
+  .object({
+    classMaterials: z.array(apiV1ClassMaterialSummarySchema).max(API_V1_MAX_PAGE_SIZE),
+    page: apiV1PageMetaSchema,
+  })
+  .strict();
+export type ApiV1ClassMaterialListResponse = z.infer<typeof apiV1ClassMaterialListResponseSchema>;
+
+/** 강의자료 상세 GET 응답은 허용된 DTO 하나로 고정합니다. */
+export const apiV1ClassMaterialDetailResponseSchema = z
+  .object({ classMaterial: apiV1ClassMaterialDetailSchema })
+  .strict();
+export type ApiV1ClassMaterialDetailResponse = z.infer<typeof apiV1ClassMaterialDetailResponseSchema>;
+
+/** 저장소 결과에서 강의자료 상세 DTO의 허용 필드만 선택합니다. */
+export function toApiV1ClassMaterialDetailResponse(
+  input: ClassMaterialSummaryInput & { fileName: string },
+): ApiV1ClassMaterialDetailResponse {
+  return apiV1ClassMaterialDetailResponseSchema.parse({
+    classMaterial: { ...toApiV1ClassMaterialSummary(input), fileName: input.fileName },
+  });
+}
+
+/** 주차별 텍스트의 기수는 표시용 ID·이름만 전달합니다. */
+const apiV1WeeklyTextCohortSchema = z
+  .object({ id: apiV1UuidSchema, name: z.string().min(1) })
+  .strict();
+
+/**
+ * 주차별 텍스트 목록 항목입니다. 본문·첨부 존재 여부만 알리고 본문·원본 파일 URL·파일명은 제외합니다.
+ * 수업일은 한국 달력 날짜이며 시간대 없는 작성 시각은 보내지 않습니다.
+ */
+export const apiV1WeeklyTextSummarySchema = z
+  .object({
+    id: apiV1UuidSchema,
+    title: z.string().min(1),
+    textType: z.string().min(1).nullable(),
+    cohort: apiV1WeeklyTextCohortSchema.nullable(),
+    classDate: apiV1CalendarDateSchema.nullable(),
+    hasBody: z.boolean(),
+    hasFile: z.boolean(),
+  })
+  .strict();
+export type ApiV1WeeklyTextSummary = z.infer<typeof apiV1WeeklyTextSummarySchema>;
+
+/** 주차별 텍스트 상세는 Markdown 본문과 첨부 표시용 파일명만 추가합니다. 첨부 사진은 제공하지 않습니다. */
+export const apiV1WeeklyTextDetailSchema = apiV1WeeklyTextSummarySchema
+  .extend({ body: z.string().min(1).nullable(), fileName: z.string().min(1).nullable() })
+  .strict();
+export type ApiV1WeeklyTextDetail = z.infer<typeof apiV1WeeklyTextDetailSchema>;
+
+type WeeklyTextSummaryInput = {
+  id: string;
+  title: string;
+  textType: string | null;
+  cohort: { id: string; name: string } | null;
+  classDate: string | null;
+  hasBody: boolean;
+  hasFile: boolean;
+};
+
+/** 저장소 결과에서 주차별 텍스트 목록 DTO의 허용 필드만 선택합니다. 빈 분류는 null로 정규화합니다. */
+export function toApiV1WeeklyTextSummary(input: WeeklyTextSummaryInput): ApiV1WeeklyTextSummary {
+  return apiV1WeeklyTextSummarySchema.parse({
+    id: input.id,
+    title: input.title,
+    textType: typeof input.textType === "string" && input.textType.trim().length > 0 ? input.textType : null,
+    cohort: input.cohort ? { id: input.cohort.id, name: input.cohort.name } : null,
+    classDate: input.classDate,
+    hasBody: input.hasBody,
+    hasFile: input.hasFile,
+  });
+}
+
+/** 주차별 텍스트 목록 GET 응답은 최대 50건과 공통 페이지 정보만 포함합니다. */
+export const apiV1WeeklyTextListResponseSchema = z
+  .object({
+    weeklyTexts: z.array(apiV1WeeklyTextSummarySchema).max(API_V1_MAX_PAGE_SIZE),
+    page: apiV1PageMetaSchema,
+  })
+  .strict();
+export type ApiV1WeeklyTextListResponse = z.infer<typeof apiV1WeeklyTextListResponseSchema>;
+
+/** 주차별 텍스트 상세 GET 응답은 허용된 DTO 하나로 고정합니다. */
+export const apiV1WeeklyTextDetailResponseSchema = z
+  .object({ weeklyText: apiV1WeeklyTextDetailSchema })
+  .strict();
+export type ApiV1WeeklyTextDetailResponse = z.infer<typeof apiV1WeeklyTextDetailResponseSchema>;
+
+/** 저장소 결과에서 주차별 텍스트 상세 DTO의 허용 필드만 선택합니다. 빈 본문·파일명은 null로 정규화합니다. */
+export function toApiV1WeeklyTextDetailResponse(
+  input: WeeklyTextSummaryInput & { body: string | null; fileName: string | null },
+): ApiV1WeeklyTextDetailResponse {
+  return apiV1WeeklyTextDetailResponseSchema.parse({
+    weeklyText: {
+      ...toApiV1WeeklyTextSummary(input),
+      body: typeof input.body === "string" && input.body.length > 0 ? input.body : null,
+      fileName: typeof input.fileName === "string" && input.fileName.length > 0 ? input.fileName : null,
+    },
+  });
+}

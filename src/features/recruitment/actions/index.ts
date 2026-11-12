@@ -8,15 +8,11 @@
  */
 "use server";
 
-import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod/v4";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { applicationForms, applicationSubmissions, cohorts, legacyApplications } from "@/lib/db/schema";
-import { isConstraintViolation } from "@/lib/db/constraint-errors";
-import { hasSubmissionDeleteGuards } from "@/lib/db/submission-delete-guards";
+import { createAdminCohort, updateAdminCohort, deleteAdminCohort, isCohortReferenceViolation } from "@/features/recruitment/admin/service";
 import { logServerError } from "@/lib/errors";
 import { validateAdminImage } from "@/lib/admin-image-validation";
 import { galleryImageRule } from "@/lib/gallery-upload-contract";
@@ -200,7 +196,7 @@ export async function createCohort(formData: FormData): Promise<CohortActionStat
     };
   }
 
-  await db.insert(cohorts).values({
+  await createAdminCohort({ userId: session.user.id, role: session.user.role }, {
     name: parsed.data.name,
     description: parsed.data.description ?? null,
     startDate: toDateOrNull(parsed.data.startDate),
@@ -249,50 +245,19 @@ export async function updateCohort(id: string, formData: FormData): Promise<Coho
     };
   }
 
-  const [existingCohort] = await db
-    .select({ imageUrl: cohorts.imageUrl })
-    .from(cohorts)
-    .where(eq(cohorts.id, parsedId.data))
-    .limit(1);
-
-  if (!existingCohort) {
-    return {
-      success: false,
-      message: "기수를 찾을 수 없습니다.",
-    };
-  }
-
-  const shouldRemoveImage = formData.get("removeImage") === "true";
-  const uploadedImage = await uploadCohortImage(formData.get("image"), session.user.id);
-  if (uploadedImage.error) {
-    return {
-      success: false,
-      message: uploadedImage.error,
-      fieldErrors: { image: uploadedImage.error },
-    };
-  }
-
-  let nextImageUrl = existingCohort.imageUrl;
-
-  if (uploadedImage.imageUrl) {
-    nextImageUrl = uploadedImage.imageUrl;
-  } else if (shouldRemoveImage) {
-    nextImageUrl = null;
-  }
-
-  await db
-    .update(cohorts)
-    .set({
-      name: parsed.data.name,
-      description: parsed.data.description ?? null,
-      startDate: toDateOrNull(parsed.data.startDate),
-      endDate: toDateOrNull(parsed.data.endDate),
-      isActive: parsed.data.isActive,
-      // 기수 폼에는 정렬 순서 입력이 없다. 값이 넘어온 경우에만 갱신해 기존 순서를 0 으로 덮어쓰지 않는다 (#115).
-      ...(formData.has("order") ? { order: parsed.data.order } : {}),
-      imageUrl: nextImageUrl,
-    })
-    .where(eq(cohorts.id, parsedId.data));
+  // 서비스가 기존 이미지 조회 뒤 콜백을 실행하므로 파일 검증·업로드 순서가 유지됩니다.
+  const result = await updateAdminCohort({ userId: session.user.id, role: session.user.role }, parsedId.data, {
+    name: parsed.data.name,
+    description: parsed.data.description ?? null,
+    startDate: toDateOrNull(parsed.data.startDate),
+    endDate: toDateOrNull(parsed.data.endDate),
+    isActive: parsed.data.isActive,
+    // 기수 폼에는 정렬 순서 입력이 없다. 값이 넘어온 경우에만 갱신해 기존 순서를 0 으로 덮어쓰지 않는다 (#115).
+    ...(formData.has("order") ? { order: parsed.data.order } : {}),
+    shouldRemoveImage: formData.get("removeImage") === "true",
+    uploadImage: () => uploadCohortImage(formData.get("image"), session.user.id),
+  });
+  if (!result.success) return result;
 
   // 이전 이미지도 즉시 삭제하지 않습니다. 소유권 원장과 현재 공유 참조를 확인하는
   // 유지보수 정리 작업에 맡겨 다른 콘텐츠가 같은 URL을 쓰는 경우를 보존합니다 (#88).
@@ -305,7 +270,7 @@ export async function updateCohort(id: string, formData: FormData): Promise<Coho
 
 /** 제출 데이터가 있는 기수의 삭제를 거절하고, 성공 시 등록된 이미지는 정리 원장에 남깁니다. */
 export async function deleteCohort(id: string): Promise<CohortActionState> {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const parsedId = z.uuid("잘못된 기수 ID입니다.").safeParse(id);
   if (!parsedId.success) {
@@ -313,24 +278,8 @@ export async function deleteCohort(id: string): Promise<CohortActionState> {
   }
 
   try {
-    if (!await hasSubmissionDeleteGuards()) {
-      return { success: false, message: "제출 보존 설정을 확인할 수 없어 기수를 삭제할 수 없습니다." };
-    }
-    // 사전 검사는 관리자 안내용입니다. 검사 직후 제출과의 경합은 RESTRICT FK가 최종 차단합니다.
-    const [legacy, submission] = await Promise.all([
-      db.select({ id: legacyApplications.id }).from(legacyApplications)
-        .where(eq(legacyApplications.cohortId, parsedId.data)).limit(1),
-      db.select({ id: applicationSubmissions.id }).from(applicationSubmissions)
-        .innerJoin(applicationForms, eq(applicationSubmissions.formId, applicationForms.id))
-        .where(eq(applicationForms.cohortId, parsedId.data)).limit(1),
-    ]);
-    if (legacy.length > 0 || submission.length > 0) {
-      return { success: false, message: "지원서가 연결된 기수는 삭제할 수 없습니다." };
-    }
-
-    const [deleted] = await db.delete(cohorts).where(eq(cohorts.id, parsedId.data))
-      .returning({ id: cohorts.id });
-    if (!deleted) return { success: false, message: "기수를 찾을 수 없습니다." };
+    const result = await deleteAdminCohort({ userId: session.user.id, role: session.user.role }, parsedId.data);
+    if (!result.success) return result;
 
     // 업로드 소유권 원장의 파일은 공유 참조 검사와 쓰기 중단 조건을 갖춘 정리 작업에서만 삭제합니다.
     // 기존 미등록 이미지의 소유권을 URL만 보고 추정하지 않습니다 (#88).
@@ -339,12 +288,10 @@ export async function deleteCohort(id: string): Promise<CohortActionState> {
     revalidatePath("/recruitment");
     return { success: true, message: "기수가 삭제되었습니다." };
   } catch (error) {
-    if (isConstraintViolation(error, "23503", "applications_cohort_id_cohorts_id_fk") ||
-        isConstraintViolation(error, "23503", "application_submissions_form_id_application_forms_id_fk")) {
+    if (isCohortReferenceViolation(error)) {
       return { success: false, message: "지원서가 연결된 기수는 삭제할 수 없습니다." };
     }
     logServerError("recruitment/deleteCohort", error, { id: parsedId.data });
     return { success: false, message: "연결된 데이터가 있거나 기수를 삭제할 수 없습니다. 다시 확인해주세요." };
   }
 }
-

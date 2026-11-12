@@ -50,17 +50,18 @@ describe("학사 API v1 OpenAPI 경계", () => {
     for (const [path, method] of routes) {
       const operation = openapi.paths[path][method];
       expect(operation.description).toContain("Auth.js Web 세션 쿠키");
-      expect(operation.description).toContain("모바일 Bearer 인증은 아직 지원하지 않습니다");
+      expect(operation.description).toContain("모바일 Bearer access token");
       expect(operation.description).toContain("query key");
       for (const response of Object.values(operation.responses)) {
         expect(response).toMatchObject({ headers: {
           "Cache-Control": { schema: { type: "string", const: "private, no-store" } },
-          Vary: { schema: { type: "string", const: "Cookie" } },
+          Vary: { schema: { type: "string", const: "Cookie, Authorization" } },
           "X-Request-Id": { schema: { type: "string", format: "uuid" } },
         } });
       }
     }
-    expect(openapi.components.securitySchemes).toBeUndefined();
+    expect(Object.keys(openapi.components.securitySchemes)).toEqual(["bearerAuth"]);
+    for (const [path, method] of routes) expect(openapi.paths[path][method].security).toEqual([{ bearerAuth: [] }]);
   });
 
   it("DB 행과 독립된 DTO·본문의 필수 허용 필드를 Zod와 동일하게 선언한다", () => {
@@ -109,7 +110,7 @@ describe("학사 API v1 OpenAPI 경계", () => {
     expect(submit.description).toContain("HTTP 200");
     expect(submit.description).toContain("submissionKey");
     expect(submit.description).toContain("16KiB");
-    expect(submit.parameters).toContainEqual(expect.objectContaining({ name: "Origin", required: true }));
+    expect(submit.parameters).toContainEqual(expect.objectContaining({ name: "Origin", required: false }));
     expect(submit.responses["413"].content["application/json"].schema).toEqual({ $ref: "#/components/schemas/AcademicTooLargeError" });
     const protocol = openapi.paths["/api/v1/uploads"].post;
     expect(protocol.description).toContain("원본 파싱 객체");

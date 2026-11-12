@@ -60,6 +60,19 @@ const nextConfig: NextConfig = {
         source: "/api/v1/submissions/:id/files/:fileId",
         headers: [{ key: "Content-Security-Policy", value: "sandbox; default-src 'none'" }],
       },
+      // 공동 자료 API v1 파일도 첨부 스트림이므로 일반 API CSP 뒤에서 같은 sandbox를 고정합니다.
+      {
+        source: "/api/v1/resources/guidebooks/:id/file",
+        headers: [{ key: "Content-Security-Policy", value: "sandbox; default-src 'none'" }],
+      },
+      {
+        source: "/api/v1/resources/class-materials/:id/file",
+        headers: [{ key: "Content-Security-Policy", value: "sandbox; default-src 'none'" }],
+      },
+      {
+        source: "/api/v1/resources/weekly-texts/:id/file",
+        headers: [{ key: "Content-Security-Policy", value: "sandbox; default-src 'none'" }],
+      },
     ];
   },
   experimental: {

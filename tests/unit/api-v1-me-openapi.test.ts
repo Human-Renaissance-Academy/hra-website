@@ -20,7 +20,7 @@ const requestId = "11111111-1111-4111-8111-111111111111";
 const userId = "22222222-2222-4222-8222-222222222222";
 
 describe("#272 본인 프로필 OpenAPI 3.1 계약", () => {
-  it("Web 세션 쿠키만 설명하고 query·고정 쿠키 이름·Bearer 지원을 주장하지 않는다", () => {
+  it("Bearer 또는 Web 세션 쿠키를 설명하고 query·고정 쿠키 이름을 주장하지 않는다", () => {
     expect(openapi.openapi).toBe("3.1.1");
     expect(openapi.info.description).toContain("각 경로의 설명");
     expect(Object.keys(openapi.paths)).toEqual(expect.arrayContaining(["/api/v1/me", "/api/v1/notices", "/api/v1/notices/{id}", "/api/v1/resources/guidebooks", "/api/v1/schedule"]));
@@ -29,11 +29,12 @@ describe("#272 본인 프로필 OpenAPI 3.1 계약", () => {
     expect(operation.parameters).toEqual([]);
     expect(operation.description).toContain("Auth.js Web 세션 쿠키");
     expect(operation.description).toContain("쿠키 이름");
-    expect(operation.description).toContain("Bearer 인증은 아직 지원하지 않습니다");
+    expect(operation.description).toContain("모바일 Bearer access token");
     expect(operation.description).toContain("PENDING 사용자도 자신의 프로필만");
     expect(operation.description).toContain("query key는 허용하지 않습니다");
     expect(operation.description).not.toContain("session-token");
-    expect(openapi.components.securitySchemes).toBeUndefined();
+    expect(Object.keys(openapi.components.securitySchemes)).toEqual(["bearerAuth"]);
+    expect(operation.security).toEqual([{ bearerAuth: [] }]);
   });
 
   it("200·400·401·503의 DTO·오류 코드와 비공개 무저장 캐시 헤더를 고정한다", () => {

@@ -41,6 +41,7 @@ const candidates = [
   ['scripts/sql/rate-limit-reservations.sql', 'custom-rate-limit-reservations'],
   ['scripts/sql/markdown-image-references.sql', 'custom-markdown-image-references'],
   ['scripts/migrate-287-rate-limit-reservation-index.sql', 'custom-rate-limit-reservation-index'],
+  ['scripts/migrate-mobile-sessions.sql', 'mobile-sessions'],
   ['scripts/migrate-recruitment-singleton.mjs', 'custom-recruitment-default'],
 ];
 function bytesAt(file) {

@@ -15,6 +15,26 @@
   },
   "sources": [
     {
+      "ref": "scripts/migrate-mobile-sessions.sql",
+      "phase": "schema-overlap",
+      "fresh": { "disposition": "unresolved", "required": true, "reason": "모바일 세션 구조는 export가 소유하며 기존 DB의 엄격한 catalog 비교와 한국어 설명을 별도 원문으로 유지한다." },
+      "objects": ["mobile-sessions"],
+      "requires": ["web-base", "session-version"],
+      "checks": ["자체 transaction·5초 잠금·60초 문장 제한과 advisory lock을 유지하며 기존 값·제약·인덱스 불일치를 자동 보정하지 않는다.", "소유 로컬 PostgreSQL에서 원자 회전·재사용·만료·계정 무효화와 SQL 재실행을 확인한다."],
+      "evidence": [{ "file": "scripts/migrate-mobile-sessions.sql", "line": 1, "note": "모바일 세션 원문의 transaction·catalog 검증과 한국어 설명 정의." }],
+      "unresolved": ["운영 대상·백업·복구·승인은 별도 검증 대상이다. 로컬 reference에는 원문을, 후보 bundle에는 COMMENT 보완본을 편입한다." ]
+    },
+    {
+      "ref": "scripts/db/candidates/db-fresh/mobile-sessions.sql",
+      "phase": "custom-definition",
+      "fresh": { "disposition": "unresolved", "required": true, "reason": "구조는 schema export가 소유하고 한국어 COMMENT만 보완하는 소유 로컬 신규 설치 후보이다." },
+      "objects": ["mobile-sessions"],
+      "requires": ["web-base", "session-version"],
+      "checks": ["원문 COMMENT 문장과 바이트 동등성을 확인하고 기존 DB 전용 DDL 검증을 신규 설치 후보에 중복하지 않는다.", "운영 manifest·baseline·freshReady는 승격하지 않는다."],
+      "evidence": [{ "file": "scripts/db/candidates/db-fresh/mobile-sessions.sql", "line": 1, "note": "모바일 세션 한국어 COMMENT의 소유 로컬 후보." }, { "file": "scripts/migrate-mobile-sessions.sql", "line": 1, "note": "기존 DB용 원문과 후보의 역할 차이를 검토한다." }],
+      "unresolved": ["로컬 reference/bundle에서 원문과 COMMENT 보완본을 독립 대조하며 운영 승격은 별도다." ]
+    },
+    {
       "ref": "scripts/migrate-287-rate-limit-reservation-index.sql",
       "phase": "custom-definition",
       "fresh": {
@@ -655,29 +675,29 @@
       "fresh": {
         "disposition": "exclude",
         "required": false,
-        "reason": "기존 콘텐츠·계정·학적을 변경하는 seed/backfill/변환은 fresh DDL 적용 이력에서 제외한다."
+        "reason": "과거 HTML 본문 변환의 대상 열 선언과 순수 변환 규칙만 보존하고 공개 CLI의 조회·UPDATE는 차단한다. 기존 콘텐츠 변환은 fresh DDL 적용 이력에 넣지 않는다."
       },
       "objects": ["content-markdown-conversion"],
       "requires": ["web-base"],
-      "checks": ["현재 실제 본문을 읽어 변환하는 runtime UPDATE이며 빈 신규 DB 설치에 넣지 않는다."],
+      "checks": ["CLI는 고정 계획·거부만 출력하고 DB·자격정보·통신·파일 읽기를 수행하지 않는다. 모듈 import는 출력·종료 상태 변화가 없고 변환 라이브러리도 불러오지 않는다.","이전 무인자 즉시 UPDATE와 실제 본문을 조회·출력하던 --dry-run 미리보기는 미제공이며 --dry-run은 접속 전에 별도 코드로 거부한다.","보존한 HTML 판정·Turndown 변환은 입력 문자열만 쓰는 순수 함수이며 실제 운영 본문의 변환 필요 여부·완료·승인을 증명하지 않는다."],
       "evidence": [
         {
           "file": "scripts/migrate-html-to-markdown.mjs",
-          "line": 67,
-          "note": "변환 TARGETS."
+          "line": 1,
+          "note": "이전 동작과 접속 없는 계획·신뢰되지 않은 적용 차단의 역할 설명."
         },
         {
           "file": "scripts/migrate-html-to-markdown.mjs",
-          "line": 103,
-          "note": "동적 표/열 조회."
+          "line": 28,
+          "note": "과거 변환 대상 열의 순수 선언."
         },
         {
           "file": "scripts/migrate-html-to-markdown.mjs",
-          "line": 123,
-          "note": "실제 원문별 변환·조건부 UPDATE."
+          "line": 65,
+          "note": "기존 Turndown 설정의 순수 변환 함수 생성기."
         }
       ],
-      "unresolved": ["행별 실제 HTML과 변환 결과가 UPDATE 값·대상을 정하므로 AST만으로 데이터 효과 전체를 고정할 수 없다."]
+      "unresolved": []
     },
     {
       "ref": "scripts/migrate-protected-resource-blobs.mjs",
@@ -1622,7 +1642,8 @@
         "academic-students-type",
         "academic-assignments-type",
         "academic-submissions-type",
-        "web-types"
+        "web-types",
+        "mobile-sessions"
       ],
       "requires": [],
       "checks": [
@@ -1648,6 +1669,22 @@
     }
   ],
   "objects": [
+    {
+      "id": "mobile-sessions",
+      "kind": "table-set",
+      "names": ["public.mobile_sessions", "public.mobile_session_refresh_history"],
+      "owner": "schema-export",
+      "definitions": [
+        { "source": "schema-export", "relationship": "primary", "reason": "모바일 세션 partial은 테이블·제약·인덱스의 선언 소유자다." },
+        { "source": "scripts/db/candidates/db-fresh/schema-export.sql", "relationship": "unresolved", "reason": "검토된 export 후보이며 운영 승격을 뜻하지 않는다." },
+        { "source": "scripts/migrate-mobile-sessions.sql", "relationship": "unresolved", "reason": "기존 DB에서 동등 구조를 확인하며 한국어 COMMENT를 설치하는 별도 원문이다." },
+        { "source": "scripts/db/candidates/db-fresh/mobile-sessions.sql", "relationship": "unresolved", "reason": "export에 없는 두 표의 한국어 COMMENT만 보완하며 독립 reference와 후보 bundle에서 대조한다." }
+      ],
+      "requires": ["web-base", "session-version"],
+      "checks": ["세션 UUID·이력 hash PK·양쪽 CASCADE FK·고정 hex 해시·회수 사유·시간 순서·전체 user/부분/정리/이력 session 인덱스를 확인한다."],
+      "unresolved": ["로컬 bundle 검증은 운영 대상·복구·승인 완료를 뜻하지 않는다."],
+      "requiredForFresh": true
+    },
     {
       "id": "web-base",
       "kind": "table-set",
@@ -2614,11 +2651,11 @@
         {
           "source": "scripts/migrate-html-to-markdown.mjs",
           "relationship": "primary",
-          "reason": "해당 inventory 원문이 이 사용자 정의 객체·효과의 선언 소유자다."
+          "reason": "이 MJS의 순수 대상 열 선언과 변환 규칙이 과거 HTML→Markdown 변환 효과의 선언 소유자다. 공개 CLI는 실제 본문을 조회·변환·UPDATE하지 않는다."
         }
       ],
       "requires": ["web-base"],
-      "checks": ["runtime TARGETS와 HTML 변환 결과에 따라 데이터별 UPDATE가 달라지며 현재 운영 콘텐츠를 새 설치 데이터로 재생하지 않는다."],
+      "checks": ["대상 열 선언과 순수 변환 결과는 실제 운영 본문의 HTML 잔존 여부·변환 완료·UPDATE 가능성·승인을 증명하지 않으며 현재 운영 콘텐츠를 새 설치 데이터로 재생하지 않는다."],
       "unresolved": [],
       "requiredForFresh": false
     },
@@ -2980,6 +3017,8 @@
         }
       ],
       "exclusions": [
+        { "ref": "scripts/migrate-mobile-sessions.sql", "reason": "이 기존 학사 fixture는 모바일 로그인 설치를 수행하지 않는다." },
+        { "ref": "scripts/db/candidates/db-fresh/mobile-sessions.sql", "reason": "모바일 세션 신규 후보는 별도 소유 로컬 시험 범위다." },
         {
           "ref": "scripts/migrate-287-rate-limit-reservation-index.sql",
           "reason": "예약 인덱스는 별도 index 검증 범위이며 이 fixture 비포함만으로 운영 누락을 판단하지 않는다."
@@ -3165,6 +3204,8 @@
         }
       ],
       "exclusions": [
+        { "ref": "scripts/migrate-mobile-sessions.sql", "reason": "이 기존 경로 fixture는 모바일 로그인 설치를 수행하지 않는다." },
+        { "ref": "scripts/db/candidates/db-fresh/mobile-sessions.sql", "reason": "모바일 세션 신규 후보는 별도 소유 로컬 시험 범위다." },
         {
           "ref": "scripts/migrate-287-rate-limit-reservation-index.sql",
           "reason": "예약 인덱스는 별도 index 검증 범위이며 이 fixture 비포함만으로 운영 누락을 판단하지 않는다."

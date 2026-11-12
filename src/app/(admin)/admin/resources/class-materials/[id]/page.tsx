@@ -8,15 +8,13 @@
 
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import { Button } from "@/components/ui/button";
 import { ResourcesTabNav } from "@/app/(admin)/admin/resources/_components/resources-tab-nav";
 import { ClassMaterialForm } from "@/app/(admin)/admin/resources/class-materials/_components/class-material-form";
 import { updateClassMaterial } from "@/features/class-materials/actions";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { classMaterials } from "@/lib/db/schema";
+import { getAdminMaterial } from "@/features/class-materials/admin/service";
 
 export const dynamic = "force-dynamic";
 
@@ -37,9 +35,7 @@ export default async function EditClassMaterialPage({ params }: Props) {
     notFound();
   }
 
-  const material = await db.query.classMaterials.findFirst({
-    where: eq(classMaterials.id, parsedId.data),
-  });
+  const material = await getAdminMaterial({ userId: session.user.id, role: session.user.role }, parsedId.data);
 
   if (!material) {
     notFound();

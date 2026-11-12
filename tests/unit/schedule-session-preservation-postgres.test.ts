@@ -67,6 +67,7 @@ describe.skipIf(!bin)("기존 세션 UUID를 보존하는 일정 액션", () => 
   },30000);
   beforeEach(()=>{
     vi.clearAllMocks();
+    mocks.requireAdmin.mockResolvedValue({ user: { id: actor, role: "ADMIN" } });
     mocks.redirect.mockImplementation((path:string)=>{throw new Error(`REDIRECT:${path}`);});
     mocks.execute.mockImplementation(async (statement)=>{
       const query=new PgDialect().sqlToQuery(statement);

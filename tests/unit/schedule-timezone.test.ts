@@ -34,6 +34,7 @@ function scheduleForm(withSession: boolean) {
 describe("일정 raw SQL 시간대", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.requireAdmin.mockResolvedValue({ user: { id: "admin-1", role: "ADMIN" } });
     mocks.execute.mockResolvedValue({ rows: [{ event_exists: true, sessions_valid: true }] });
     mocks.redirect.mockImplementation((path: string) => { throw new Error(`REDIRECT:${path}`); });
   });

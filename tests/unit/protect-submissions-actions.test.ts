@@ -52,7 +52,7 @@ const id = "11111111-1111-4111-8111-111111111111";
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.selectRows.length = 0;
-  mocks.requireAdmin.mockResolvedValue({ user: { id } });
+  mocks.requireAdmin.mockResolvedValue({ user: { id, role: "ADMIN" } });
   mocks.hasGuards.mockResolvedValue(true);
   mocks.deleteReturning.mockResolvedValue([{ id }]);
   mocks.put.mockImplementation(async (path: string) => ({ url: `https://${projectBlobHost}/${path}` }));

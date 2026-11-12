@@ -3,6 +3,7 @@
  * 세션·대상·마감·파일 검증은 기존 서비스가 수행하고 HTTP 입력·관측·Web 캐시만 처리합니다.
  */
 import { revalidatePath } from "next/cache";
+import { withApiV1Principal } from "@/lib/api-v1-principal";
 import {
   apiV1FinalizeSubmissionInputSchema,
   apiV1FinalizedSubmissionResponseSchema,
@@ -25,6 +26,10 @@ export const maxDuration = 120;
 
 /** 성공 재시도에서도 같은 submissionKey를 서비스에 전달하여 저장된 최종 결과를 복구합니다. */
 export async function POST(request: Request): Promise<Response> {
+  return withApiV1Principal(request, () => handlePost(request), (code) => academicApiErrorResponse(new AcademicApiHttpError(code), crypto.randomUUID()));
+}
+
+async function handlePost(request: Request): Promise<Response> {
   const observation = createAcademicObservation("SUBMISSION_FINALIZE", "SUBMISSION");
   try {
     const parsed = apiV1FinalizeSubmissionInputSchema.safeParse(await readAcademicApiJson(request));

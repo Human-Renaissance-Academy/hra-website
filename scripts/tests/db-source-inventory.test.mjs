@@ -182,8 +182,8 @@ test("새 관리 MJS와 새 npm 연결 명령이 미분류면 거부한다", asy
 
 test("현재 인벤토리는 읽기 전용 preflight·현행 뷰와 알려진 명령 동작을 분리한다", () => {
   const inventory = JSON.parse(readFileSync(join(root, "scripts/db/source-inventory.json"), "utf8"));
-  assert.equal(inventory.sql.length, 35);
-  assert.equal(inventory.sql.filter((entry) => entry.role === "fresh_candidate").length, 18);
+  assert.equal(inventory.sql.length, 37);
+  assert.equal(inventory.sql.filter((entry) => entry.role === "fresh_candidate").length, 19);
   assert.equal(inventory.scripts.length, 18);
   assert.equal(inventory.g1Order.length, 9);
   assert.equal(inventory.sql.find((entry) => entry.path === "scripts/preflight-academic-students.sql")?.role, "read_only_preflight");
@@ -202,7 +202,7 @@ test("현재 인벤토리는 읽기 전용 preflight·현행 뷰와 알려진 �
     "migrate-add-user-session-version": ["db_schema", "read_only"],
     "migrate-atomic-application-questions": ["db_schema", "read_only"],
     "migrate-backfill-kakao-legacy-bindings": ["db_data", "read_only"],
-    "migrate-html-to-markdown": ["db_data", "writes"],
+    "migrate-html-to-markdown": ["db_data", "read_only"],
     "migrate-protected-resource-blobs": ["blob_and_db", "read_only"],
     "migrate-rate-limit-reservations": ["db_schema", "read_only"],
     "migrate-recruitment-singleton": ["db_schema_and_data", "read_only"],
@@ -225,5 +225,5 @@ test("가짜 DB 주소가 있어도 CLI는 소스만 검사하고 통과한다",
     timeout: 10_000,
   });
   assert.equal(result.status, 0, "소스 검사기는 DB 접속 없이 종료해야 합니다.");
-  assert.match(result.stdout, /SQL 35개.*MJS 18개/);
+  assert.match(result.stdout, /SQL 37개.*MJS 18개/);
 });

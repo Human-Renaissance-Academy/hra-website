@@ -1194,3 +1194,6 @@ export { academicUploadAuthorizations } from "./academic-upload-authorizations";
 
 // 개별 제출 파일의 전달 허가 기록을 Drizzle 관리 범위에 포함한다.
 export { academicSubmissionFileReads } from "./academic-file-accesses";
+
+// 모바일 로그인 토큰의 해시·회수·만료 상태를 같은 스키마 진입점에 포함한다.
+export { mobileSessions, mobileSessionRefreshHistory } from "./mobile-sessions";

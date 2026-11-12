@@ -36,7 +36,10 @@ const sessionConstraint = "assignments_schedule_session_id_schedule_sessions_id_
 const referenceMessage = "과제에 연결된 일정이나 세션은 삭제할 수 없습니다. 연결된 과제를 확인해주세요.";
 const failureMessage = "일정을 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.";
 
-beforeEach(() => vi.resetAllMocks());
+beforeEach(() => {
+  vi.resetAllMocks();
+  mocks.requireAdmin.mockResolvedValue({ user: { id: actor, role: "ADMIN" } });
+});
 
 // 실패 응답은 원본 SQL·제약명·테스트 개인정보를 포함하지 않아야 한다.
 function expectSafeFailure(result: Awaited<ReturnType<typeof deleteScheduleEvent>>) {

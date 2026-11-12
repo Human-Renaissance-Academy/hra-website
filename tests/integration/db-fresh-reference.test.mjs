@@ -45,17 +45,17 @@ test("전체 원본 fresh reference는 독립 prefix·변형·동작 계약을 �
   const baseline = reference.contracts.at(-1).digest;
 
   await t.test("전체 prefix 계약을 고정하고 독립 reference 외의 준비 완료를 주장하지 않는다", async () => {
-    assert.equal(reference.contracts.length, 19); assert.equal(reference.prefixes.length, 19);
+    assert.equal(reference.contracts.length, 20); assert.equal(reference.prefixes.length, 20);
     ensure(reference.checks.objects > 1000 && reference.checks.behaviors >= 10 && reference.checks.mutations === reference.contracts.length, "FRESH_PREFIX_ASSERTIONS_COMPLETE");
-    assert.equal(reference.checks.immediateReplays, 17);
+    assert.equal(reference.checks.immediateReplays, 18);
     ensure(reference.checks.scopePrivate && reference.checks.physicalBackend, "FRESH_OWNED_OPERATOR_PINNED");
     ensure(Object.isFrozen(reference.contracts) && reference.contracts.every(item => Object.isFrozen(item) && Object.isFrozen(item.counts)), "FRESH_CONTRACTS_FROZEN");
     for (const value of [reference.provenance.schemaDigest, reference.provenance.exportDigest, baseline]) assert.match(value, /^[a-f0-9]{64}$/);
-    assert.equal(reference.provenance.toolVersion, "0.31.10");
-    assert.equal(reference.provenance.inventoryLegacySqlSourceCount, 17);
-    assert.equal(reference.provenance.inventoryCandidateSqlSourceCount, 18);
-    assert.equal(reference.provenance.inventoryTotalSqlSourceCount, 35);
-    assert.equal(reference.provenance.rawSqlSourceCount, 16);
+    assert.equal(reference.provenance.toolVersion, "0.31.11");
+    assert.equal(reference.provenance.inventoryLegacySqlSourceCount, 18);
+    assert.equal(reference.provenance.inventoryCandidateSqlSourceCount, 19);
+    assert.equal(reference.provenance.inventoryTotalSqlSourceCount, 37);
+    assert.equal(reference.provenance.rawSqlSourceCount, 17);
     assert.equal(reference.provenance.generatedExportCount, 1);
     assert.equal(reference.provenance.handcraftedSqlCount, 1);
     for (const prefix of reference.prefixes) {

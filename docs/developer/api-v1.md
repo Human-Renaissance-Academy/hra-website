@@ -1,10 +1,43 @@
 # API v1 현재 제공 범위
 
-공용 HTTP 계약의 정본은 [`packages/contracts/openapi.json`](https://github.com/yeongseon/hra-website/blob/main/packages/contracts/openapi.json)입니다. 이 파일은 OpenAPI 3.1.1 JSON 형식이며 **실제로 제공하는 경로만** 기록합니다. 기존 공지·본인 프로필·공개 일정·가이드북 목록과 아래 학사 MVP 경로를 제공합니다. 나머지 자료 유형과 모바일 인증은 각각 후속 확장 및 #273 범위입니다.
+공용 HTTP 계약의 정본은 [`packages/contracts/openapi.json`](https://github.com/yeongseon/hra-website/blob/main/packages/contracts/openapi.json)입니다. 이 파일은 OpenAPI 3.1.1 JSON 형식이며 기존 공지·본인 프로필·공개 일정·가이드북 목록, 강의자료·주차별 텍스트 목록/상세와 자료 파일, 학사 MVP와 모바일 인증 계약을 기록합니다. 모바일 인증과 기존 경로의 Bearer 수용은 서버 작업 반영 후 사용할 수 있으며 계약 추가만으로 배포 완료를 뜻하지 않습니다. 수업일지·보고서 양식 등 나머지 자료 유형과 모바일 소셜 로그인은 후속 범위입니다.
+
+## 모바일 인증
+
+서버 작업 반영 후 `/api/v1/me`, `/api/v1/resources/guidebooks`, 아래 「승인 회원 강의자료·주차별 텍스트·자료 파일」의 7경로, `/api/v1/assignments` 및 그 상세·제출 조회, `/api/v1/submissions`, `/api/v1/uploads` 및 발급·검증·취소, `/api/v1/submissions/{id}/files/{fileId}`는 **Web 쿠키 또는 모바일 Bearer**를 받습니다. 공개 공지·일정은 계속 익명 조회입니다. Bearer는 `/api/v1` 어댑터에서만 처리하며 Server Action·페이지·관리자·legacy `/api/*`에는 적용하지 않습니다. 보호 경로에 `Authorization` 헤더가 있으면 쿠키보다 우선합니다. 비어 있거나 잘못된 토큰·형식·지원하지 않는 인증 방식도 401이며 유효한 쿠키가 함께 있어도 대체하지 않습니다. 쿠키 변경 요청의 동일 출처 Origin 방어는 유지하고 **검증된 모바일 Bearer** 요청만 해당 검사를 생략합니다. SDK 업로드 완료 callback의 권한은 Bearer나 쿠키가 아니라 기존 SDK 서명 검증에만 있습니다.
+
+| 요청 | 입력·결과 | 전체 HTTP 상태 |
+| --- | --- | --- |
+| `POST /api/v1/auth/login` | `{ email, password, device? }` → 200 `{ session, user }`. 사용자 DTO는 `/me`와 동일 | 200/400/401/413/429/503 |
+| `POST /api/v1/auth/refresh` | `{ refreshToken }` → 200 `{ session }`. 두 토큰 모두 회전 | 200/400/401/413/429/503 |
+| `POST /api/v1/auth/logout` | `{ refreshToken }` → 본문 없는 204. 알 수 없거나 이미 폐기된 토큰도 204. 갱신과 같은 IP 예산 소진 시 429 | 204/400/413/429/503 |
+| `POST /api/v1/auth/logout-all` | Bearer 필수, 본문 없음 → 204. 본인의 모든 **모바일** 세션만 폐기하며 Web 쿠키 세션은 변경하지 않음 | 204/400/401/503 |
+
+로그인은 이메일·비밀번호만 사용합니다. 이메일은 trim 후 3~320자 이메일 형식, 비밀번호는 trim하지 않고 1~256자입니다. 선택적 `device`는 필수 `platform: "ANDROID" | "IOS"`, 선택적 `appVersion`(1~32자)·`deviceName`(1~64자)만 받습니다. 모든 입력·기기·응답 객체는 추가 키를 거부합니다. ADMIN·PENDING도 로그인할 수 있지만 기존 API의 역할별 인가는 유지합니다. PENDING은 자기 프로필만 조회하고 자료·학사 권한을 얻지 않으며 ADMIN 로그인도 학생 과제 권한을 추가하지 않습니다. 잘못된 자격 증명은 계정 존재 여부를 구별하지 않는 일반 401 `UNAUTHENTICATED`입니다.
+
+네 인증 경로 모두 query를 거부합니다. 로그인·갱신·단일 로그아웃은 `application/json`이 필수이며 실제 본문 16KiB 초과는 413 `AcademicTooLargeError`입니다. 쿠키를 읽거나 설정하지 않고 Origin 없이 사용할 수 있습니다. 전체 로그아웃은 쿠키 단독 인증을 받지 않으며 **어떤 본문이나 query도 400**입니다(빈 JSON 객체 `{}`도 금지). 잘못된 JSON·입력은 400 `InvalidInputError`, 인증 실패는 401 `UnauthenticatedError`, 저장소 제공 불가는 503 `UnavailableError`입니다. 로그인 제한은 계정 조회·bcrypt 전에 429로 거부하고 갱신은 IP·세션 예산을 적용하며 성공한 갱신도 계산합니다. 제한 저장소 장애는 429가 아니라 503입니다. 로그인·갱신 429는 `MobileRateLimitedError`와 `Retry-After`에 같은 `retryAfterSeconds`(1~900초)를 제공합니다. 기존 `AcademicRateLimitedError`의 60초 상한과 구분합니다. 인증 응답과 오류 및 본문 없는 204는 모두 `Cache-Control: private, no-store`입니다. 보호 경로의 성공·오류에는 `Vary: Cookie, Authorization`을 기존 Vary 값과 병합합니다.
+
+`MobileSession`은 `tokenType: "Bearer"`, 불투명한 `accessToken`·`refreshToken`과 각각의 `accessTokenExpiresAt`·`refreshTokenExpiresAt`을 제공합니다. 만료 시각은 UTC 밀리초 ISO 문자열입니다. **클라이언트는 수명을 하드코딩하지 않고 이 필드들을 사용합니다.** 설계상 access 15분·refresh 30일 sliding·로그인 후 절대 90일은 비계약 운영 지침이며 변경될 수 있습니다. 토큰 접두어·길이·내부 형식을 클라이언트에서 해석하지 않습니다.
+
+갱신 성공 시 access와 refresh를 함께 교체합니다. 갱신의 일반 401 `UNAUTHENTICATED`는 잘못된 토큰·만료·철회·세션 버전 불일치·재사용뿐 아니라 **정상 동시 회전 경합**도 포함합니다. 바로 직전 소비 토큰은 회전 후 **10초 유예 안에서 401만 반환하고 세션을 폐기하지 않습니다.** 직전 소비 토큰을 그 유예 밖에서 제시하거나 더 오래전에 소비된 어느 세대의 토큰을 제시해도 계열 재사용 감지로 **해당 모바일 세션 전체**를 폐기합니다. 이전 토큰 재전송은 복구 수단이 아닙니다. 더 오래된 세대에는 직전 회전의 유예를 적용하지 않습니다.
+
+### 모바일 클라이언트 필수 계약
+
+- **하나의 갱신 조정자(single flight)** 를 앱 시작·HTTP 인터셉터·전경 복귀·백그라운드 작업이 모두 공유합니다. 각 호출이 별도로 refresh를 보내지 않습니다.
+- 로그인·갱신·로그아웃의 로컬 세션 전환마다 **세션 세대(session generation)** 를 갱신하고 작업 시작 당시의 세대를 붙입니다. 오래된 요청의 성공·실패가 더 최신 로그인·갱신 토큰을 덮어쓰거나 지우지 못하게 합니다. 갱신 401 뒤 토큰·개인 캐시 제거와 재로그인은 그 요청의 세대가 여전히 현재일 때만 수행합니다. 늦게 도착한 경합 실패가 승자의 새 토큰을 삭제해서는 안 됩니다.
+- access token은 **메모리에만**, refresh token은 **Android Keystore 기반 보안 저장소에만** 보관합니다. 일반 파일·AsyncStorage·로그·분석 이벤트·URL에는 넣지 않습니다. 앱 재시작은 저장된 refresh와 같은 조정자를 사용합니다.
+- 회전된 refresh의 보안 저장이 끝난 뒤 두 토큰을 함께 현재 세션으로 공개합니다. 저장 실패 시 새 세션을 계속 사용하지 않으며 오래된 세션에 대한 정리가 새 세대에 영향을 주지 않게 합니다. 로그아웃도 서버 폐기 결과와 별개로 해당 로컬 세대의 토큰·개인 캐시를 제거합니다.
+- **전송 결과가 불명확한 갱신은 자동 재시도하지 않습니다.** 타임아웃·연결 단절로 응답을 못 받아도 서버는 이미 회전했을 수 있습니다. 503·통신 실패를 401로 간주하지 않으며 이전 refresh를 자동 재전송하지 않습니다. 상태를 확정할 수 없으면 명시적인 재로그인으로 복구합니다.
+- **변경 요청은 자동 재전송하지 않습니다.** 보호 GET 등 안전한 조회만 유효한 현재 세대에서 갱신 후 최대 한 번 재시도할 수 있습니다. POST·DELETE·업로드·제출은 인증 갱신을 이유로 자동 재실행하지 않고 기존 멱등키·명시적 복구 절차를 따릅니다. 403은 권한 거부이므로 갱신 루프를 돌리지 않습니다.
+- 429는 본문 `retryAfterSeconds`와 동일한 `Retry-After`만큼 대기하며 즉시 반복하지 않습니다. 갱신 재시도는 명시적으로 거부된 429와 전송 결과 불명확 실패를 구별하고 같은 조정자와 세대 검사를 사용합니다.
+
+모바일 Google·Kakao OAuth는 이번 계약 범위가 아닙니다.
+
+**OpenAPI 인증 표기 정정 정책(#439):** 추가 전용 gate(`scripts/check-openapi-compat.mjs`)는 기존 path item을 그대로 보존하는 것이 원칙입니다. Bearer 이중 전송(#438)으로 어긋난 표기만 바로잡기 위해 `scripts/_lib/openapi-append-only.mjs`의 `authWordingRevisions`에 **고정된 11개 operation**(`GET /me`, `GET /resources/guidebooks`, 본인 과제 3개 조회, `POST /submissions`, 업로드 4개 경로, 제출 파일 `GET`)만 예외로 등록했습니다. 이 operation에서는 `description`, `security`, `Origin` 헤더 매개변수의 `required`·`description`, 응답 `Vary` 헤더만 바뀔 수 있고 나머지(경로·상태 코드·스키마·operationId)가 달라지면 기존처럼 `OPENAPI_PATH_CHANGED`로 실패합니다. 정정 후 값은 `security: [{ bearerAuth: [] }]`(쿠키 대안은 설명에 기록), `Vary: Cookie, Authorization`, 선택(`required: false`) `Origin`이어야 합니다. 목록은 확장하지 않으며 새 operation은 처음부터 정확한 표기로 추가합니다. `info.version`은 계약 구조가 바뀌지 않으므로 올리지 않습니다. 쿠키 이름은 환경마다 달라 고정하지 않습니다. 정정은 이전 operation이 옛 형태(`security` 없음, `Vary: Cookie`)일 때 한 번만 허용되며 정정된 operation은 이후 정확히 보존해야 합니다. 쿠키 인증은 OpenAPI `security`로 표현할 수 없어 설명에만 기록하므로 도구는 이 operation을 Bearer 전용으로 인식합니다. `POST /api/v1/uploads`의 `blob.upload-completed` callback은 Bearer도 쿠키도 아닌 SDK 서명으로만 인가됩니다. 향후 Bearer 보호 operation을 새로 추가할 때 OpenAPI의 `{}` 대안은 익명 허용이므로 쿠키 인증 표현에 사용하지 않습니다.
 
 ## 본인 프로필
 
-`GET /api/v1/me`는 현재 Auth.js **Web 세션 쿠키**를 사용합니다. 세션이 없으면 401 `UNAUTHENTICATED`로 끝나고, Route 내부에서도 매 요청 세션을 확인합니다. 쿠키 이름은 배포 환경과 보안 접두어·분할에 따라 달라지므로 계약에 하나로 고정하지 않습니다. 모바일 Bearer·refresh 인증은 아직 구현되지 않았으며 #273의 별도 경계입니다.
+`GET /api/v1/me`는 서버 작업 반영 후 Auth.js **Web 세션 쿠키 또는 모바일 Bearer**를 사용합니다. 인증 상태가 없으면 401 `UNAUTHENTICATED`로 끝나고 매 요청 현재 인증 상태를 확인합니다. 쿠키 이름은 배포 환경과 보안 접두어·분할에 따라 달라지므로 계약에 하나로 고정하지 않습니다.
 
 세션 확인 뒤 현재 사용자의 표시용 행을 다시 조회합니다. 응답은 `{ user: { id, name, email, role, cohortId, imageUrl } }` 여섯 필드만 허용하며 비밀번호 해시·OAuth binding·세션 버전은 반환하지 않습니다. 내부 placeholder 이메일은 `null`입니다. `PENDING`도 **자기 프로필만** 읽을 수 있고 자료실·학사 인가는 이 API로 부여하지 않습니다. 사용자 행이 없어졌거나 세션의 역할과 다르면 401로 거부합니다.
 
@@ -42,15 +75,59 @@ OpenAPI의 JSON 표현은 [OpenAPI 3.1.1 명세](https://spec.openapis.org/oas/v
 
 ## 승인 회원 가이드북 목록
 
-`GET /api/v1/resources/guidebooks`는 현재 Auth.js Web 세션으로 승인된 `ADMIN`, `FACULTY`, `MEMBER`에게 가이드북 **메타데이터만** 제공합니다. Route 안에서 세션을 확인하고 Application Service가 현재 계정 행과 역할을 다시 대조합니다. 익명·삭제 또는 역할이 바뀐 계정은 401 `UNAUTHENTICATED`, 현재 승인 대기 계정은 403 `FORBIDDEN`입니다. Auth.js가 DB 오류를 무세션으로 바꾸는 경우는 `/api/v1/me`와 동일하게 401이 될 수 있습니다.
+`GET /api/v1/resources/guidebooks`는 서버 작업 반영 후 Auth.js Web 쿠키 또는 모바일 Bearer로 승인된 `ADMIN`, `FACULTY`, `MEMBER`에게 가이드북 **메타데이터만** 제공합니다. Route 안에서 세션을 확인하고 Application Service가 현재 계정 행과 역할을 다시 대조합니다. 익명·삭제 또는 역할이 바뀐 계정은 401 `UNAUTHENTICATED`, 현재 승인 대기 계정은 403 `FORBIDDEN`입니다. Auth.js가 DB 오류를 무세션으로 바꾸는 경우는 `/api/v1/me`와 동일하게 401이 될 수 있습니다.
 
-`page`(기본 1)와 `pageSize`(기본 10, 최대 50)만 받으며 중복·미등록 key와 PostgreSQL offset 범위 밖 값은 400 `INVALID_INPUT`으로 거부합니다. 범위 밖 페이지는 요청 번호를 유지한 빈 `guidebooks` 배열과 공통 `page` 메타를 반환합니다. 목록은 작성 시각·ID 역순으로 안정 정렬합니다. 각 항목은 `id`·`title` 두 필드뿐이고 원본 파일 URL·파일명·Blob 토큰·시간대 없는 `createdAt`은 보내지 않습니다. 실제 파일은 기존 인증 다운로드 경로에서만 서버가 읽습니다. 모든 응답은 `Cache-Control: private, no-store`와 `Vary: Cookie`이며 저장소 장애는 원문 없는 503 `UNAVAILABLE`입니다.
+`page`(기본 1)와 `pageSize`(기본 10, 최대 50)만 받으며 중복·미등록 key와 PostgreSQL offset 범위 밖 값은 400 `INVALID_INPUT`으로 거부합니다. 범위 밖 페이지는 요청 번호를 유지한 빈 `guidebooks` 배열과 공통 `page` 메타를 반환합니다. 목록은 작성 시각·ID 역순으로 안정 정렬합니다. 각 항목은 `id`·`title` 두 필드뿐이고 원본 파일 URL·파일명·Blob 토큰·시간대 없는 `createdAt`은 보내지 않습니다. 실제 파일은 기존 인증 다운로드 경로와 아래 `GET /api/v1/resources/guidebooks/{id}/file`에서만 서버가 읽습니다. 모든 응답은 `Cache-Control: private, no-store`와 `Vary: Cookie`이며 저장소 장애는 원문 없는 503 `UNAVAILABLE`입니다.
 
 `/resources` 화면은 별도 통합 목록 Application Service를 사용하며 기수·다른 자료 유형과 기존 전체 정렬을 유지합니다. 가이드북 API는 페이지 조회에 필요한 최소 메타데이터만 제공하므로 화면의 통합 목록을 HTTP로 재호출하지 않습니다.
 
+## 승인 회원 강의자료·주차별 텍스트·자료 파일
+
+| 메서드·경로 | 제공하는 결과 |
+| --- | --- |
+| `GET /api/v1/resources/guidebooks/{id}/file` | 가이드북 원본 첨부 스트림 |
+| `GET /api/v1/resources/class-materials` | 역할에 허용된 강의자료 메타데이터 페이지 |
+| `GET /api/v1/resources/class-materials/{id}` | 강의자료 메타데이터와 원본 파일명 |
+| `GET /api/v1/resources/class-materials/{id}/file` | 강의자료 원본 첨부 스트림 |
+| `GET /api/v1/resources/weekly-texts` | 주차별 텍스트 메타데이터 페이지 |
+| `GET /api/v1/resources/weekly-texts/{id}` | 주차별 텍스트 Markdown 본문과 첨부 파일명 |
+| `GET /api/v1/resources/weekly-texts/{id}/file` | 주차별 텍스트 첨부 원본 스트림 |
+
+인증은 위 「모바일 인증」의 보호 경로와 같습니다. **모바일 Bearer 또는 Web 쿠키**를 받으며 `Authorization` 헤더가 있으면 쿠키보다 우선하고, 잘못된 토큰·형식·지원하지 않는 방식·회수된 모바일 세션은 유효한 쿠키가 있어도 401입니다. 모바일 세션은 매 요청 현재 상태를 다시 확인하고 세션 저장소 장애는 503입니다. Route 전용 `src/app/api/v1/resources/_lib/principal.ts`가 `withApiV1Principal`로 주체를 해석하고, Application Service(`src/features/{class-materials,weekly-texts}/member`, `src/features/guidebooks/file-download`)가 현재 계정 행과 역할을 다시 대조합니다. 익명·삭제·역할 변경은 401 `UNAUTHENTICATED`, 승인 대기 `PENDING`은 현재 계정 조회 전에 403 `FORBIDDEN`입니다. OpenAPI에는 `security: [{ bearerAuth: [] }]`를 선언하고 쿠키 대안은 설명에 기록합니다(`{}`는 익명 허용이라 사용하지 않습니다). Route는 Drizzle을 직접 호출하지 않습니다.
+
+권한 범위는 기존 Web 자료실과 같습니다.
+
+- **강의자료**: `MEMBER`는 학생용(`STUDENT`)만, `ADMIN`·`FACULTY`는 학생용·교수용(`FACULTY`)을 받습니다. 기존 `classMaterialReadFilter`를 목록·상세·파일 SQL WHERE에 적용하므로 MEMBER가 교수용 자료를 요청하면 없는 자료와 같은 404 `NOT_FOUND`입니다.
+- **주차별 텍스트**: 공동 자료 정책(#100)에 따라 승인 회원은 **기수와 무관하게** 열람합니다(허용 범위 정책 확인은 #441). Web 통합 목록·상세·기존 다운로드 경로와 같은 범위이며, 본인 기수만 보여 주는 `/resources/weekly-texts` 업로드 화면의 목록 필터는 표시용으로 API에 적용하지 않습니다.
+- **가이드북 파일**: 승인 회원은 모든 가이드북 원본을 받습니다.
+
+목록은 `page`(기본 1)·`pageSize`(기본 10, 최대 50)만 받고 가이드북 목록과 같은 400·범위 밖 빈 배열 규칙을 따릅니다. 정렬은 Web 통합 목록과 같은 수업일 역순(없으면 마지막)·작성 시각 역순이며 ID 역순으로 안정화합니다. 수업일 `classDate`는 Web 화면과 같은 KST 변환의 `YYYY-MM-DD` 달력 날짜이고, 시간대 없는 `createdAt`은 보내지 않습니다.
+
+- 강의자료 항목은 `id`·`title`·`audience`·`weekNumber`·`lectureTitle`·`classDate`이고 상세에만 `fileName`을 추가합니다. 업로더 계정·이름과 원본 URL은 반환하지 않습니다.
+- 주차별 텍스트 항목은 `id`·`title`·`textType`·`cohort{id,name}`·`classDate`·`hasBody`·`hasFile`이고 상세에만 Markdown `body`와 `fileName`을 추가합니다. 빈 본문·파일명·분류는 `null`이며 첨부 사진은 이 API 범위에 포함하지 않습니다.
+
+상세·파일 경로는 query를 받지 않으며 잘못된 UUID와 함께 400 `INVALID_INPUT`입니다. 파일 경로는 기존 Web 다운로드(`/api/resources/[kind]/[id]/download`)와 같은 `resourceBlobAccess`·`resourceBlobToken` 규칙으로 프로젝트 공개 저장소 또는 지정 비공개 저장소의 원본만 **서버가 읽어 첨부 스트림으로** 전달합니다. 원본 URL로 리다이렉트하거나 서명 URL을 발급하지 않고 `inline` 미리보기도 제공하지 않습니다. 성공 응답은 저장된 MIME(알 수 없으면 `application/octet-stream`)·안전한 `attachment` 파일명·`nosniff`·`sandbox; default-src 'none'` CSP를 사용하며, 같은 CSP를 `next.config.ts`의 정적 헤더로도 고정합니다. 없는 자료·첨부 없는 텍스트·허용되지 않은 저장 위치·공급자 304는 404, 비공개 토큰 누락·공급자 장애·응답 헤더 대기 60초 상한 초과는 원문 없는 503 `UNAVAILABLE`입니다. 요청 취소는 공급자 SDK 요청과 본문 스트림까지 전파하고, 응답 시작 뒤의 전송 오류는 고정 문구로 스트림을 중단합니다. 요청 한도는 아래 「자료 조회 빈도 제한」을 따릅니다.
+
+모든 응답은 `Cache-Control: private, no-store`, `Vary: Cookie, Authorization`, `X-Request-Id`를 포함합니다.
+
+### 자료 조회 빈도 제한 {#resource-read-rate-limit}
+
+[#444](https://github.com/yeongseon/hra-website/issues/444)에 따라 위 7경로와 `GET /api/v1/resources/guidebooks`, 기존 Web 다운로드 `/api/resources/[kind]/[id]/download`(사진 포함)는 **인증 사용자 id 하나당 하나의 예산**을 공유합니다. Web 쿠키와 모바일 Bearer 주체도 같은 키로 계산합니다.
+
+- **정책**: 분당 300회와 시간당 2000회를 함께 적용합니다(`src/lib/rate-limit-core.ts`의 `RESOURCE_READ_*_RATE_LIMIT`). 주차별 텍스트 상세 화면은 첨부 사진을 최대 100장까지 불러오고 자료 응답은 `no-store`라 다시 열 때마다 재요청하므로, 한 화면(약 110회)을 1분 안에 두세 번 다시 열어도 막히지 않는 값입니다. 목록과 파일 몇 건을 보는 일반 화면은 10회 안팎입니다. 시간당 상한은 세션 하나로 자료실 전체를 반복해서 내려받는 자동화를 분당 약 33회 수준으로 묶습니다. 주차별 텍스트 상세의 첨부 사진은 `loading="lazy"`·`decoding="async"`로 화면에 가까워질 때만 요청해 보지 않은 사진이 예산을 쓰지 않게 합니다.
+- **운영 관측**: 시간당 2000회는 실제 사용량 측정 없이 정한 초기값입니다. 배포 후 `rate-limit/reserve-resource-read` 로그와 자료 경로의 429 비율을 관찰하고, 정상 사용자의 429가 확인되면 값을 조정합니다(429 사진은 화면에서 깨진 이미지로만 보입니다).
+- **순서**: API v1은 입력 400 → 무인증·회수·삭제/역할 변경 401 → 승인 대기 403 → 빈도 제한 429 → 대상 404·파일 전송입니다. Web 다운로드는 미로그인·승인 대기 이동 → 잘못된 UUID·알 수 없는 자료 종류 404 → 빈도 제한 429 → 대상 404·파일 전송입니다. 401·403과 입력 오류 요청은 예산에 기록하지 않으며, 초과로 거부된 요청도 기록하지 않습니다.
+- **구현**: 기존 로그인·업로드와 같은 PostgreSQL `reserve_rate_limit` 원자 예약(`rate_limit_events`, 사용자 id는 범위별 SHA-256 해시로만 저장)을 재사용하며 새 저장소를 추가하지 않습니다. API v1 서비스는 `verifySharedResourceReader`·가이드북 목록 서비스에서, Web 다운로드는 `requireSharedResourceReader` 뒤에서 공용 `src/features/resources/read-limit.ts`를 호출합니다.
+- **초과 응답**: API v1은 공용 오류 봉투의 429 `RATE_LIMITED`와 `Retry-After`에 같은 `retryAfterSeconds`(1~3600초, `ResourceRateLimitedError`)를 반환하고 `Cache-Control`·`Vary: Cookie, Authorization`·`X-Request-Id`(파일 경로는 sandbox 헤더 포함)를 유지합니다. Web 다운로드는 기존 응답처럼 한국어 평문 429와 `Retry-After`이며 429·503 모두 `Cache-Control: private, no-store`와 `X-Content-Type-Options: nosniff`를 붙입니다.
+- **제한 저장소 장애 — fail-closed**: 기존 `reserve`는 DB 오류 시 항상 차단하고 모바일 로그인은 이를 503으로 구분합니다. 같은 선례에 따라 장애 시 자료를 제공하지 않고 429가 아닌 503 `UNAVAILABLE`(Web은 평문 503)을 반환합니다. 제한 저장소와 자료 메타데이터가 같은 PostgreSQL에 있어 장애 시 조회도 대부분 실패하므로, fail-open으로 얻는 가용성은 거의 없고 제한 우회 위험만 생기기 때문입니다.
+- **OpenAPI**: 기존 path item은 append-only gate로 바꿀 수 없으므로 429를 각 operation에 추가하지 않고 신규 `components.responses.ResourceRateLimited`(파일 경로는 `ResourceFileRateLimited`)와 `components.schemas.ResourceRateLimitedError`로 기록합니다. operation별 표기 정리는 [#439](https://github.com/yeongseon/hra-website/issues/439)의 기존 operation 정리와 함께 다룹니다.
+- 모바일 클라이언트는 위 「모바일 클라이언트 필수 계약」의 429 규칙대로 `Retry-After`만큼 기다리며 즉시 반복하지 않습니다.
+
 ## 본인 과제·제출·파일 MVP
 
-모든 학사 경로는 기존 Auth.js **Web 세션 쿠키**를 사용합니다. 모바일 Bearer·refresh 인증은 #273에서 구현하며, 이 API 추가가 모바일 로그인이나 학사 운영 활성화를 뜻하지 않습니다. 기존 `ACADEMIC_ENABLED`·쓰기/업로드 gate와 현재 학적·과제 대상·개인 파일 인가를 그대로 적용합니다. 일반 `ADMIN`·`FACULTY` 역할에 학생 과제 권한을 추가하지 않습니다.
+OpenAPI의 `Origin` 헤더는 쿠키 요청에서만 필수이며(`required: false`로 표기) 검증된 Bearer 요청은 Origin 검사를 생략합니다. 인증별 응답 구분은 `Vary: Cookie, Authorization`입니다. JSON 크기·서명 callback·소유권·파일 감사 등 나머지 보호는 전송 방식과 무관하게 유지합니다.
+
+모든 학사 경로는 서버 작업 반영 후 Auth.js **Web 세션 쿠키 또는 모바일 Bearer**를 사용합니다. 이 계약 추가가 모바일 인증 배포나 학사 운영 활성화를 뜻하지 않습니다. 기존 `ACADEMIC_ENABLED`·쓰기/업로드 gate와 현재 학적·과제 대상·개인 파일 인가를 그대로 적용합니다. 일반 `ADMIN`·`FACULTY` 역할에 학생 과제 권한을 추가하지 않습니다.
 
 | 메서드·경로 | 제공하는 결과 |
 | --- | --- |

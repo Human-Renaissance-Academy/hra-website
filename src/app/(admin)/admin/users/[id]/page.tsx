@@ -1,4 +1,4 @@
-import { eq, isNotNull } from "drizzle-orm";
+/** 관리자 회원 상세 Web 화면으로 UUID·누락 처리와 최소 표시 props를 담당합니다. */
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -8,9 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { cohortNumberDesc } from "@/lib/db/cohort-order";
-import { cohorts, users } from "@/lib/db/schema";
+import { getAdminUser, listAdminCohorts } from "@/features/users/admin/service";
 import { formatKstDateTime as formatDate } from "@/lib/date-time";
 import { UserRoleButton } from "../_components/user-role-button";
 
@@ -30,26 +28,10 @@ export default async function AdminUserDetailPage({ params }: AdminUserDetailPag
   }
 
   // 사용자 정보와 기수 목록을 병렬 조회
-  const [[user], cohortList] = await Promise.all([
-    db
-      .select({
-        id: users.id,
-        name: users.name,
-        email: users.email,
-        role: users.role,
-        cohortId: users.cohortId,
-        image: users.image,
-        createdAt: users.createdAt,
-        updatedAt: users.updatedAt,
-        hasPassword: isNotNull(users.passwordHash),
-      })
-      .from(users)
-      .where(eq(users.id, parsedId.data))
-      .limit(1),
-    db
-      .select({ id: cohorts.id, name: cohorts.name })
-      .from(cohorts)
-      .orderBy(cohortNumberDesc(cohorts.name)),
+  const actor = { userId: session.user.id, role: session.user.role };
+  const [user, cohortList] = await Promise.all([
+    getAdminUser(actor, parsedId.data),
+    listAdminCohorts(actor),
   ]);
 
   if (!user) {

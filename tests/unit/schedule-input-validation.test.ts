@@ -29,7 +29,10 @@ function scheduleForm(overrides: Record<string, string> = {}) {
 }
 
 describe("일정 날짜·시간 검증", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.requireAdmin.mockResolvedValue({ user: { id: "admin-1", role: "ADMIN" } });
+  });
 
   it.each(["2026-13-45", "2026-02-30", "0001-01-01", "not-a-date"])("잘못된 날짜 %s를 거부한다", async (eventDate) => {
     const result = await createScheduleEvent({ success: false, message: "" }, scheduleForm({ eventDate }));

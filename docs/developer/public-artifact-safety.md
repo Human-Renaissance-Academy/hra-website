@@ -21,6 +21,17 @@ node --test scripts/tests/public-artifact-policy.test.mjs
 
 검사 로그는 성공 표식 `PUBLIC_ARTIFACT_SAFE` 또는 실패 표식 `PUBLIC_ARTIFACT_REJECTED`만 출력하며 파일 경로·원문·예외를 기록하지 않는다. 이 게이트는 세 JSON의 알려진 공개 계약과 대표 위험 패턴을 검증하는 방어층이다. 모든 개인정보·비밀정보 부재를 증명하지 않으며 숫자에 인코딩한 정보나 악의적으로 수정한 생산자까지 완전히 탐지하지 않는다. 소스·Git history 검사와 별도로 유지한다. 임의 스캐너 원본 결과를 새 산출물로 업로드하지 않는다.
 
+## JSON 보고서가 아닌 산출물
+
+위 세 JSON 보고서 외에 모바일 workflow 두 개가 산출물을 올립니다. 이 파일들은 `check-public-artifact.mjs`의 종류 검사 대상이 아니므로 아래 근거로만 허용하며, 공개 저장소에서 계속 보관할지는 소유자가 정합니다.
+
+| workflow | 산출물 | 내용과 근거 |
+| --- | --- | --- |
+| `mobile.yml` | `hra-android-debug` (debug APK, 7일) | 공개 소스의 debug 빌드입니다. 운영 API 주소와 비밀값을 주입하지 않으며, 같은 방식으로 로컬에서 만든 APK의 압축을 풀어 비밀 패턴이 없음을 확인했습니다. 생성 프로젝트의 기본 debug 키로 서명되어 배포용이 아닙니다. |
+| `mobile-server-e2e.yml` | `mobile-server-failure` (실패 때만, 7일) | 환경을 비운 빌드 출력과 하네스 출력입니다. 하네스는 고정 사례명·오류 코드·소스 위치와 토큰·비밀번호 패턴을 걸러낸 모듈 로드 오류 한 줄만 출력합니다. |
+
+두 workflow 모두 `secrets.*`를 참조하지 않습니다. 이 근거는 현재 하네스의 출력 계약과 APK 설정에 의존하므로 그 둘을 바꿀 때 다시 확인해야 합니다.
+
 ## 공개 문서·테스트의 대표 개인정보 표식
 
 ```bash

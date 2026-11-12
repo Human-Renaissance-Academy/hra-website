@@ -33,6 +33,7 @@ Blob은 파일의 실제 내용을 저장하는 곳입니다. 공개 Blob은 주
 
 - 서버는 저장된 파일 URL이나 사용자가 보낸 URL을 범용 프록시 대상으로 받지 않는다. 자료 종류와 DB ID로 행을 다시 찾고, 현재 DB에 연결된 로그인 계정의 역할과 자료 대상(`audience`)을 검사한 뒤 그 행의 비공개 Blob만 읽는다. 인증·인가 실패 응답에는 파일 주소와 존재 여부를 담지 않는다.
 - 비공개 응답에는 `Cache-Control: private, no-store`와 `X-Content-Type-Options: nosniff`를 설정한다. CDN 공유 캐시를 사용하지 않는다. PDF 미리보기와 다운로드는 같은 권한 검사 경로를 쓴다.
+- 인증·역할 확인을 통과한 요청만 사용자별 조회 빈도 제한(#444)에 기록한다. Web 다운로드와 `/api/v1/resources/*`, Web 쿠키와 모바일 Bearer가 같은 예산을 공유하며 초과는 429와 `Retry-After`, 제한 저장소 장애는 파일을 제공하지 않는 503이다. 정책 값과 근거는 [API v1 문서](developer/api-v1.md#resource-read-rate-limit)를 따른다.
 - Microsoft Office Online에 문서 URL을 전달하면 Microsoft 서비스가 파일을 가져갈 수 있고, 전달된 주소가 뷰어·브라우저 기록에 남을 수 있다. 보호 자료의 Office 외부 미리보기를 중단하고 DOC/DOCX/PPT/PPTX/HWP를 인증 후 다운로드로 제공한다. PDF는 사이트 내부 뷰어로 제공한다.
 - Vercel의 단기 서명 URL도 만료 전에는 링크 소지자가 재사용할 수 있다. 계정 역할 변경 직후 접근 차단을 보장해야 하는 기본 다운로드 경로에는 사용하지 않는다. 제3자 미리보기를 허용하는 별도 정책을 정할 때만 만료 시간과 제3자 제공 범위를 다시 검토한다.
 

@@ -34,7 +34,7 @@ function dependencyChanges(snapshot, recorded) {
     const actual = actualPackages.get(name);
     const expected = recordedPackages.get(name);
     if (!actual || !expected) { add(actual ? 'PACKAGE_ONLY_IN_AUDIT' : 'PACKAGE_ONLY_IN_POLICY', name); continue; }
-    if (actual.severity !== expected.severity || actual.range !== expected.range) add('PACKAGE_METADATA_CHANGED', name);
+    if (actual.severity !== expected.severity) add('PACKAGE_METADATA_CHANGED', name);
     const actualNodes = new Map(actual.nodes.map(node => [node.path, node]));
     const recordedNodes = new Map(expected.nodes.map(node => [node.path, node]));
     for (const path of new Set([...actualNodes.keys(), ...recordedNodes.keys()])) {
@@ -68,7 +68,7 @@ function dependencyChanges(snapshot, recorded) {
 export function dependencyDiagnosticLines(error) {
   if (!(error instanceof Error) || !/^DEPENDENCY_[A-Z_]+$/.test(error.message)) return ['DEPENDENCY_CHECK_FAILED'];
   const lines = [error.message];
-  if (error.message === 'DEPENDENCY_TRIAGE_CHANGED' && Array.isArray(error.diagnostics)) {
+  if (['DEPENDENCY_TRIAGE_CHANGED', 'DEPENDENCY_LOCK_REGISTRY_INVALID'].includes(error.message) && Array.isArray(error.diagnostics)) {
     for (const item of error.diagnostics) lines.push(`DEPENDENCY_CHANGE ${canonical(item)}`);
   }
   return lines;
@@ -77,12 +77,35 @@ export function dependencyDiagnosticLines(error) {
 const contextFields = ['usedApi', 'callLocations', 'assessment', 'residualAssumptions'];
 const contextKeys = ['assessment', 'callLocations', 'id', 'residualAssumptions', 'usedApi'].join(',');
 const assessmentKeys = ['attackCondition', 'contextId', 'key', 'owner', 'priority', 'reviewBy', 'reviewedOn'].join(',');
+/** 모든 lock `resolved`가 공식 npm registry를 가리키는지 확인한다(워크스페이스 link 제외). 외부 피드 주소는 출력하지 않고 설치 경로만 진단한다(#432). */
+export function lockRegistryViolations(lock) {
+  if (!lock?.packages || typeof lock.packages !== 'object') throw new Error('DEPENDENCY_REPORT_INVALID');
+  return Object.entries(lock.packages)
+    .filter(([, pkg]) => pkg && pkg.link !== true && pkg.resolved !== undefined && !(typeof pkg.resolved === 'string' && pkg.resolved.startsWith('https://registry.npmjs.org/')))
+    .map(([path]) => ({ kind: 'RESOLVED_NOT_OFFICIAL_REGISTRY', path: safeLabel(path) }))
+    .sort((a, b) => a.path.localeCompare(b.path));
+}
 /** 변경/누락/만료/미분류/P1은 차단한다. 공유 맥락은 검토 책임과 위험 수용 권한을 대체하지 않는다. */
 export function verifyDependencyPolicy(audit, lock, policy, today = new Date().toISOString().slice(0, 10)) {
+  const registryViolations = lockRegistryViolations(lock);
+  if (registryViolations.length) {
+    const error = new Error('DEPENDENCY_LOCK_REGISTRY_INVALID');
+    error.diagnostics = registryViolations.slice(0, 20);
+    throw error;
+  }
   const snapshot = dependencySnapshot(audit, lock);
   if (!policy || policy.schemaVersion !== 2 || !Array.isArray(policy.packages)
     || !Array.isArray(policy.contexts) || !Array.isArray(policy.assessments)) throw new Error('DEPENDENCY_TRIAGE_CHANGED');
-  if (canonical(snapshot) !== canonical(policy.packages)) {
+  // npm의 metavulnerability 분석이 만든 상위 패키지 range는 registry의 새 배포만으로 바뀔 수 있다.
+  // 실제 설치된 nodes, severity, via 권고·전이 링크는 정확 일치로 유지한다.
+  // via의 개별 advisory range가 바뀌면 그대로 차단하며 누락·손상된 원장 range도 허용하지 않는다.
+  const stableSnapshot = packages => packages.map(pkg => {
+    if (!pkg || typeof pkg.range !== 'string' || !pkg.range.trim()) throw new Error('DEPENDENCY_TRIAGE_CHANGED');
+    const securityIdentity = { ...pkg };
+    delete securityIdentity.range;
+    return securityIdentity;
+  });
+  if (canonical(stableSnapshot(snapshot)) !== canonical(stableSnapshot(policy.packages))) {
     const error = new Error('DEPENDENCY_TRIAGE_CHANGED');
     error.diagnostics = dependencyChanges(snapshot, policy.packages);
     throw error;
@@ -98,7 +121,10 @@ export function verifyDependencyPolicy(audit, lock, policy, today = new Date().t
     contextTexts.add(text);
     contexts.set(item.id, item);
   }
-  const required = snapshot.flatMap(pkg => pkg.via.map(via => `${pkg.name}:${via.source ?? via.dependency}`));
+  // 한 패키지가 버전이 다른 같은 이름의 전이 패키지를 여러 경로에 두면 npm은 같은 `dependency` 링크를 중복해 보고한다.
+  // 링크 자체는 위의 snapshot 정확 일치로 이미 고정했으므로, 평가 키는 중복을 합쳐 한 번만 요구한다(#446 모바일 lock).
+  // advisory 키는 source 번호를 포함하므로 서로 다른 권고가 합쳐지지 않는다.
+  const required = [...new Set(snapshot.flatMap(pkg => pkg.via.map(via => `${pkg.name}:${via.source ?? via.dependency}`)))];
   if (policy.assessments.some(item => !item || typeof item.key !== 'string')) throw new Error('DEPENDENCY_TRIAGE_MISSING');
   if (policy.assessments.length !== required.length || new Set(policy.assessments.map(item => item.key)).size !== required.length) throw new Error('DEPENDENCY_TRIAGE_MISSING');
   const usedContexts = new Set();

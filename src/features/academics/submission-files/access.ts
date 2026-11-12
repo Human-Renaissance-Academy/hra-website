@@ -4,6 +4,7 @@
  */
 import "server-only";
 import { auth } from "@/lib/auth";
+import { freshMobilePrincipalIdentity } from "@/lib/api-v1-principal";
 import { canManageAcademics } from "@/lib/academic-access";
 import { isValidUuid } from "@/lib/auth-session";
 
@@ -34,14 +35,17 @@ export interface SubmissionFileReader {
 
 /** 인증·역할·전체 기능 gate를 먼저 검사하여 비활성 환경에서 학사 표를 조회하지 않습니다. */
 export async function requireSubmissionFileReader(): Promise<SubmissionFileReader> {
-  let session;
-  try { session = await auth(); }
+  let user;
+  try {
+    const mobile = await freshMobilePrincipalIdentity();
+    user = mobile === undefined ? (await auth())?.user : mobile;
+  }
   catch { throw new SubmissionFileAccessError("UNAVAILABLE"); }
-  if (!session?.user || !isValidUuid(session.user.id)) throw new SubmissionFileAccessError("UNAUTHENTICATED");
+  if (!user || !isValidUuid(user.id)) throw new SubmissionFileAccessError("UNAUTHENTICATED");
   const configured = process.env.ACADEMIC_APPROVER_USER_ID;
-  const management = canManageAcademics(session.user, configured);
-  if (!management && session.user.role !== "MEMBER") throw new SubmissionFileAccessError("FORBIDDEN");
+  const management = canManageAcademics(user, configured);
+  if (!management && user.role !== "MEMBER") throw new SubmissionFileAccessError("FORBIDDEN");
   if (process.env.ACADEMIC_ENABLED !== "true") throw new SubmissionFileAccessError("DISABLED");
-  return { userId: session.user.id, scope: management ? "MANAGEMENT" : "OWNER",
+  return { userId: user.id, scope: management ? "MANAGEMENT" : "OWNER",
     approverId: isValidUuid(configured) ? configured : null };
 }

@@ -10,13 +10,19 @@
 
 | 정본 | 유일한 책임 | 주요 필드 | 일관성을 강제하는 검사 |
 | --- | --- | --- | --- |
-| `scripts/db/source-inventory.json` | 저장소의 DB 관련 SQL·관리 MJS의 **존재·역할·원본 바이트 해시·후보 선행 관계·G1 순서** 목록 | `sql[]`(`path`, `role`, `sha256`, `id`, `predecessors`), `scripts[]`(`path`, `sha256`, `effect`, `defaultBehavior`, `writeOptions`, `commands`), `g1Order` | `scripts/_lib/db-source-inventory.mjs`, `scripts/check-db-source-inventory.mjs`, `scripts/tests/db-source-inventory.test.mjs`, `scripts/tests/schema-plan-cli.test.mjs` |
+| `scripts/db/source-inventory.json` | 저장소의 DB 관련 SQL·관리 MJS의 **존재·역할·원본 바이트 해시·후보 선행 관계·G1 순서** 목록 | `sql[]`(`path`, `role`, `sha256`, `id`, `predecessors`), `scripts[]`(`path`, `sha256`, `effect`, `defaultBehavior`, `writeOptions`, `commands`), `g1Order` | `scripts/_lib/db-source-inventory.mjs`, `scripts/check-db-source-inventory.mjs`, `scripts/tests/db-source-inventory.test.mjs`, `scripts/tests/db-plan-cli.test.mjs` |
 | `scripts/db/installation-contract.json` | 각 소스가 **어떤 DB 객체를 정의·요구하는지**와 fresh 설치 준비 상태(`include`/`exclude`/`unresolved`)의 의미 대응 | `inventoryRef`, `schemaExport`, `sources[]`(`ref`, `phase`, `fresh`, `objects`, `requires`, `checks`, `evidence`, `unresolved`), `objects[]`(`id`, `kind`, `names`, `owner`, `definitions`, `requires`, …), `fixtures[]`(`steps`, `exclusions`) | `scripts/_lib/db-installation-contract.mjs`, `scripts/check-db-installation-contract.mjs`, `scripts/tests/db-installation-contract.test.mjs` |
-| `scripts/db/candidates/db-fresh/*.sql` (18개) | 빈 DB 신규 설치 검증용 **SQL 본문**(원본에서 transaction 제어 등만 검토해 변환한 사본) | SQL 원문 + 머리 주석(`원본 참조`, `검토 원본 SHA256`, `reviewedDelta`, `원본→후보 보존 행`) | `scripts/tests/db-fresh-candidate-export.test.mjs`, `db-fresh-candidate-custom.test.mjs`, `db-fresh-candidate-g1.test.mjs`, `tests/integration/db-fresh-reference.test.mjs` (전용 `_lib` 검증기는 없고 테스트가 직접 검사) |
+| `scripts/db/candidates/db-fresh/*.sql` (`db-fresh-candidate-*` 검증 대상 전체) | 빈 DB 신규 설치 검증용 **SQL 본문**(원본에서 transaction 제어 등만 검토해 변환한 사본) | SQL 원문 + 머리 주석(`원본 참조`, `검토 원본 SHA256`, `reviewedDelta`, `원본→후보 보존 행`) | `scripts/tests/db-fresh-candidate-export.test.mjs`, `db-fresh-candidate-custom.test.mjs`, `db-fresh-candidate-g1.test.mjs`, `db-mobile-session-candidate.test.mjs`, `tests/integration/db-fresh-reference.test.mjs` (전용 `_lib` 검증기는 없고 테스트가 직접 검사) |
 | `scripts/db/migration-manifest.json` | **운영 후보로 검토한 versioned SQL의 순서·ID·해시**(현재 비어 있음) | `schemaVersion`, `state`, `executionContract`, `migrations[]`(`id`, `sequence`, `path`, `sha256`, `transaction`) | `scripts/_lib/db-migration-manifest.mjs`, `scripts/check-db-migration-manifest.mjs`, `scripts/tests/db-migration-manifest.test.mjs` |
 | `scripts/_lib/db-*.mjs` | 위 정본을 **입력으로 받아 판정**하는 순수 검증기. 파일·Git·DB에 직접 접근하지 않음(`db-migration-local-engine.mjs`는 소유 로컬 PostgreSQL 전용 적용기) | 위 정본에 없음(진단 코드만 반환) | 각 검증기 옆의 `scripts/tests/db-*.test.mjs`, `db-migration-local-engine.test.mjs`, `db-migration-catalog.test.mjs` |
 
-현재 규모: inventory SQL 35개(`fresh_candidate` 18, `versioned_candidate` 10, `current_definition_or_installer` 6, `read_only_preflight` 1)와 MJS 18개, 계약의 `sources` 53개·`objects` 52개·`fixtures` 2개.
+현재 규모는 문서에 고정하지 않고 아래 명령으로 확인합니다. 숫자는 SQL·MJS·계약을 바꿀 때마다 달라지므로 이 문서를 함께 고치지 않습니다.
+
+- `node scripts/check-db-source-inventory.mjs`: inventory의 SQL·MJS 개수를 출력합니다.
+- `node scripts/check-db-installation-contract.mjs`: 계약의 `counts`(`sources`, `objects`, `requiredUnresolved`)를 JSON으로 출력합니다.
+- 역할별 SQL 개수(`fresh_candidate`, `versioned_candidate`, `current_definition_or_installer`, `read_only_preflight`)와 `fixtures` 개수는 `source-inventory.json`의 `sql[].role`, `installation-contract.json`의 `fixtures[]`에서 셉니다.
+
+(참고: 작성 시점 `origin/main` 기준 inventory SQL 37개·MJS 18개, 계약 `sources` 55개·`objects` 53개·`requiredUnresolved` 79개·`fixtures` 2개. 이 값은 갱신하지 않는 참고용입니다.)
 
 ## 2. 실제로 중복되는 필드
 
@@ -26,7 +32,7 @@
 
 | 해시 | 기록 위치 | 확인 예 |
 | --- | --- | --- |
-| 원본 SQL/MJS 바이트 | `source-inventory.json`의 `sha256`(53개) | `scripts/migrate-protect-application-answers.sql` = `c6adf77d…` |
+| 원본 SQL/MJS 바이트 | `source-inventory.json`의 `sha256`(SQL·MJS 항목마다 1개) | `scripts/migrate-protect-application-answers.sql` = `c6adf77d…` |
 | 후보 SQL 바이트 | `source-inventory.json`의 후보 항목 `sha256` + `db-fresh-candidate-custom.test.mjs`의 `digest` | `custom-protect-application-answers.sql` = `1f208455…`가 두 파일에 모두 있음 |
 | 원본 해시의 후보 머리 주석 사본 | 후보 SQL의 `-- 검토 원본 SHA256:` + 원본의 inventory `sha256` | `g1-roster.sql` 머리 주석과 inventory가 `fef40d56…`를 공유 (g1 테스트가 대조) |
 | 생성 export 해시 | `schema-export.sql`의 inventory `sha256` + `db-fresh-candidate-export.test.mjs`의 `rawDigest`/`candidateDigest`/`schemaDigest` | `0ed45733…`가 inventory와 export 테스트에 함께 있음 |
@@ -47,7 +53,7 @@
 ### 2.4 스크립트 목록
 
 - inventory `scripts[].commands`는 `package.json`의 `db:*` 명령과 정확히 일치해야 합니다(`UNREGISTERED_COMMAND`).
-- `db-source-inventory.test.mjs`의 기대 표(`effect`, `defaultBehavior`)와 `schema-plan-cli.test.mjs`의 사례 목록이 같은 스크립트의 동작을 다시 적습니다.
+- `db-source-inventory.test.mjs`의 기대 표(`effect`, `defaultBehavior`)와 `db-plan-cli.test.mjs`의 사례 목록이 같은 스크립트의 동작을 다시 적습니다.
 
 ## 3. 현재 수동 수정 지점
 
@@ -55,7 +61,7 @@
 
 | 커밋 | 변경 내용 | 전체 파일 | 검증 정본·테스트 수정 지점 |
 | --- | --- | --- | --- |
-| `9c987d5` | 기존 MJS 1개의 DB 접근 차단 | 7 | inventory(해시 + `defaultBehavior`), 계약(`reason`/`checks`/`evidence`), `db-source-inventory.test.mjs`, `schema-plan-cli.test.mjs`, `package.json` = **5** (나머지: 스크립트 본체, 절차 문서) |
+| `9c987d5` | 기존 MJS 1개의 DB 접근 차단 | 7 | inventory(해시 + `defaultBehavior`), 계약(`reason`/`checks`/`evidence`), `db-source-inventory.test.mjs`, `db-plan-cli.test.mjs`, `package.json` = **5** (나머지: 스크립트 본체, 절차 문서) |
 | `fc93082` | 같은 유형의 MJS 1개 | 7 | 위와 같은 **5** |
 | `1fa2537` | MJS + 후보 SQL 1개 | 11 | 위 5 + 후보 SQL, `db-fresh-reference.test.mjs`(고정 해시), `ci.yml` = **8** (나머지: 스크립트 본체, 절차 문서, 부가 문서) |
 
@@ -67,7 +73,7 @@
 2. `source-inventory.json`: `path`, `role`, `sha256`, `id`, `predecessors`
 3. `installation-contract.json`: `sources[]` 항목 + 관련 `objects[]` + `evidence` 줄 번호 + fixture `steps` 또는 `exclusions`
 4. fresh 후보가 필요하면 후보 SQL 본체(머리 주석의 원본 해시 포함)와 `db-fresh-candidate-*.test.mjs`의 검토 표(`digest`, `edits`)
-5. 필요할 때만: `package.json` 명령, `schema-plan-cli.test.mjs` 사례, [절차 문서](database-change-procedure.md)의 개수 설명
+5. 필요할 때만: `package.json` 명령, `db-plan-cli.test.mjs` 사례, [절차 문서](database-change-procedure.md)의 개수 설명
 
 SQL 1개 추가 시 최소 3곳(파일·inventory·계약), fresh 후보까지 포함하면 약 5곳입니다.
 

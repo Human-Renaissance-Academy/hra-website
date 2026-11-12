@@ -73,6 +73,7 @@ src/
 - Android/iOS 별도 앱을 만들지 않는다. 하나의 React Native 코드베이스를 유지한다.
 - Microservice, 메시지 브로커, 분산 트랜잭션은 실제 독립 확장 요구가 생기기 전까지 도입하지 않는다.
 - 기존 학사 DB 제약·인가·Private Blob·rate limit·audit·통합 테스트를 구조 개편 편의를 위해 완화하지 않는다.
+- `apps/mobile`은 루트 typecheck와 lint에서 제외된 독립 npm 프로젝트로 존재하며, 모바일 토큰은 `/api/v1` 어댑터([모바일 요청 주체 어댑터](docs/developer/mobile-principal-adapter.md))에서만 수용한다.
 
 > untouched legacy 코드는 #271에서 module 단위로 이동하기 전까지 기존 경로를 유지할 수 있다. 새 코드는 legacy 직접 DB 패턴을 복제하지 않는다.
 

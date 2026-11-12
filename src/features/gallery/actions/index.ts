@@ -4,19 +4,17 @@
  * 갤러리 서버 액션 모음
  *
  * 역할:
- * - 갤러리 메타데이터를 GitHub JSON 파일 대신 DB에 직접 저장합니다.
+ * - 검증한 갤러리 입력을 관리자 서비스에 전달합니다.
  * - 이미지 파일만 Vercel Blob에 업로드/삭제합니다.
  * - 관리자 페이지와 공개 페이지가 최신 데이터를 바로 보도록 경로를 재검증합니다.
  */
 
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod/v4";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { reorderByCase } from "@/lib/db/reorder";
-import { galleries, galleryImages } from "@/lib/db/schema";
+import * as galleryService from "@/features/gallery/admin/service";
+import type { GalleryActor } from "@/features/gallery/admin/service";
 import { logServerError } from "@/lib/errors";
 import { validateGalleryUploadReference } from "@/lib/gallery-upload-server";
 
@@ -66,26 +64,13 @@ function revalidateGalleryPaths(id: string) {
   revalidatePath(`/admin/gallery/${id}/edit`);
 }
 
-async function getGalleryWithImages(id: string) {
-  const gallery = await db.query.galleries.findFirst({
-    where: eq(galleries.id, id),
-    with: {
-      images: {
-        orderBy: [asc(galleryImages.order), asc(galleryImages.createdAt)],
-      },
-    },
-  });
-
-  return gallery ?? null;
-}
-
-async function getValidatedGallery(id: string) {
+async function getValidatedGallery(actor: GalleryActor, id: string) {
   const parsedId = idSchema.safeParse(id);
   if (!parsedId.success) {
     return { error: parsedId.error.issues[0]?.message ?? "잘못된 ID입니다." } as const;
   }
 
-  const gallery = await getGalleryWithImages(parsedId.data);
+  const gallery = await galleryService.getGallerySnapshot(actor, parsedId.data);
   if (!gallery) {
     return { error: "앨범을 찾을 수 없습니다." } as const;
   }
@@ -94,7 +79,8 @@ async function getValidatedGallery(id: string) {
 }
 
 export async function createGallery(formData: FormData): Promise<GalleryActionState> {
-  await requireAdmin();
+  const session = await requireAdmin();
+  const actor = { userId: session.user.id, role: session.user.role };
 
   const parsed = gallerySchema.safeParse({
     title: normalizeText(formData.get("title")),
@@ -105,14 +91,7 @@ export async function createGallery(formData: FormData): Promise<GalleryActionSt
     return initialError(parsed.error.issues[0]?.message ?? "입력값을 확인해주세요.");
   }
 
-  const [createdGallery] = await db
-    .insert(galleries)
-    .values({
-      title: parsed.data.title,
-      description: parsed.data.description ?? null,
-      coverImageUrl: null,
-    })
-    .returning({ id: galleries.id });
+  const createdGallery = await galleryService.createAdminGallery(actor, parsed.data);
 
   if (!createdGallery) {
     return initialError("앨범 생성에 실패했습니다.");
@@ -123,7 +102,8 @@ export async function createGallery(formData: FormData): Promise<GalleryActionSt
 }
 
 export async function updateGallery(id: string, formData: FormData): Promise<GalleryActionState> {
-  await requireAdmin();
+  const session = await requireAdmin();
+  const actor = { userId: session.user.id, role: session.user.role };
 
   const parsed = gallerySchema.safeParse({
     title: normalizeText(formData.get("title")),
@@ -134,36 +114,29 @@ export async function updateGallery(id: string, formData: FormData): Promise<Gal
     return initialError(parsed.error.issues[0]?.message ?? "입력값을 확인해주세요.");
   }
 
-  const galleryResult = await getValidatedGallery(id);
+  const galleryResult = await getValidatedGallery(actor, id);
   if ("error" in galleryResult) {
     return initialError(galleryResult.error ?? "앨범을 찾을 수 없습니다.");
   }
 
-  await db
-    .update(galleries)
-    .set({
-      title: parsed.data.title,
-      description: parsed.data.description ?? null,
-    })
-    .where(eq(galleries.id, galleryResult.gallery.id));
+  await galleryService.updateAdminGallery(actor, galleryResult.gallery.id, parsed.data);
 
   revalidateGalleryPaths(galleryResult.gallery.id);
   return successState("앨범 정보가 수정되었습니다.");
 }
 
 export async function deleteGallery(id: string): Promise<GalleryActionState> {
-  await requireAdmin();
+  const session = await requireAdmin();
+  const actor = { userId: session.user.id, role: session.user.role };
 
-  const galleryResult = await getValidatedGallery(id);
+  const galleryResult = await getValidatedGallery(actor, id);
   if ("error" in galleryResult) {
     return initialError(galleryResult.error ?? "앨범을 찾을 수 없습니다.");
   }
 
   // 기존 이미지의 업로드 소유권이 확인되지 않아 파일은 보존합니다.
   // DB 삭제가 실패해도 원본 사진은 계속 열 수 있어야 합니다 (#93).
-  const [deleted] = await db.delete(galleries)
-    .where(eq(galleries.id, galleryResult.gallery.id))
-    .returning({ id: galleries.id });
+  const deleted = await galleryService.deleteAdminGallery(actor, galleryResult.gallery.id);
   if (!deleted) return initialError("앨범을 찾을 수 없습니다.");
 
   revalidateGalleryPaths(galleryResult.gallery.id);
@@ -172,6 +145,7 @@ export async function deleteGallery(id: string): Promise<GalleryActionState> {
 
 export async function addGalleryImages(id: string, formData: FormData): Promise<GalleryActionState> {
   const session = await requireAdmin();
+  const actor = { userId: session.user.id, role: session.user.role };
 
   const parsed = galleryImageBulkSchema.safeParse({
     alt: normalizeOptionalText(formData.get("alt")),
@@ -189,7 +163,7 @@ export async function addGalleryImages(id: string, formData: FormData): Promise<
     return initialError("업로드한 이미지 정보를 확인할 수 없습니다.");
   }
 
-  const galleryResult = await getValidatedGallery(id);
+  const galleryResult = await getValidatedGallery(actor, id);
   if ("error" in galleryResult) {
     return initialError(galleryResult.error ?? "앨범을 찾을 수 없습니다.");
   }
@@ -200,39 +174,22 @@ export async function addGalleryImages(id: string, formData: FormData): Promise<
   if (checks.some((valid) => !valid)) {
     return initialError("업로드한 이미지 정보를 확인할 수 없습니다. 다시 시도해주세요.");
   }
-  const existingImages = await db.select({ url: galleryImages.url }).from(galleryImages)
-    .where(inArray(galleryImages.url, parsedUrls.data));
-  if (existingImages.length > 0) return initialError("이미 등록된 이미지가 포함되어 있습니다.");
-  const baseOrder = galleryResult.gallery.images.length;
-
-  try {
-    await db.insert(galleryImages).values(
-      parsedUrls.data.map((url, index) => ({
-        galleryId: galleryResult.gallery.id,
-        url,
-        alt: parsed.data.alt ?? null,
-        order: baseOrder + index,
-      })),
-    );
-  } catch (error) {
-    logServerError("gallery/add-images-insert", error, { galleryId: galleryResult.gallery.id });
-    // DB 응답이 실패해도 INSERT가 계속 진행 중이거나 커밋됐을 수 있습니다.
-    // 즉시 조회에서 참조가 안 보여도 삭제 근거가 되지 않으므로 파일을 보존합니다.
-    return initialError("이미지 저장 중 오류가 발생했습니다. 앨범을 확인해주세요.");
-  }
-
-  const firstUrl = parsedUrls.data[0];
-  if (!galleryResult.gallery.coverImageUrl && firstUrl) {
-    try {
-      await db
-        .update(galleries)
-        .set({ coverImageUrl: firstUrl })
-        .where(eq(galleries.id, galleryResult.gallery.id));
-    } catch (error) {
-      // 이미지 행이 이미 저장됐으므로 파일을 지우거나 전체 실패로 돌리지 않습니다.
-      logServerError("gallery/add-images-cover", error, { galleryId: galleryResult.gallery.id });
+  const result = await galleryService.saveGalleryImages(actor, {
+    gallery: galleryResult.gallery, urls: parsedUrls.data, alt: parsed.data.alt,
+  });
+  switch (result.kind) {
+    case "duplicate": return initialError("이미 등록된 이미지가 포함되어 있습니다.");
+    case "insert-error":
+      logServerError("gallery/add-images-insert", result.error, { galleryId: galleryResult.gallery.id });
+      return initialError("이미지 저장 중 오류가 발생했습니다. 앨범을 확인해주세요.");
+    case "cover-error":
+      logServerError("gallery/add-images-cover", result.error, { galleryId: galleryResult.gallery.id });
       revalidateGalleryPaths(galleryResult.gallery.id);
       return successState("이미지는 추가됐지만 대표 사진 설정에 실패했습니다. 앨범을 확인해주세요.");
+    case "saved": break;
+    default: {
+      const unreachable: never = result;
+      return unreachable;
     }
   }
 
@@ -247,7 +204,8 @@ export async function reorderGalleryImages(
   galleryId: string,
   orderedIds: string[]
 ): Promise<GalleryActionState> {
-  await requireAdmin();
+  const session = await requireAdmin();
+  const actor = { userId: session.user.id, role: session.user.role };
 
   const parsedGalleryId = idSchema.safeParse(galleryId);
   if (!parsedGalleryId.success) {
@@ -266,36 +224,16 @@ export async function reorderGalleryImages(
   }
   const validIds = parsedIds.data;
 
-  // 전달된 ID가 모두 해당 갤러리에 속한 이미지인지 검증
-  const existingImages = await db
-    .select({ id: galleryImages.id })
-    .from(galleryImages)
-    .where(
-      and(
-        eq(galleryImages.galleryId, parsedGalleryId.data),
-        inArray(galleryImages.id, validIds)
-      )
-    );
-
-  if (existingImages.length !== validIds.length) {
+  // 전달된 ID가 모두 해당 갤러리에 속한 이미지인지 서비스에서 검증합니다.
+  if (!(await galleryService.checkGalleryImageIds(actor, parsedGalleryId.data, validIds))) {
     return initialError("일부 이미지를 찾을 수 없습니다.");
   }
 
   try {
-    // 단일 UPDATE ... CASE 문으로 원자적으로 갱신 —
-    // extraWhere 로 galleryId 조건을 함께 걸어 다른 앨범 이미지가
-    // 사전 검증과 UPDATE 사이(TOCTOU) 에 끼어들어도 갱신되지 않도록 방어한다.
-    const { affected } = await reorderByCase({
-      table: galleryImages,
-      idColumn: galleryImages.id,
-      targetColumn: galleryImages.order,
-      // 갤러리는 0-based (0, 1, 2, ...) — alumni/press/faq(1-based) 와 다름
-      assignments: validIds.map((id, index) => ({ id, value: index })),
-      extraWhere: eq(galleryImages.galleryId, parsedGalleryId.data),
-    });
+    const { matched, affected } = await galleryService.reorderAdminImages(actor, parsedGalleryId.data, validIds);
 
     // 존재하지 않는 ID 또는 중복 ID 로 인해 일부만 갱신된 경우 방어
-    if (affected !== validIds.length) {
+    if (!matched) {
       logServerError(
         "gallery/reorder-images",
         new Error("update count mismatch"),
@@ -320,7 +258,8 @@ export async function reorderGalleryImages(
 }
 
 export async function deleteGalleryImage(id: string, imageId: string): Promise<GalleryActionState> {
-  await requireAdmin();
+  const session = await requireAdmin();
+  const actor = { userId: session.user.id, role: session.user.role };
 
   const parsedGalleryId = idSchema.safeParse(id);
   if (!parsedGalleryId.success) {
@@ -332,58 +271,19 @@ export async function deleteGalleryImage(id: string, imageId: string): Promise<G
     return initialError(parsedImageId.error.issues[0]?.message ?? "잘못된 이미지 ID입니다.");
   }
 
-  const gallery = await getGalleryWithImages(parsedGalleryId.data);
-  if (!gallery) {
-    return initialError("앨범을 찾을 수 없습니다.");
-  }
-
-  // 이미지가 해당 갤러리에 실제로 속한 항목인지 함께 검증합니다.
-  const targetImage = await db.query.galleryImages.findFirst({
-    where: and(
-      eq(galleryImages.id, parsedImageId.data),
-      eq(galleryImages.galleryId, parsedGalleryId.data),
-    ),
-  });
-
-  if (!targetImage) {
-    return initialError("이미지를 찾을 수 없습니다.");
-  }
-
-  // 이미지 행 삭제가 실패하거나 다른 관리자와 경합해도 파일은 보존합니다.
-  const [deleted] = await db
-    .delete(galleryImages)
-    .where(
-      and(
-        eq(galleryImages.id, parsedImageId.data),
-        eq(galleryImages.galleryId, parsedGalleryId.data),
-      ),
-    )
-    .returning({ id: galleryImages.id });
-
-  if (!deleted) return initialError("이미지를 찾을 수 없습니다.");
-
-  try {
-    // 삭제 직전의 앨범 스냅샷 대신 현재 DB의 남은 사진을 조회합니다.
-    // 다른 관리자가 대표 사진을 바꿨다면 조건이 맞지 않아 덮어쓰지 않습니다.
-    await db
-      .update(galleries)
-      .set({
-        coverImageUrl: sql<string | null>`(
-          SELECT ${galleryImages.url} FROM ${galleryImages}
-          WHERE ${galleryImages.galleryId} = ${parsedGalleryId.data}
-          ORDER BY ${galleryImages.order}, ${galleryImages.createdAt}
-          LIMIT 1
-        )`,
-      })
-      .where(and(
-        eq(galleries.id, parsedGalleryId.data),
-        eq(galleries.coverImageUrl, targetImage.url),
-      ));
-  } catch (error) {
-    // 사진 행은 이미 삭제됐으므로 DB 작업 전체를 실패로 돌리지 않습니다.
-    logServerError("gallery/delete-image-cover", error, { galleryId: parsedGalleryId.data });
-    revalidateGalleryPaths(parsedGalleryId.data);
-    return successState("이미지는 삭제됐지만 대표 사진 갱신에 실패했습니다. 앨범을 확인해주세요.");
+  const result = await galleryService.deleteAdminImage(actor, parsedGalleryId.data, parsedImageId.data);
+  switch (result.kind) {
+    case "missing-gallery": return initialError("앨범을 찾을 수 없습니다.");
+    case "missing-image": return initialError("이미지를 찾을 수 없습니다.");
+    case "cover-error":
+      logServerError("gallery/delete-image-cover", result.error, { galleryId: parsedGalleryId.data });
+      revalidateGalleryPaths(parsedGalleryId.data);
+      return successState("이미지는 삭제됐지만 대표 사진 갱신에 실패했습니다. 앨범을 확인해주세요.");
+    case "deleted": break;
+    default: {
+      const unreachable: never = result;
+      return unreachable;
+    }
   }
 
   revalidateGalleryPaths(parsedGalleryId.data);

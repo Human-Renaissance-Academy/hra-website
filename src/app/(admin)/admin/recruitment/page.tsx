@@ -24,9 +24,7 @@ import {
 } from "@/components/ui/table";
 import { RecruitmentRowActions } from "@/app/(admin)/admin/recruitment/_components/recruitment-row-actions";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { cohortNumberDesc } from "@/lib/db/cohort-order";
-import { cohorts } from "@/lib/db/schema";
+import { listAdminCohorts } from "@/features/recruitment/admin/service";
 import { logServerError } from "@/lib/errors";
 import { formatKstDate } from "@/lib/date-time";
 
@@ -40,22 +38,12 @@ const formatDate = (value: Date | null) => {
 
 export default async function AdminRecruitmentPage() {
   // 관리자 권한 확인
-  await requireAdmin();
+  const session = await requireAdmin();
 
   // 모든 기수 조회 (기수명에서 숫자만 추출해 내림차순 정렬: 20기 → 19기 → ... → 1기)
   const { rows, hasDbError } = await (async () => {
     try {
-      const rows = await db
-        .select({
-          id: cohorts.id,
-          name: cohorts.name,
-          description: cohorts.description,
-          isActive: cohorts.isActive,
-          startDate: cohorts.startDate,
-          endDate: cohorts.endDate,
-        })
-        .from(cohorts)
-        .orderBy(cohortNumberDesc(cohorts.name));
+      const rows = await listAdminCohorts({ userId: session.user.id, role: session.user.role });
 
       return { rows, hasDbError: false };
     } catch (error) {

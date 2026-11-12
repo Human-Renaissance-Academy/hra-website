@@ -1,31 +1,23 @@
-// 수료생 이야기 관리 목록 페이지 (관리자 전용)
-// 드래그앤드롭으로 공개 페이지 표시 순서를 변경할 수 있습니다.
+/**
+ * 수료생 이야기 관리 목록 페이지 (관리자 전용)
+ * 드래그앤드롭으로 공개 페이지 표시 순서를 변경할 수 있습니다.
+ * 세션을 확인하고 서비스의 표시용 목록을 전달합니다.
+ */
 
 import Link from "next/link";
-import { desc } from "drizzle-orm";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { alumniStories } from "@/lib/db/schema";
+import { listAdminItems } from "@/features/alumni/admin/service";
 import { AlumniSortableList } from "./_components/alumni-sortable-list";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminAlumniPage() {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   // 고정된 항목 먼저, 그 다음 작성일 최신순
-  const stories = await db
-    .select({
-      id: alumniStories.id,
-      name: alumniStories.name,
-      quote: alumniStories.quote,
-      content: alumniStories.content,
-      pinned: alumniStories.pinned,
-    })
-    .from(alumniStories)
-    .orderBy(desc(alumniStories.pinned), desc(alumniStories.createdAt));
+  const stories = await listAdminItems({ userId: session.user.id, role: session.user.role });
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10">
