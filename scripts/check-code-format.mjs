@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { check, format, getFileInfo } from "prettier";
+import { check, getFileInfo } from "prettier";
 import { isCommitSha, isFormatTarget, parseGitPaths } from "./_lib/format-scope.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -64,16 +64,6 @@ async function main() {
       const source = git("show", revision + file).toString("utf8");
       checked++;
       if (!(await check(source, { ...config, filepath: virtualFile }))) {
-        if (file === "scripts/tests/dependency-policy.test.mjs") {
-          // 임시 CI 진단: 공개 회귀 테스트 파일의 포맷 결과만 분할해 출력합니다.
-          const formatted = await format(source, { ...config, filepath: virtualFile });
-          const encoded = Buffer.from(formatted).toString("base64");
-          const chunkSize = 2048;
-          const count = Math.ceil(encoded.length / chunkSize);
-          for (let index = 0; index < count; index++) {
-            console.error("FORMAT_DEP_PART " + index + " " + count + " " + encoded.slice(index * chunkSize, (index + 1) * chunkSize));
-          }
-        }
         invalid.push(file);
       }
     }
