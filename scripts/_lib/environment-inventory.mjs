@@ -47,7 +47,6 @@ export const environmentInventory = {
     variable("ACADEMIC_UPLOAD_CLEANUP_DELETE_ENABLED", "application", "cleanup 실물 삭제 추가 승인", false, "cleanup 활성화와 별도 삭제 승인 후 true", "정확한 true가 아니면 dry-run. true여도 cleanup 실행 gate가 필요", active("false")),
     variable("ACADEMIC_APPROVER_USER_ID", "application", "검증된 학사 운영 책임자 UUID; 값 공개 금지", false, "학사 승인·운영 인가 및 적용 backfill", "누락·유효하지 않은 UUID면 승인자 인가 거부; 홈페이지 ADMIN으로 대체하지 않음", active()),
     variable("ACADEMIC_ENROLLMENT_WRITES_ENABLED", "application", "학적 개인정보 쓰기 별도 승인", false, "#142 보존·파기 정책과 운영 승인 후 true", "정확한 true가 아니면 쓰기 차단; 화면 공개와 별도 조건", active("false")),
-    variable("GOOGLE_SHEETS_API_KEY", "legacy", "기존 선택 Sheets helper; 현재 앱 호출 참조 없음", true, "별도 검토 후 외부 시트 helper를 사용하는 경우만", "미설정이면 helper가 빈 결과와 설정 오류 반환. 내장 지원서 관리에 불필요", commented()),
     variable("ADMIN_EMAIL", "operator", "초기 관리자 생성/승격 대상; 값 공개 금지", false, "승인된 seed-admin 명령에서 대상 확인", "없으면 기존 기본 관리자 이메일 사용; 확인 인자 없으면 DB 조회 전 중단", commented()),
     variable("ADMIN_PASSWORD", "operator", "초기 관리자 credentials 비밀번호", true, "승인된 seed-admin 생성/승격 실행", "없으면 중단. 기존 관리자 비밀번호 재설정 수단이 아님", commented()),
     variable("ADMIN_NAME", "operator", "초기 관리자 표시 이름", false, "seed-admin에서 기본 이름을 변경할 때만", "미설정이면 관리자라는 기본 이름", commented()),
