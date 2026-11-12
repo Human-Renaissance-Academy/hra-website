@@ -166,3 +166,34 @@ test("브라우저 스모크 실제 실행을 제거하고 --list만 남기면 �
   assert.ok(files["ci.yml"].includes("npm run test:e2e -- tests/e2e/ci-smoke.spec.ts --list"));
   assert.notDeepEqual(validateWorkflowCheckBoundaries(files), []);
 });
+
+test("OpenAPI·커밋 이력의 조건부 필수 실행 단계를 삭제하면 차단한다", () => {
+  for (const stepName of Object.keys({
+    "OpenAPI 기존 계약 추가 전용 검사": true,
+    "OpenAPI 현재 문서·Route 검사": true,
+    "새 커밋 메시지 검사": true,
+  })) {
+    const files = baseline();
+    const content = files["process-format.yml"];
+    const marker = "      - name: " + stepName + "\n";
+    const start = content.indexOf(marker);
+    assert.ok(start >= 0, stepName + " fixture missing");
+    const nextStep = content.indexOf("\n      - ", start + marker.length);
+    const nextJob = content.indexOf("\n  audit:", start + marker.length);
+    const end = nextStep >= 0 ? nextStep : nextJob;
+    assert.ok(end > start, stepName + " cannot find next boundary");
+    files["process-format.yml"] = content.slice(0, start) + content.slice(end + 1);
+    assert.notDeepEqual(validateWorkflowCheckBoundaries(files), [], stepName);
+  }
+});
+
+test("필수 조건부 스텝을 중복 선언하면 차단한다", () => {
+  const files = baseline();
+  const anchor = "      - name: OpenAPI 현재 문서·Route 검사";
+  assert.ok(files["process-format.yml"].includes(anchor));
+  files["process-format.yml"] = files["process-format.yml"].replace(
+    anchor,
+    "      - name: OpenAPI 기존 계약 추가 전용 검사\n" + anchor,
+  );
+  assert.notDeepEqual(validateWorkflowCheckBoundaries(files), []);
+});

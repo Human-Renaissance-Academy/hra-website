@@ -190,6 +190,15 @@ export function validateWorkflowCheckBoundaries(workflows) {
         errors.push(key + ": checkout credentials must not persist.");
       }
     }
+    // 조건부 필수 단계를 통째로 삭제하거나 중복 선언해도 검사에서 빠져나가면 안 됩니다.
+    if (key === "process-format.yml:contracts") {
+      for (const stepName of Object.keys(CONDITIONAL_STEPS)) {
+        const occurrences = job.steps.filter((step) => step?.name === stepName).length;
+        if (occurrences !== 1) {
+          errors.push(key + ": required conditional step must appear exactly once: " + stepName);
+        }
+      }
+    }
     const commands = activeLines(job.steps);
     for (const required of CHECK_COMMANDS[key] || []) {
       const found = required === "npm run test:e2e -- tests/e2e/ci-smoke.spec.ts"
