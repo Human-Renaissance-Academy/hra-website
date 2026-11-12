@@ -18,9 +18,9 @@ git add src/수정한-파일.ts
 npm run format:staged
 ```
 
-커밋 훅은 Git index의 실제 스테이징 내용을 검사합니다. 작업 트리에만 존재하는 변경으로 검사를 우회할 수 없습니다. 기존 전체 타입 검사는 훅에 계속 남습니다. 포맷 기능은 자동으로 전체 파일을 수정하지 않습니다.
+커밋 훅은 Git index의 실제 스테이징 내용을 검사합니다. **`.prettierrc.json` 설정과 `.prettierignore` 제외 규칙도 index에서 읽어 격리된 가상 경로에 적용**하므로 미스테이징 설정·소스 변경으로 검사를 우회할 수 없습니다. CI는 검증 HEAD의 설정·제외 규칙·소스만 사용합니다. Git diff/show나 설정 파싱이 실패하면 fail-closed합니다. 기존 전체 타입 검사는 훅에 계속 남습니다. 포맷 기능은 자동으로 전체 파일을 수정하지 않습니다.
 
-CI의 `Lint · Typecheck · Test · Build` 작업에서는 PR base → 검증 HEAD(merge ref) 또는 main push 이전 → 현재 커밋 사이의 변경된 TS/TSX/JS/JSX/MJS/CJS/MTS/CTS 파일만 검사합니다. Git diff·SHA·Prettier 실행에 실패하면 검사를 통과시키지 않습니다. 테스트는 `node --test scripts/tests/code-format-scope.test.mjs`로 실행합니다.
+CI의 `Lint · Typecheck · Test · Build` 작업에서는 PR base → 검증 HEAD(merge ref) 또는 main push 이전 → 현재 커밋 사이의 변경된 TS/TSX/JS/JSX/MJS/CJS/MTS/CTS 파일만 검사합니다. Git diff·SHA·Prettier 실행에 실패하면 검사를 통과시키지 않습니다. 테스트는 `node --test scripts/tests/code-format-scope.test.mjs`로 실행합니다. 격리 Git 저장소에서 스테이징과 작업 트리의 서로 반대인 포맷 상태, ignore 변경, Git 실패까지 실제 CLI로 재현합니다.
 
 현재 열려 있는 다른 PR의 작업 파일이 신규 포맷 검사에 실패하면 해당 PR에서 **수정한 파일만** 별도 포맷 커밋으로 조정합니다. 폭넓은 포맷-only 작업이 필요할 때는 기능 변경과 분리한 독립 PR로 진행하고 `.git-blame-ignore-revs` 등록 여부를 검토합니다. 동일 PR에서 코드 의미 변경과 포맷을 섞지 않습니다.
 
