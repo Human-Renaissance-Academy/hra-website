@@ -126,10 +126,16 @@ export function validateWorkflowCheckBoundaries(workflows) {
         errors.push(file + ": " + event + " must run for every main change without path filters.");
       }
     }
-    if (file === "process-format.yml" &&
-        (!Array.isArray(work.on.pull_request?.types) ||
-         !work.on.pull_request.types.includes("synchronize"))) {
-      errors.push(file + ": PR synchronize event is required.");
+    // 별도 types 선언이 없으면 GitHub 기본 opened/synchronize/reopened가 실행됩니다.
+    // 명시된 이벤트 목록으로 default 이벤트를 축소하면 보안 필수 체크가 사라집니다.
+    const eventTypes = work.on.pull_request?.types;
+    const requiredEvents = file === "process-format.yml"
+      ? ["opened", "edited", "reopened", "synchronize", "ready_for_review", "labeled", "unlabeled"]
+      : ["opened", "reopened", "synchronize"];
+    if ((file === "process-format.yml" && !Array.isArray(eventTypes)) ||
+        (eventTypes !== undefined && (!Array.isArray(eventTypes) ||
+          requiredEvents.some((event) => !eventTypes.includes(event))))) {
+      errors.push(file + ": required PR activity types are missing.");
     }
     if (work.on.pull_request_target !== undefined) {
       errors.push(file + ": pull_request_target is not allowed.");
@@ -186,9 +192,11 @@ export function validateWorkflowCheckBoundaries(workflows) {
     }
     const commands = activeLines(job.steps);
     for (const required of CHECK_COMMANDS[key] || []) {
-      const found = required.startsWith("scripts/tests/")
-        ? commands.some((line) => line.startsWith("node --test ") && (" " + line + " ").includes(" " + required + " "))
-        : commands.some((line) => line.startsWith(required));
+      const found = required === "npm run test:e2e -- tests/e2e/ci-smoke.spec.ts"
+        ? commands.some((line) => line === required)
+        : required.startsWith("scripts/tests/")
+          ? commands.some((line) => line.startsWith("node --test ") && (" " + line + " ").includes(" " + required + " "))
+          : commands.some((line) => line.startsWith(required));
       if (!found) {
         errors.push(key + ": required executable command missing: " + required);
       }

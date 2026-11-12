@@ -138,3 +138,29 @@ test("커밋 메시지 검사가 비활성 명령으로 바뀌면 차단한다",
   files[name] = files[name].replace(/node scripts\/check-commit-messages\.mjs[^\n]*/, "echo bypass");
   assert.notDeepEqual(validateWorkflowCheckBoundaries(files), []);
 });
+
+test("모든 필수 PR workflow에서 synchronize 생성을 보장한다", () => {
+  for (const filename of ["ci.yml", "repository-security.yml"]) {
+    const files = baseline();
+    files[filename] = files[filename].replace(
+      "  pull_request:\n    branches: [main]",
+      "  pull_request:\n    branches: [main]\n    types: [opened]",
+    );
+    assert.notDeepEqual(validateWorkflowCheckBoundaries(files), [], filename);
+  }
+  const files = baseline();
+  files["process-format.yml"] = files["process-format.yml"].replace(
+    ", edited,",
+    ",",
+  );
+  assert.notDeepEqual(validateWorkflowCheckBoundaries(files), []);
+});
+
+test("브라우저 스모크 실제 실행을 제거하고 --list만 남기면 차단한다", () => {
+  const files = baseline();
+  const before = "run: npm run test:e2e -- tests/e2e/ci-smoke.spec.ts\n";
+  assert.ok(files["ci.yml"].includes(before));
+  files["ci.yml"] = files["ci.yml"].replace(before, "run: echo smoke-not-run\n");
+  assert.ok(files["ci.yml"].includes("npm run test:e2e -- tests/e2e/ci-smoke.spec.ts --list"));
+  assert.notDeepEqual(validateWorkflowCheckBoundaries(files), []);
+});
