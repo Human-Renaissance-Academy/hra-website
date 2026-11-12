@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { check, format, getFileInfo } from "prettier";
+import { check, getFileInfo } from "prettier";
 import { isCommitSha, isFormatTarget, parseGitPaths } from "./_lib/format-scope.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -64,11 +64,6 @@ async function main() {
       const source = git("show", revision + file).toString("utf8");
       checked++;
       if (!(await check(source, { ...config, filepath: virtualFile }))) {
-        // 임시 CI 검증: 수정 후 제거할 포맷 출력. 원본과 비밀정보는 포함하지 않습니다.
-        if (file === "scripts/tests/code-format-scope.test.mjs") {
-          const formatted = await format(source, { ...config, filepath: virtualFile });
-          console.error("FORMAT_FIX_BASE64 " + Buffer.from(formatted).toString("base64"));
-        }
         invalid.push(file);
       }
     }

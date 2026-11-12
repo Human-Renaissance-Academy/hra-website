@@ -43,7 +43,6 @@ describe("변경 파일 포맷 검사 범위", () => {
   });
 });
 
-
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
 function gitFixture(directory, ...args) {
