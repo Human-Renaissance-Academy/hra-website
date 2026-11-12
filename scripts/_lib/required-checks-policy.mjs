@@ -166,7 +166,7 @@ export function validateWorkflowCheckBoundaries(workflows) {
         const allowed = CONDITIONAL_STEPS[step.name];
         if (key !== "process-format.yml:contracts" ||
             !allowed || step.if !== allowed.condition || !run.includes(allowed.command)) {
-          errors.push(key + ": a required step is conditionally skipped: " + String(step.name ?? run.slice(0,70)) + " (" + String(step.if) + ").");
+          errors.push(key + ": unexpected conditional step " + JSON.stringify({ name: step.name ?? null, condition: step.if, expectedCondition: allowed?.condition ?? null, allowed: Boolean(allowed), commandMatched: allowed ? run.includes(allowed.command) : false, runStart: run.slice(0,120) }));
         }
       }
       if (typeof step.uses === "string" && step.uses.startsWith("actions/checkout@") &&
