@@ -149,9 +149,11 @@ test("모든 필수 PR workflow에서 synchronize 생성을 보장한다", () =>
     assert.notDeepEqual(validateWorkflowCheckBoundaries(files), [], filename);
   }
   const files = baseline();
+  const fullEvents = "types: [opened, edited, reopened, synchronize, ready_for_review, labeled, unlabeled]";
+  assert.ok(files["process-format.yml"].includes(fullEvents));
   files["process-format.yml"] = files["process-format.yml"].replace(
-    ", edited,",
-    ",",
+    fullEvents,
+    "types: [opened, reopened, synchronize, ready_for_review, labeled, unlabeled]",
   );
   assert.notDeepEqual(validateWorkflowCheckBoundaries(files), []);
 });
