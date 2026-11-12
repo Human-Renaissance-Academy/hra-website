@@ -87,6 +87,7 @@ npm run lint
 npm run typecheck
 npm test
 npm run build
+npm ci
 node --test scripts/tests/release-policy.test.mjs scripts/tests/required-checks-policy.test.mjs
 node scripts/check-release-config.mjs
 node scripts/check-required-checks-config.mjs

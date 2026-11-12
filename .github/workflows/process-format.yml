@@ -80,8 +80,6 @@ jobs:
           node-version: 24
       - run: node --test scripts/tests/release-policy.test.mjs
       - run: node scripts/check-release-config.mjs
-      - run: node --test scripts/tests/required-checks-policy.test.mjs
-      - run: node scripts/check-required-checks-config.mjs
       - run: node --test scripts/tests/commit-messages.test.mjs
       - run: node --test scripts/tests/openapi-append-only.test.mjs scripts/tests/openapi-cli.test.mjs
       - name: OpenAPI 기존 계약 추가 전용 검사

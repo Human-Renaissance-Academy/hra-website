@@ -12,7 +12,7 @@
 | 공개 artifact | [업로드 직전 검사](../developer/public-artifact-safety.md)의 고정 세 JSON만 허용. 검사 성공 전 업로드 금지, 승인된 정제 증거는 7일 후 만료 |
 | 문서·fixture 개인정보 표식 | 같은 안내의 명시한 텍스트 범위에서 이메일·전화·주민번호 모양·세션 표식을 검사. 합성 값은 정확한 파일·규칙·해시·검토 이유로만 구분하며 개인정보 전체 부재의 증명으로 보지 않음 |
 | 브라우저 정책 | [CSP·HSTS](../developer/browser-security-policy.md)와 실제 읽기 전용 배포 점검. 운영 계정·실제 파일·OAuth 검증으로 과장하지 않음 |
-| `main` 필수 체크 보호 | [필수 체크 경계](../developer/github-actions-security.md) 정본 6개(`Lint · Typecheck · Test · Build`, `PR 형식`, `형식·릴리스 계약 테스트`, `추적 소스 · 도달 가능한 이력 · dependency 검토`, `실제 production CSP · 에디터 · 인쇄 · Blob SDK`, `Vercel`)와 GitHub 설정(`--protection-file`) 일치 여부를 별도 검증. YAML 병합만으로 GitHub 보호 설정 반영 완료로 간주하지 않음 ([#408](https://github.com/yeongseon/hra-website/issues/408)) |
+| `main` 필수 체크 보호 | [필수 체크 경계](../developer/github-actions-security.md) 목표 정본 6개(`Lint · Typecheck · Test · Build`, `PR 형식`, `형식·릴리스 계약 테스트`, `추적 소스 · 도달 가능한 이력 · dependency 검토`, `실제 production CSP · 에디터 · 인쇄 · Blob SDK`, `Vercel`)와 관리자 제공 GitHub 보호 설정(`--protection-file`) 일치 여부를 별도 검증. 현재 Vercel status 미생성 및 보호 설정 조회 권한 부족으로 실제 적용은 미완료. YAML 병합만으로 GitHub 보호 설정 반영 완료로 간주하지 않음 ([#408](https://github.com/yeongseon/hra-website/issues/408)) |
 | LICENSE | 현재 저장소에 선택한 LICENSE 파일 없음. 라이선스 선택은 소유권자의 별도 결정이며 이 변경이 사용 권한을 부여하지 않음. 사이트 사진·콘텐츠·자료의 권리도 별도 검토 |
 | Git author 이메일 | 향후 기여에는 GitHub noreply 이메일 사용 권고. GitHub 계정 설정의 정확한 noreply 주소를 확인하고 로컬 저장소의 commit email에 적용. 기존 이력 rewrite는 별도 필요성·영향 검토 없이 실행하지 않음 |
 

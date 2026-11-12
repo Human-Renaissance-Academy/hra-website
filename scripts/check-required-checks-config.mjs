@@ -1,12 +1,12 @@
 /**
  * 역할: 저장소 워크플로의 PR 필수 보안·품질 체크 경계와(선택 시) GitHub 브랜치 보호 스냅샷을 검증하는 읽기 전용 CLI
  * 사용 위치:
- *   - .github/workflows/process-format.yml (형식·릴리스 계약 테스트)
+ *   - .github/workflows/ci.yml (기존 main 필수 웹 CI)
  *   - .github/workflows/repository-security.yml (저장소 보안 게이트)
  *   - 운영자의 main 브랜치 보호 설정 점검 (`--protection-file <JSON 경로>`)
  * 주요 기능:
- *   - 외부 패키지·네트워크·비밀값 없이 `.github/workflows/*.yml` 전체의 필수 체크 생성·우회 차단 불변식 검사
- *   - `--protection-file` 전달 시 GitHub API 응답 JSON의 6개 필수 체크(context + app_id)·strict·enforce_admins 정합성 대조
+ *   - 기존 설치 의존성 js-yaml JSON_SCHEMA, 네트워크·비밀값 없이 `.github/workflows/*.yml` 전체의 필수 체크 생성·우회 차단 불변식 검사
+ *   - `--protection-file`이 명시된 경우에만 실제 GitHub 관리자 스냅샷을 목표 6개 체크와 대조
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
