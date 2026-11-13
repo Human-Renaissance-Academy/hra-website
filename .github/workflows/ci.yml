@@ -17,7 +17,41 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  scope:
+    name: 변경 범위 판별
+    runs-on: ubuntu-latest
+    outputs:
+      web: ${{ steps.detect.outputs.web }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          # PR merge HEAD의 첫 번째 부모와 차이를 비교합니다. 범위를 확인할 수 없으면 전체 CI를 실행합니다.
+          # 포맷 게이트는 push의 before SHA까지 조회하므로 전체 이력을 가져옵니다.
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      # 문서·모바일 전용 PR도 변경 소스 포맷 게이트는 반드시 실행합니다.
+      # 여기서 실패하면 범위 생략이 허용되지 않으며 기존 전체 CI도 다시 검사합니다.
+      - name: 포맷 검사 의존성 설치
+        run: npm ci
+      - name: 변경 소스 포맷 검사
+        run: |
+          node --test scripts/tests/code-format-scope.test.mjs
+          npm run format:check
+      - name: 변경 범위의 허용 목록·오류 시 전체 검사 회귀
+        run: node --test scripts/tests/ci-scope.test.mjs
+      - name: 대상 변경 범위 판별
+        id: detect
+        run: node scripts/detect-ci-scope.mjs "$GITHUB_EVENT_NAME" "$GITHUB_OUTPUT"
+
   ci:
+    needs: scope
+    # 탐지 실패/범위 판독 오류는 전체 CI로 복귀합니다. Docs/Mobile만 바뀐 정상 PR에서만 생략.
+    # job 이름을 유지해 기존 branch protection의 체크 이름을 바꾸지 않습니다.
+    if: ${{ always() && (needs.scope.result != 'success' || needs.scope.outputs.web != 'false') }}
     name: Lint · Typecheck · Test · Build
     runs-on: ubuntu-latest
 
