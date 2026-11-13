@@ -33,6 +33,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
+          fetch-depth: 0
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -82,6 +83,11 @@ jobs:
       - name: 로컬 push 훅 ref 계약 검사
         # 삭제 전용 push만 빌드를 생략하고 코드 ref·손상된 입력은 계속 차단합니다.
         run: node --test scripts/tests/pre-push-hook.test.mjs
+
+      - name: 변경 소스 포맷 검사
+        run: |
+          node --test scripts/tests/code-format-scope.test.mjs
+          npm run format:check
 
       - name: ESLint 검사
         run: npm run lint

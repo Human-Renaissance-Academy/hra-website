@@ -53,7 +53,7 @@ node --test scripts/tests/release-policy.test.mjs scripts/tests/required-checks-
 
 ### 전체 상태 검사·워크플로 분류 (2026-11-03 확인 기준)
 
-| 워크플로 / 통합 | 실제 Check Run / Status 이름 | App ID | 실행 트리거 | 모든 `main` PR 생성 여부 | 정본 `main` 필수 여부 | 2026-11-03 GitHub 설정 조회 결과 |
+| 워크플로 / 통합 | 실제 Check Run / Status 이름 | App ID | 실행 트리거 | 모든 `main` PR 생성 여부 | 정본 `main` 필수 여부 | 2026-11-13 GitHub 설정 조회 결과 |
 | --- | --- | --- | --- | --- | --- | --- |
 | `ci.yml` | `Lint · Typecheck · Test · Build` | `15368` | `pull_request(main)`, `push(main)` | 예 (무조건 실행) | **필수** | 등록됨 (`strict: true`, `enforce_admins: true`) |
 | `process-format.yml` | `PR 형식` | `15368` | `pull_request(main)` (7개 활동 유형) | 예 (`event_name == 'pull_request'`) | **필수** | 등록됨 |
@@ -79,4 +79,4 @@ gh api repos/Human-Renaissance-Academy/hra-website/branches/main/protection > /t
 node scripts/check-required-checks-config.mjs --protection-file /tmp/hra-main-protection.json
 ```
 
-> **2026-11-13 진행 상황:** 현재 연결된 GitHub App의 branch protection 읽기는 HTTP 403이며, 실제 required `Vercel` commit status는 조직 이전 후 PR HEAD에서 생성되지 않아 병합이 HTTP 405로 차단됩니다. 위 표의 **목표 6개**는 아직 적용 완료된 GitHub 설정이 아닙니다. 외부 Vercel 연결과 GitHub branch protection은 권한 있는 관리자가 확인해야 하며, 이 PR의 정적 검증이 운영 설정 변경을 대신하지 않습니다.
+> **2026-11-13 진행 상황:** branch protection 조회가 복구되었으며 현재 필수 검사는 기존 4개(`Lint · Typecheck · Test · Build`, `PR 형식`, `형식·릴리스 계약 테스트`, `Vercel`)이고 `strict: true`, `enforce_admins: true`입니다. Vercel 운영 연결도 복구되었지만 각 PR 최신 HEAD의 실제 배포 상태는 별도로 확인해야 합니다. 위 표의 **목표 6개** 중 추가 보안 2개는 아직 보호 설정에 등록되지 않았습니다. 보안 게이트 코드와 #483의 검사 범위 작업이 main에 반영되고 최신 HEAD에서 필요한 검사가 성공한 뒤, 권한 있는 운영자가 외부 보호 설정을 적용·재조회하여 목표 정본과 검증해야 합니다. 이 PR의 코드 병합과 정적 검사는 외부 설정 적용 완료를 의미하지 않습니다.

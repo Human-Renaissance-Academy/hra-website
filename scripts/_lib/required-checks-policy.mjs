@@ -10,11 +10,36 @@ export const VERCEL_APP_ID = 8329;
 
 // 2026-11-03에 제안된 목표 설정입니다. 실제 GitHub 관리 화면의 현재 값이 아닙니다.
 export const REQUIRED_MAIN_STATUS_CHECKS = Object.freeze([
-  { context: "Lint · Typecheck · Test · Build", appId: GITHUB_ACTIONS_APP_ID, file: "ci.yml", job: "ci" },
-  { context: "PR 형식", appId: GITHUB_ACTIONS_APP_ID, file: "process-format.yml", job: "pull-request" },
-  { context: "형식·릴리스 계약 테스트", appId: GITHUB_ACTIONS_APP_ID, file: "process-format.yml", job: "contracts" },
-  { context: "추적 소스 · 도달 가능한 이력 · dependency 검토", appId: GITHUB_ACTIONS_APP_ID, file: "repository-security.yml", job: "repository" },
-  { context: "실제 production CSP · 에디터 · 인쇄 · Blob SDK", appId: GITHUB_ACTIONS_APP_ID, file: "repository-security.yml", job: "browser" },
+  {
+    context: "Lint · Typecheck · Test · Build",
+    appId: GITHUB_ACTIONS_APP_ID,
+    file: "ci.yml",
+    job: "ci",
+  },
+  {
+    context: "PR 형식",
+    appId: GITHUB_ACTIONS_APP_ID,
+    file: "process-format.yml",
+    job: "pull-request",
+  },
+  {
+    context: "형식·릴리스 계약 테스트",
+    appId: GITHUB_ACTIONS_APP_ID,
+    file: "process-format.yml",
+    job: "contracts",
+  },
+  {
+    context: "추적 소스 · 도달 가능한 이력 · dependency 검토",
+    appId: GITHUB_ACTIONS_APP_ID,
+    file: "repository-security.yml",
+    job: "repository",
+  },
+  {
+    context: "실제 production CSP · 에디터 · 인쇄 · Blob SDK",
+    appId: GITHUB_ACTIONS_APP_ID,
+    file: "repository-security.yml",
+    job: "browser",
+  },
   { context: "Vercel", appId: VERCEL_APP_ID, file: null, job: null },
 ]);
 
@@ -26,12 +51,9 @@ export const NON_REQUIRED_WORKFLOWS = Object.freeze([
   "production-smoke.yml",
   "release-please.yml",
 ]);
-export const EXPECTED_WORKFLOW_FILES = Object.freeze([
-  "ci.yml",
-  "process-format.yml",
-  "repository-security.yml",
-  ...NON_REQUIRED_WORKFLOWS,
-].sort());
+export const EXPECTED_WORKFLOW_FILES = Object.freeze(
+  ["ci.yml", "process-format.yml", "repository-security.yml", ...NON_REQUIRED_WORKFLOWS].sort(),
+);
 
 const isObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 const CHECK_COMMANDS = {
@@ -72,8 +94,10 @@ const JOB_IF = {
   "process-format.yml:contracts": "github.event_name != 'issues'",
 };
 // PR과 push의 모드·범위가 바뀌면 0개 커밋을 검사하고 성공할 수 있어 정확한 식을 고정합니다.
-const BASE_SHA = "${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}";
-const HEAD_SHA = "${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}";
+const BASE_SHA =
+  "${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}";
+const HEAD_SHA =
+  "${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}";
 const HISTORY_MODE = "${{ github.event_name == 'pull_request' && '--pr-history' || '--history' }}";
 const CONDITIONAL_STEPS = {
   "OpenAPI 기존 계약 추가 전용 검사": {
@@ -95,9 +119,11 @@ const CONDITIONAL_STEPS = {
 
 /** 환경 값을 오류에 출력하지 않고 검토한 키·값·완전성만 대조합니다. */
 function sameEnvironment(actual, expected) {
-  return (actual === undefined || isObject(actual)) &&
+  return (
+    (actual === undefined || isObject(actual)) &&
     Object.keys(actual ?? {}).length === Object.keys(expected).length &&
-    Object.entries(expected).every(([key, value]) => actual?.[key] === value);
+    Object.entries(expected).every(([key, value]) => actual?.[key] === value)
+  );
 }
 
 /** npm 별칭·NODE_OPTIONS·PATH·BASH_ENV·ENV 등을 놓치지 않도록 필요한 환경만 허용합니다.
@@ -105,15 +131,23 @@ function sameEnvironment(actual, expected) {
  * 플랫폼 환경이나 임의 셸의 무결성을 입증하는 sandbox는 아닙니다.
  */
 function expectedEnvironment(key, step) {
-  if (!step && key === "ci.yml:ci") return {
-    DATABASE_URL: "postgresql://ci:ci@127.0.0.1:1/isolated",
-    AUTH_SECRET: "ci-only-secret-for-isolated-smoke-tests",
-    NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3100",
-  };
-  if (step && key === "process-format.yml:pull-request" && step.run === "node scripts/check-process-format.mjs --event") return {
-    GH_TOKEN: "${{ github.token }}", RELEASE_PLEASE_BOT_LOGIN: "${{ vars.RELEASE_PLEASE_BOT_LOGIN }}",
-  };
-  if (step && key === "process-format.yml:contracts") return CONDITIONAL_STEPS[step.name]?.environment ?? {};
+  if (!step && key === "ci.yml:ci")
+    return {
+      DATABASE_URL: "postgresql://ci:ci@127.0.0.1:1/isolated",
+      AUTH_SECRET: "ci-only-secret-for-isolated-smoke-tests",
+      NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3100",
+    };
+  if (
+    step &&
+    key === "process-format.yml:pull-request" &&
+    step.run === "node scripts/check-process-format.mjs --event"
+  )
+    return {
+      GH_TOKEN: "${{ github.token }}",
+      RELEASE_PLEASE_BOT_LOGIN: "${{ vars.RELEASE_PLEASE_BOT_LOGIN }}",
+    };
+  if (step && key === "process-format.yml:contracts")
+    return CONDITIONAL_STEPS[step.name]?.environment ?? {};
   return {};
 }
 
@@ -130,11 +164,15 @@ const DIRECT_CHECK_COMMANDS = Object.values(CHECK_COMMANDS).flat();
  * 정상적인 gate/순서/env/uses 변경도 먼저 실제 실행·실패 전파 회귀를 검토하고 workflow와 이 지문을 함께 갱신합니다.
  */
 const REVIEWED_PIPELINE_DIGESTS = {
-  "ci.yml:ci": "78db483ada67e8414b52e4eb0967e563230f3f0505816b732239821dc3854e2e",
-  "process-format.yml:pull-request": "ae70c42a9c814c1df9e9c238b87353f08b462cc50160cfa6b485820e83a263f1",
-  "process-format.yml:contracts": "9609c6b8d08644321f50e2b5c872744acf117f472a1dc4165f9a001f97dc370a",
-  "repository-security.yml:repository": "edcac22b2b55d615bed5b784ed51bfd5d079c07afebc966953750dbccfbf9e97",
-  "repository-security.yml:browser": "baed69b6efce5a1146adba27a84cea126c7c8fc336113e253567c9475d5be168"
+  "ci.yml:ci": "8b83bc1da3bc6b368d0b02a4623e85381933e6b9c3c8486cce8e34e390aabaa2",
+  "process-format.yml:pull-request":
+    "ae70c42a9c814c1df9e9c238b87353f08b462cc50160cfa6b485820e83a263f1",
+  "process-format.yml:contracts":
+    "9609c6b8d08644321f50e2b5c872744acf117f472a1dc4165f9a001f97dc370a",
+  "repository-security.yml:repository":
+    "edcac22b2b55d615bed5b784ed51bfd5d079c07afebc966953750dbccfbf9e97",
+  "repository-security.yml:browser":
+    "baed69b6efce5a1146adba27a84cea126c7c8fc336113e253567c9475d5be168",
 };
 const REVIEWED_JOB_PERMISSIONS = {
   "process-format.yml:pull-request": { contents: "read", "pull-requests": "read" },
@@ -144,23 +182,33 @@ const REVIEWED_JOB_PERMISSIONS = {
 /** 검토한 직접 명령만 인정하며, npm config 같은 설정 변경이나 혼합 셸은 전체 블록을 인정하지 않습니다. */
 function directCommands(step, key) {
   if (typeof step.run !== "string") return [];
-  if (key === "repository-security.yml:repository" &&
-      createHash("sha256").update(step.run.trim()).digest("hex") === SCANNER_RUN_SHA256) {
+  if (
+    key === "repository-security.yml:repository" &&
+    createHash("sha256").update(step.run.trim()).digest("hex") === SCANNER_RUN_SHA256
+  ) {
     return ["npm run verify:repository-secrets"];
   }
-  const lines = step.run.split(/\r?\n/).map(line => line.trim()).filter(line => line && !line.startsWith("#"));
+  const lines = step.run
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#"));
   // 셸 연산자·치환·함수·따옴표 결합을 해석하지 않습니다. Node 배치 테스트만 파일 인수 집합을 허용합니다.
-  return lines.every(line => DIRECT_CHECK_COMMANDS.includes(line) || NODE_TEST_COMMAND.test(line)) ? lines : [];
+  return lines.every((line) => DIRECT_CHECK_COMMANDS.includes(line) || NODE_TEST_COMMAND.test(line))
+    ? lines
+    : [];
 }
 
 /** Node 배치 테스트는 실제 파일 인수만 허용하며 --test-name-pattern/--list 같은 축소 옵션을 거부합니다. */
 function hasCommand(commands, required) {
-  return commands.some(line => {
+  return commands.some((line) => {
     if (line === required) return true;
-    if (!required.startsWith("node --test ") && !required.startsWith("scripts/tests/")) return false;
+    if (!required.startsWith("node --test ") && !required.startsWith("scripts/tests/"))
+      return false;
     if (!NODE_TEST_COMMAND.test(line)) return false;
-    const requiredFiles = required.startsWith("node --test ") ? required.split(" ").slice(2) : [required];
-    return requiredFiles.every(file => line.split(" ").slice(2).includes(file));
+    const requiredFiles = required.startsWith("node --test ")
+      ? required.split(" ").slice(2)
+      : [required];
+    return requiredFiles.every((file) => line.split(" ").slice(2).includes(file));
   });
 }
 
@@ -193,25 +241,42 @@ export function validateWorkflowCheckBoundaries(workflows) {
     // YAML의 환경 매핑은 실행 프로세스 환경과 구분해 구조 분해로 읽습니다.
     const { env: workflowEnvironment } = work;
     if (workflowEnvironment !== undefined || work.defaults !== undefined) {
-      errors.push(file + ": required workflow environment/defaults must retain reviewed execution settings.");
+      errors.push(
+        file + ": required workflow environment/defaults must retain reviewed execution settings.",
+      );
     }
     for (const event of ["pull_request", "push"]) {
       const trigger = work.on[event];
-      if (!isObject(trigger) || !Array.isArray(trigger.branches) ||
-          trigger.branches.length !== 1 || trigger.branches[0] !== "main" ||
-          ["paths", "paths-ignore", "branches-ignore"].some((k) => k in trigger)) {
+      if (
+        !isObject(trigger) ||
+        !Array.isArray(trigger.branches) ||
+        trigger.branches.length !== 1 ||
+        trigger.branches[0] !== "main" ||
+        ["paths", "paths-ignore", "branches-ignore"].some((k) => k in trigger)
+      ) {
         errors.push(file + ": " + event + " must run for every main change without path filters.");
       }
     }
     // 별도 types 선언이 없으면 GitHub 기본 opened/synchronize/reopened가 실행됩니다.
     // 명시된 이벤트 목록으로 default 이벤트를 축소하면 보안 필수 체크가 사라집니다.
     const eventTypes = work.on.pull_request?.types;
-    const requiredEvents = file === "process-format.yml"
-      ? ["opened", "edited", "reopened", "synchronize", "ready_for_review", "labeled", "unlabeled"]
-      : ["opened", "reopened", "synchronize"];
-    if ((file === "process-format.yml" && !Array.isArray(eventTypes)) ||
-        (eventTypes !== undefined && (!Array.isArray(eventTypes) ||
-          requiredEvents.some((event) => !eventTypes.includes(event))))) {
+    const requiredEvents =
+      file === "process-format.yml"
+        ? [
+            "opened",
+            "edited",
+            "reopened",
+            "synchronize",
+            "ready_for_review",
+            "labeled",
+            "unlabeled",
+          ]
+        : ["opened", "reopened", "synchronize"];
+    if (
+      (file === "process-format.yml" && !Array.isArray(eventTypes)) ||
+      (eventTypes !== undefined &&
+        (!Array.isArray(eventTypes) || requiredEvents.some((event) => !eventTypes.includes(event))))
+    ) {
       errors.push(file + ": required PR activity types are missing.");
     }
     if (work.on.pull_request_target !== undefined) {
@@ -231,23 +296,40 @@ export function validateWorkflowCheckBoundaries(workflows) {
       errors.push(key + ": required job or name/steps missing.");
       continue;
     }
-    if (job.if !== JOB_IF[key] || job.needs !== undefined || job.strategy !== undefined ||
-        job["continue-on-error"] !== undefined || job.uses !== undefined) {
+    if (
+      job.if !== JOB_IF[key] ||
+      job.needs !== undefined ||
+      job.strategy !== undefined ||
+      job["continue-on-error"] !== undefined ||
+      job.uses !== undefined
+    ) {
       errors.push(key + ": job if/needs/strategy/error policy could skip the required check.");
     }
-    if (createHash("sha256").update(JSON.stringify(job.steps)).digest("hex") !== REVIEWED_PIPELINE_DIGESTS[key]) {
-      errors.push(key + ": REVIEWED_PIPELINE_DRIFT: reviewed step pipeline changed; execution review is required.");
+    if (
+      createHash("sha256").update(JSON.stringify(job.steps)).digest("hex") !==
+      REVIEWED_PIPELINE_DIGESTS[key]
+    ) {
+      errors.push(
+        key +
+          ": REVIEWED_PIPELINE_DRIFT: reviewed step pipeline changed; execution review is required.",
+      );
     }
     const expectedPermissions = REVIEWED_JOB_PERMISSIONS[key];
-    if (expectedPermissions ? !sameEnvironment(job.permissions, expectedPermissions) : job.permissions !== undefined) {
+    if (
+      expectedPermissions
+        ? !sameEnvironment(job.permissions, expectedPermissions)
+        : job.permissions !== undefined
+    ) {
       errors.push(key + ": job permissions must retain the reviewed read-only mapping.");
     }
     const { env: jobEnvironment } = job;
     if (job.defaults !== undefined || !sameEnvironment(jobEnvironment, expectedEnvironment(key))) {
       errors.push(key + ": unreviewed job environment/defaults could disable execution.");
     }
-    if (expected.job === "pull-request" && job.concurrency?.group !==
-        "process-format-pr-${{ github.event.pull_request.number }}") {
+    if (
+      expected.job === "pull-request" &&
+      job.concurrency?.group !== "process-format-pr-${{ github.event.pull_request.number }}"
+    ) {
       errors.push(key + ": unexpected concurrency group.");
     }
     for (const step of job.steps) {
@@ -256,22 +338,36 @@ export function validateWorkflowCheckBoundaries(workflows) {
         continue;
       }
       const { env: stepEnvironment } = step;
-      if (step.shell !== undefined || step["working-directory"] !== undefined ||
-          !sameEnvironment(stepEnvironment, expectedEnvironment(key, step))) {
+      if (
+        step.shell !== undefined ||
+        step["working-directory"] !== undefined ||
+        !sameEnvironment(stepEnvironment, expectedEnvironment(key, step))
+      ) {
         errors.push(key + ": unreviewed step execution environment/shell/directory.");
       }
       // if를 삭제하고 같은 이름의 echo만 남기는 경우도 거부합니다.
-      const allowed = key === "process-format.yml:contracts" ? CONDITIONAL_STEPS[step.name] : undefined;
+      const allowed =
+        key === "process-format.yml:contracts" ? CONDITIONAL_STEPS[step.name] : undefined;
       if (allowed) {
-        if (step.if !== allowed.condition || step.run !== allowed.command ||
-            !sameEnvironment(stepEnvironment, allowed.environment)) {
-          errors.push(key + ": required conditional step must retain exact command/condition/environment: " + step.name);
+        if (
+          step.if !== allowed.condition ||
+          step.run !== allowed.command ||
+          !sameEnvironment(stepEnvironment, allowed.environment)
+        ) {
+          errors.push(
+            key +
+              ": required conditional step must retain exact command/condition/environment: " +
+              step.name,
+          );
         }
       } else if (step.if !== undefined) {
         errors.push(key + ": unauthorized conditional step: " + String(step.name ?? "unnamed"));
       }
-      if (typeof step.uses === "string" && step.uses.startsWith("actions/checkout@") &&
-          step.with?.["persist-credentials"] !== false) {
+      if (
+        typeof step.uses === "string" &&
+        step.uses.startsWith("actions/checkout@") &&
+        step.with?.["persist-credentials"] !== false
+      ) {
         errors.push(key + ": checkout credentials must not persist.");
       }
     }
@@ -284,16 +380,18 @@ export function validateWorkflowCheckBoundaries(workflows) {
         }
       }
     }
-    const commands = job.steps.filter(step => isObject(step) && step.if === undefined)
-      .flatMap(step => directCommands(step, key));
+    const commands = job.steps
+      .filter((step) => isObject(step) && step.if === undefined)
+      .flatMap((step) => directCommands(step, key));
     for (const required of CHECK_COMMANDS[key] || []) {
       if (!hasCommand(commands, required)) {
         errors.push(key + ": required executable command missing: " + required);
       }
     }
     if (expected.job === "repository") {
-      const checkout = job.steps.find((s) => typeof s?.uses === "string" &&
-        s.uses.startsWith("actions/checkout@"));
+      const checkout = job.steps.find(
+        (s) => typeof s?.uses === "string" && s.uses.startsWith("actions/checkout@"),
+      );
       if (checkout?.with?.["fetch-depth"] !== 0) {
         errors.push(key + ": full Git history checkout is required.");
       }
@@ -302,13 +400,21 @@ export function validateWorkflowCheckBoundaries(workflows) {
 
   for (const [file, work] of Object.entries(parsed)) {
     for (const [jobId, job] of Object.entries(work.jobs)) {
-      const owner = REQUIRED_MAIN_STATUS_CHECKS.find(check => check.file === file && check.job === jobId);
+      const owner = REQUIRED_MAIN_STATUS_CHECKS.find(
+        (check) => check.file === file && check.job === jobId,
+      );
       if (owner) continue;
       const name = job?.name ?? jobId;
-      const reviewedDynamic = file === "production-smoke.yml" && jobId === "smoke" &&
-        name === "${{ inputs.fixture_alert && '알림 경로 합성 검증 (의도된 실패)' || 'Production 읽기 점검' }}";
-      if (typeof name !== "string" || (name.includes("${{") && !reviewedDynamic) ||
-          REQUIRED_MAIN_STATUS_CHECKS.some(check => check.context === name)) {
+      const reviewedDynamic =
+        file === "production-smoke.yml" &&
+        jobId === "smoke" &&
+        name ===
+          "${{ inputs.fixture_alert && '알림 경로 합성 검증 (의도된 실패)' || 'Production 읽기 점검' }}";
+      if (
+        typeof name !== "string" ||
+        (name.includes("${{") && !reviewedDynamic) ||
+        REQUIRED_MAIN_STATUS_CHECKS.some((check) => check.context === name)
+      ) {
         errors.push(file + ": unowned job name may duplicate a required check context: " + jobId);
       }
     }
@@ -320,12 +426,16 @@ export function validateWorkflowCheckBoundaries(workflows) {
     if (file === "release-please.yml" && work.on.pull_request !== undefined) {
       errors.push(file + ": release automation must not run from a PR.");
     }
-    if (file !== "release-please.yml" &&
-        (!isObject(work.on.pull_request) || !Array.isArray(work.on.pull_request.paths))) {
+    if (
+      file !== "release-please.yml" &&
+      (!isObject(work.on.pull_request) || !Array.isArray(work.on.pull_request.paths))
+    ) {
       errors.push(file + ": conditional PR workflow must retain a paths filter.");
     }
-    if (file === "production-smoke.yml" && work.jobs?.smoke?.if !==
-        "github.event_name != 'pull_request'") {
+    if (
+      file === "production-smoke.yml" &&
+      work.jobs?.smoke?.if !== "github.event_name != 'pull_request'"
+    ) {
       errors.push(file + ": production smoke must never run on PR code.");
     }
   }
@@ -349,15 +459,19 @@ export function validateBranchProtection(protection) {
       }
     }
     for (const actual of checks) {
-      if (!REQUIRED_MAIN_STATUS_CHECKS.some((x) =>
-          x.context === actual?.context && x.appId === actual?.app_id)) {
+      if (
+        !REQUIRED_MAIN_STATUS_CHECKS.some(
+          (x) => x.context === actual?.context && x.appId === actual?.app_id,
+        )
+      ) {
         unexpectedChecks.push({ context: actual?.context, appId: actual?.app_id });
         errors.push("승인되지 않은 필수 체크 등록: " + String(actual?.context));
       }
     }
   }
   if (protection?.enforce_admins?.enabled !== true) errors.push("관리자 보호 강제가 필요합니다.");
-  if (protection?.allow_force_pushes?.enabled !== false) errors.push("강제 push 허용은 금지됩니다.");
+  if (protection?.allow_force_pushes?.enabled !== false)
+    errors.push("강제 push 허용은 금지됩니다.");
   if (protection?.allow_deletions?.enabled !== false) errors.push("main 삭제 허용은 금지됩니다.");
   return { ok: errors.length === 0, errors, missingChecks, unexpectedChecks };
 }
