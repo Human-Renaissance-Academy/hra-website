@@ -8,7 +8,7 @@ import { pathToFileURL } from "node:url";
 
 // 운영 대상·읽기 경로·응답 한도는 외부 입력이 아닌 이 계약으로 고정한다.
 export const productionSmokeOrigin = "https://hra-website-theta.vercel.app";
-const paths = ["/", "/login", "/favicon.ico", "/api/health"];
+const paths = ["/", "/login", "/favicon.ico", "/api/health", "/robots.txt", "/sitemap.xml"];
 const bodyLimit = 2 * 1024 * 1024;
 const procedure =
   "https://github.com/Human-Renaissance-Academy/hra-website/blob/main/docs/operations/production-smoke.md";
@@ -119,6 +119,182 @@ function validHsts(value) {
   return maximumAge !== null && maximumAge >= 31536000;
 }
 
+// #413: 공개 색인 정책은 운영 Production 응답의 고정된 최소 계약으로 확인한다.
+// robots.txt는 접근 제어가 아니며, 정본 권한 정책은 애플리케이션에서 검사한다.
+function validRobots(value, origin) {
+  const groups = [];
+  let group = null;
+  let sitemap = false;
+  // RFC 9309의 주석·그룹을 구분합니다. 키워드와 UA만 소문자로 만들고 경로는 보존합니다.
+  for (const line of value.replace(/^\uFEFF/, "").split(/\r\n|\r|\n/)) {
+    const directive = /^([a-z-]+)[ \t]*:[ \t]*(.*)$/i.exec(line.split("#")[0].trim());
+    if (!directive) continue;
+    const [, rawName, rawContent] = directive;
+    const name = rawName.toLowerCase(),
+      content = rawContent.trim();
+    if (name === "user-agent") {
+      if (!content) return false;
+      if (!group || group.rules.length) {
+        group = { agents: [], rules: [] };
+        groups.push(group);
+      }
+      group.agents.push(content.toLowerCase());
+    } else if (name === "allow" || name === "disallow") {
+      if (!group) return false;
+      group.rules.push({ name, content });
+    } else if (name === "sitemap") {
+      let url;
+      try {
+        url = new URL(content);
+      } catch {
+        return false;
+      }
+      if (url.href !== `${origin}/sitemap.xml`) return false;
+      sitemap = true;
+    }
+  }
+  // 같은 UA의 복수 그룹은 합칩니다. 특정 UA의 허용 규칙이 기본 보호 정책을 덮지도 못하게 합니다.
+  const rulesByAgent = new Map();
+  for (const current of groups)
+    for (const agent of current.agents) {
+      rulesByAgent.set(agent, [...(rulesByAgent.get(agent) ?? []), ...current.rules]);
+    }
+  const required = [
+    "/admin",
+    "/member",
+    "/mypage",
+    "/resources",
+    "/login",
+    "/register",
+    "/pending",
+    "/system-error",
+    "/api/",
+  ];
+  return (
+    sitemap &&
+    rulesByAgent.has("*") &&
+    [...rulesByAgent].every(([agent, rules]) => {
+      const allows = rules.filter((rule) => rule.name === "allow").map((rule) => rule.content);
+      const disallows = new Set(
+        rules.filter((rule) => rule.name === "disallow").map((rule) => rule.content),
+      );
+      // 특정 크롤러의 전체 차단은 보호 정책을 약화하지 않으므로 허용합니다.
+      if (agent !== "*" && !allows.length && disallows.has("/")) return true;
+      return (
+        allows.includes("/") &&
+        allows.every((path) => path === "/") &&
+        !disallows.has("/") &&
+        required.every((path) => disallows.has(path))
+      );
+    })
+  );
+}
+
+// 설치 없는 운영 점검을 유지하기 위해 Next가 생성하는 제한된 sitemap 문법 전체를 검사합니다.
+// 일반 XML 파서가 아니며 namespace·요소·속성이 이 출력 계약을 벗어나면 실패합니다.
+function validSitemap(value, origin) {
+  if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]/.test(value)) return false;
+  const input = value.replace(/^\uFEFF/, "");
+  if (input.indexOf("<?xml") > 0) return false;
+  // 정상 XML 주석만 제거하므로 주석 속 loc는 URL 항목으로 세지 않습니다.
+  // 태그 중간의 주석을 지워 잘못된 태그를 정상으로 고치지는 않습니다.
+  let invalidComment = false;
+  const source = input
+    .replace(/<!--(?:[^-]|-(?!-))*-->/g, (_comment, offset) => {
+      const prefix = input.slice(0, offset);
+      if (prefix.lastIndexOf("<") > prefix.lastIndexOf(">")) invalidComment = true;
+      return "";
+    })
+    .trim();
+  if (invalidComment) return false;
+  const document =
+    /^(?:<\?xml[ \t]+version=(?:"1\.0"|'1\.0')(?:[ \t]+encoding=(?:"UTF-8"|'UTF-8'))?[ \t]*\?>\s*)?<urlset[ \t\r\n]+xmlns=(?:"http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9"|'http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9')[ \t\r\n]*>([\s\S]*)<\/urlset>$/.exec(
+      source,
+    );
+  if (!document) return false;
+  const locations = [];
+  let remaining = document[1].trim();
+  while (remaining) {
+    const entry = /^<url>([\s\S]*?)<\/url>\s*/.exec(remaining);
+    if (!entry) return false;
+    const fields = [];
+    const leftover = entry[1].replace(
+      /<(loc|lastmod|changefreq|priority)>([^<]*)<\/\1>/g,
+      (_match, name, text) => {
+        fields.push({ name, text });
+        return "";
+      },
+    );
+    if (leftover.trim() || fields[0]?.name !== "loc") return false;
+    const order = ["loc", "lastmod", "changefreq", "priority"];
+    let previous = -1;
+    for (const field of fields) {
+      const index = order.indexOf(field.name);
+      if (index <= previous) return false;
+      previous = index;
+      // XML의 정의된 문자 참조만 해제하고 미완성·정의되지 않은 entity는 거부합니다.
+      let invalid = false;
+      field.text = field.text.replace(/&([^&;]*);|&/g, (_match, reference) => {
+        const named = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" };
+        if (Object.hasOwn(named, reference)) return named[reference];
+        const numeric = /^(?:#([0-9]+)|#x([0-9a-fA-F]+))$/.exec(reference ?? "");
+        const point = numeric ? Number.parseInt(numeric[1] ?? numeric[2], numeric[1] ? 10 : 16) : 0;
+        if (
+          !(
+            point === 9 ||
+            point === 10 ||
+            point === 13 ||
+            (point >= 32 && point <= 0xd7ff) ||
+            (point >= 0xe000 && point <= 0xfffd) ||
+            (point >= 0x10000 && point <= 0x10ffff)
+          )
+        ) {
+          invalid = true;
+          return "";
+        }
+        return String.fromCodePoint(point);
+      });
+      if (invalid || field.text.includes("]]>")) return false;
+    }
+    locations.push(fields[0].text);
+    remaining = remaining.slice(entry[0].length);
+  }
+  if (!locations.includes(origin + "/")) return false;
+  const privatePrefixes = [
+    "/admin",
+    "/member",
+    "/mypage",
+    "/resources",
+    "/login",
+    "/register",
+    "/pending",
+    "/system-error",
+    "/api",
+    "/academic",
+  ];
+  return locations.every((location) => {
+    let url, pathname;
+    try {
+      url = new URL(location);
+      pathname = decodeURIComponent(url.pathname);
+    } catch {
+      return false;
+    }
+    return (
+      url.origin === origin &&
+      !url.username &&
+      !url.password &&
+      !url.search &&
+      !url.hash &&
+      // Next가 경로를 정규화하기 전에 비정규 슬래시를 허용 목록 밖으로 거부합니다.
+      !location.includes("\\") &&
+      !pathname.includes("\\") &&
+      !pathname.includes("//") &&
+      !privatePrefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix + "/"))
+    );
+  });
+}
+
 // 각 검사는 응답 헤더·원문·예외 메시지를 외부로 내보내지 않는다.
 async function checkPath(origin, path, timeoutMs, requireHsts) {
   const started = performance.now();
@@ -177,6 +353,12 @@ async function checkPath(origin, path, timeoutMs, requireHsts) {
             code = "HEALTH_CONTENT";
           }
         }
+      } else if (path === "/robots.txt") {
+        if (contentType !== "text/plain") code = "CONTENT_TYPE";
+        else code = validRobots(new TextDecoder().decode(bytes), origin) ? "OK" : "SEO_CONTENT";
+      } else if (path === "/sitemap.xml") {
+        if (!["application/xml", "text/xml"].includes(contentType)) code = "CONTENT_TYPE";
+        else code = validSitemap(new TextDecoder().decode(bytes), origin) ? "OK" : "SEO_CONTENT";
       } else if (contentType !== "text/html") code = "CONTENT_TYPE";
       else {
         const html = new TextDecoder().decode(bytes);
@@ -200,7 +382,7 @@ async function checkPath(origin, path, timeoutMs, requireHsts) {
   };
 }
 
-/** 고정된 네 경로를 최대 두 개씩 검사하고 민감 정보가 없는 결과만 반환한다. */
+/** 고정된 여섯 경로를 최대 두 개씩 검사하고 민감 정보가 없는 결과만 반환한다. */
 export async function runProductionSmoke({
   origin = productionSmokeOrigin,
   sha,
