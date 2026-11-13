@@ -1,6 +1,6 @@
 # 코드 규칙 — 함께 읽고 고칠 수 있게 작성하기
 
-이 문서는 코드 작성 시 자주 쓰는 규칙을 설명합니다. 전체 기준은 저장소의 [AGENTS.md](https://github.com/yeongseon/hra-website/blob/main/AGENTS.md)이며, 기존 파일을 고칠 때는 주변 코드의 구조도 함께 확인합니다.
+이 문서는 코드 작성 시 자주 쓰는 규칙을 설명합니다. 전체 기준은 저장소의 [AGENTS.md](https://github.com/Human-Renaissance-Academy/hra-website/blob/main/AGENTS.md)이며, 기존 파일을 고칠 때는 주변 코드의 구조도 함께 확인합니다.
 
 ## 1. 언어와 이름
 
