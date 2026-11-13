@@ -202,3 +202,22 @@ b5a09f7  fix: press pagination and searchParams
 
 이 기록을 현재 모든 배포 실패의 원인으로 일반화하지 않습니다. 개발 화면, 타입·테스트·빌드, CI, 배포 후 실제 동작을 각각 확인하는 절차를 유지합니다.
 
+## 운영 관측: CI 실행 시간과 취소 경계
+
+2026-11-14 KST [#492](https://github.com/Human-Renaissance-Academy/hra-website/issues/492)에서 병합 PR 11건(#500, #501, #429, #490, #489, #488, #467, #479, #480, #478, #474)의 최종 head check-runs를 읽었다. 같은 이름은 가장 최근 실행 1개를 선택하고 성공 job의 `completed_at-started_at`만 집계했다. 편의 표본의 runner wall time이며 queue, 재실행 총량, workflow 전체 경과 시간, 청구 비용이 아니다.
+
+| 검사                             | 성공 표본 | 평균 초 |
+| -------------------------------- | --------: | ------: |
+| 변경 범위 판별                   |        11 |    37.5 |
+| Web CI                           |        10 |   696.4 |
+| 추적 소스·이력·dependency        |        11 |   120.5 |
+| 실제 production CSP·SDK·브라우저 |        11 |   160.2 |
+| 실제 debug APK 컴파일            |         3 |  1120.3 |
+
+성공 job 원본은 [#500 성공 실행](https://github.com/Human-Renaissance-Academy/hra-website/actions/runs/43465531126/job/132023862086), [#488 성공 실행](https://github.com/Human-Renaissance-Academy/hra-website/actions/runs/43444342463/job/131949750191)이다. 원본 PR 예시는 [#500](https://github.com/Human-Renaissance-Academy/hra-website/pull/500), [#429](https://github.com/Human-Renaissance-Academy/hra-website/pull/429), [#490](https://github.com/Human-Renaissance-Academy/hra-website/pull/490)이며 APK 표본은 [#488](https://github.com/Human-Renaissance-Academy/hra-website/pull/488)·[#467](https://github.com/Human-Renaissance-Academy/hra-website/pull/467)·[#479](https://github.com/Human-Renaissance-Academy/hra-website/pull/479) 3건이다. 문서 전용 [#501](https://github.com/Human-Renaissance-Academy/hra-website/pull/501)은 Web CI `skipped`로 성공 평균에서 제외했다. 범위 판별은 27초였고 소스·이력·dependency 및 실제 CSP 검사는 성공했으므로 문서 변경의 검증 비용이 0이라는 뜻은 아니다.
+
+실제 [#500 실패 실행](https://github.com/Human-Renaissance-Academy/hra-website/actions/runs/43464526998)은 소스 목록 계약, [#429 실패 실행](https://github.com/Human-Renaissance-Academy/hra-website/actions/runs/43457062948)은 포맷 검사에서 실패했다. 최신 head 성공과 과거 실패를 구분한다.
+
+취소된 [#490 실행](https://github.com/Human-Renaissance-Academy/hra-website/actions/runs/43450777018)과 [negative canary 실행](https://github.com/Human-Renaissance-Academy/hra-website/actions/runs/43516614083)에서는 범위 판별 성공 후 Web job이 각각 666초·218초 실행됐다. 현재 `always()`는 [취소 시 job 조건 재평가](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-cancellation)와 관련되지만 API metadata만으로 취소 요청 시각이나 지연의 단독 원인을 확정하지 않는다.
+
+단순 `!cancelled()` 치환의 안전성을 확인한 것은 아니다. 후속 실험은 범위 판별 성공·실패·취소·출력 누락, 문서 전용·unknown·코드 변경, 이전 head·현재 head 취소를 구분하고 현재 head 취소가 required 검사 skip 수용으로 병합 가능해지지 않는 fail-closed 회귀를 먼저 입증해야 한다. 이번 기록은 workflow 변경 없이 관측과 미실행 실험 경계만 남긴다. [필수 검사·보호 설정과 canary의 한계](../developer/repository-security-gates.md)를 함께 확인한다.

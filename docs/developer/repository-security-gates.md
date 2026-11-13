@@ -1,6 +1,6 @@
 # 저장소 secret·의존성 게이트
 
-이 검사는 공개 저장소의 지속 검증이며 실제 secret의 부재나 모든 취약점의 비도달성을 증명하지 않는다. GitHub native secret scanning과 push protection의 활성화 상태는 유지한다. standalone 검사는 이 기능을 보완한다.
+이 검사는 공개 저장소의 지속 검증이며 실제 secret의 부재나 모든 취약점의 비도달성을 증명하지 않는다. GitHub native secret scanning·push protection의 실제 상태는 아래 API 관측을 확인한다. standalone 검사는 별개의 검사이며 해당 기능의 활성화를 증명하지 않는다.
 
 ## Secret 검사
 
@@ -105,3 +105,13 @@ UTC 2026-11-05에는 루트 원장과 같은 원인으로 모바일 대상이 `D
 2026-11-14 관측 결과는 위 현행 원장 요약과 같다. [Zod 공식 권고](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5)는 `<4.6.6`에 영향을 주며 수정본은 `4.6.6`이다. 현재 루트·모바일 lock은 Zod `4.6.7`이고 모바일 `@expo/cli` `58.1.19`에는 Zod 전이 링크가 없어 해당 권고가 현재 audit에 보고되지 않는다. 이는 권고 철회가 아니라 설치 경로 해소다. `expo-cli-devtools-zod` context와 그 2026-11-18 기한도 현행 원장에 없다. 모바일의 가장 이른 현행 기한은 2026-11-25이며 최초 등록 기한을 연장한 서술이 아니다.
 
 모바일 release JS 번들(Metro)에는 위 패키지가 포함되지 않는다는 점은 [모바일 앱 문서](mobile-app.md)의 소스 맵 점검을 근거로 하며 운영 도달성 보증은 아니다. Dependabot은 `/apps/mobile` npm 의존성도 매주 검토하고 Expo SDK가 함께 고정하는 패키지를 `expo-sdk` 그룹으로 묶는다. TypeScript major만 루트(#436)와 같은 이유(Expo SDK 요구 6.0.3 고정·openapi-typescript override 호환성)로 자동 제안에서 제외하고 minor/patch는 계속 받는다. Android 네이티브(Gradle/Maven) 라이브러리는 npm audit 대상이 아니며 이 게이트 범위 밖이다.
+
+## 운영 관측: 필수 검사와 기본 보안 기능
+
+2026-11-14 KST [#408](https://github.com/Human-Renaissance-Academy/hra-website/issues/408) 관측에서 `main` 필수 검사는 `Lint · Typecheck · Test · Build`, `PR 형식`, `형식·릴리스 계약 테스트`, `Vercel`, `추적 소스 · 도달 가능한 이력 · dependency 검토`, `실제 production CSP · 에디터 · 인쇄 · Blob SDK` 6개였다. Actions App ID `15368`, Vercel `8329`, `strict=true`, `enforce_admins=true`를 확인했고 다른 보호 설정은 변경하지 않았다.
+
+실제 합성 [PR #502](https://github.com/Human-Renaissance-Academy/hra-website/pull/502)의 negative head `8bf18756`에서는 [required 보안 검사](https://github.com/Human-Renaissance-Academy/hra-website/actions/runs/43516614417/job/132200061649)가 `FAILURE`, 병합 상태가 `BLOCKED`였다. 실제 실패는 `dependency-policy.test.mjs`의 context별 고정 `reviewBy` 정합 assertion이다. registry 만료 거절은 로컬 validator에서 확인했으며 GHA의 registry 만료 단계에는 도달하지 않았다. 다른 검사도 pending이어서 이 실패 하나만의 병합 차단 효과를 분리 증명한 것은 아니다.
+
+원래 트리로 복원한 positive head `3369c708`에서는 필수 6개가 모두 `SUCCESS`, 병합 상태가 `CLEAN`이었다([Web CI](https://github.com/Human-Renaissance-Academy/hra-website/actions/runs/43516989146), [보안 검사](https://github.com/Human-Renaissance-Academy/hra-website/actions/runs/43516989235), [형식 검사](https://github.com/Human-Renaissance-Academy/hra-website/actions/runs/43517870235)). 병합은 시도하지 않았고 PR은 `closed`, `merged=false`로 정리했다. 추가 fork 실행은 미검증이다. 정적 설정 지문 일치는 실제 실행이나 승인·병합 성공의 증거가 아니다.
+
+같은 날 [#492](https://github.com/Human-Renaissance-Academy/hra-website/issues/492)의 읽기 전용 API 조회에서는 `secret_scanning`, `secret_scanning_push_protection`, `secret_scanning_non_provider_patterns`, `secret_scanning_validity_checks`, `dependabot_security_updates`가 모두 `disabled`였다. Dependabot alerts는 API `204`로 활성 상태를 확인했고 automated security fixes는 `enabled=false`, `paused=false`였다. 주간 version-update 설정은 security-update 자동 PR 활성이나 실행 성공을 뜻하지 않는다. CodeQL/code scanning 상태는 미확인이다. 이는 관측 기록이며 기능 활성화, 검사 삭제, 권한 완화의 승인이나 제안이 아니다.
