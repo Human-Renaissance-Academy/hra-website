@@ -34,7 +34,7 @@
 
 | 작업 | 먼저 확인할 문서 | 검증의 중심 |
 | --- | --- | --- |
-| 인증·권한 수정 | [AGENTS.md](https://github.com/yeongseon/hra-website/blob/main/AGENTS.md), 해당 기능 정책 | 허용·거부 조건, 기존 계정과 세션의 영향 |
+| 인증·권한 수정 | [AGENTS.md](https://github.com/Human-Renaissance-Academy/hra-website/blob/main/AGENTS.md), 해당 기능 정책 | 허용·거부 조건, 기존 계정과 세션의 영향 |
 | DB 구조·저장 로직 변경 | [DB 변경 절차](../developer/database-change-procedure.md) | 기존 데이터, 제약, 동시 요청, 적용·복구 |
 | 업로드·다운로드 변경 | [자료 접근 정책](../resource-access-policy.md), [파일 접근 정책](../resource-file-access-policy.md) | 권한, 파일 검증, 저장소 접근, 실패 후 정리 |
 | 신규 API·공용 업무 로직 | [플랫폼 아키텍처](../developer/platform-architecture.md) | 입력·응답 계약, Service와 Repository 경계 |
