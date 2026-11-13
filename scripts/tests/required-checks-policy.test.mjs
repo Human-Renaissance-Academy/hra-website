@@ -5,6 +5,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { collectEnvironmentReferences } from "../_lib/environment-contract.mjs";
 import {
   EXPECTED_WORKFLOW_FILES,
   GITHUB_ACTIONS_APP_ID,
@@ -17,6 +18,15 @@ import {
 
 const directory = new URL("../../.github/workflows/", import.meta.url);
 const cli = new URL("../check-required-checks-config.mjs", import.meta.url);
+
+test("YAML 환경 매핑 검사는 실제 환경변수 접근 계약과 충돌하지 않는다", () => {
+  const path = "scripts/_lib/required-checks-policy.mjs";
+  const text = readFileSync(new URL("../_lib/required-checks-policy.mjs", import.meta.url), "utf8");
+  // 정책 파일은 YAML 데이터만 읽으므로 전역 실행 환경의 이름이나 동적 접근이 없어야 합니다.
+  const result = collectEnvironmentReferences([{ path, text }]);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.references.size, 0);
+});
 
 function baseline() {
   return Object.fromEntries(readdirSync(directory)

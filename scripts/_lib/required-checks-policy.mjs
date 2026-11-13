@@ -190,7 +190,9 @@ export function validateWorkflowCheckBoundaries(workflows) {
   for (const file of ["ci.yml", "process-format.yml", "repository-security.yml"]) {
     const work = parsed[file];
     if (!work) continue;
-    if (work.env !== undefined || work.defaults !== undefined) {
+    // YAML의 환경 매핑은 실행 프로세스 환경과 구분해 구조 분해로 읽습니다.
+    const { env: workflowEnvironment } = work;
+    if (workflowEnvironment !== undefined || work.defaults !== undefined) {
       errors.push(file + ": required workflow environment/defaults must retain reviewed execution settings.");
     }
     for (const event of ["pull_request", "push"]) {
@@ -240,7 +242,8 @@ export function validateWorkflowCheckBoundaries(workflows) {
     if (expectedPermissions ? !sameEnvironment(job.permissions, expectedPermissions) : job.permissions !== undefined) {
       errors.push(key + ": job permissions must retain the reviewed read-only mapping.");
     }
-    if (job.defaults !== undefined || !sameEnvironment(job.env, expectedEnvironment(key))) {
+    const { env: jobEnvironment } = job;
+    if (job.defaults !== undefined || !sameEnvironment(jobEnvironment, expectedEnvironment(key))) {
       errors.push(key + ": unreviewed job environment/defaults could disable execution.");
     }
     if (expected.job === "pull-request" && job.concurrency?.group !==
@@ -252,15 +255,16 @@ export function validateWorkflowCheckBoundaries(workflows) {
         errors.push(key + ": invalid or fail-open step.");
         continue;
       }
+      const { env: stepEnvironment } = step;
       if (step.shell !== undefined || step["working-directory"] !== undefined ||
-          !sameEnvironment(step.env, expectedEnvironment(key, step))) {
+          !sameEnvironment(stepEnvironment, expectedEnvironment(key, step))) {
         errors.push(key + ": unreviewed step execution environment/shell/directory.");
       }
       // if를 삭제하고 같은 이름의 echo만 남기는 경우도 거부합니다.
       const allowed = key === "process-format.yml:contracts" ? CONDITIONAL_STEPS[step.name] : undefined;
       if (allowed) {
         if (step.if !== allowed.condition || step.run !== allowed.command ||
-            !sameEnvironment(step.env, allowed.environment)) {
+            !sameEnvironment(stepEnvironment, allowed.environment)) {
           errors.push(key + ": required conditional step must retain exact command/condition/environment: " + step.name);
         }
       } else if (step.if !== undefined) {
