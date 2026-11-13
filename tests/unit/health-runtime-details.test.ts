@@ -1,3 +1,7 @@
+/**
+ * 운영 상태 점검의 런타임 정보 노출 경계를 검증합니다.
+ * 정상·장애 응답에서 인증된 요청만 Node 메이저를 확인할 수 있어야 합니다.
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mock = vi.hoisted(() => ({
@@ -9,9 +13,12 @@ vi.mock("@/lib/errors", () => ({ logServerError: mock.logError }));
 
 import { GET } from "@/app/api/health/route";
 
-const health = (secret?: string) => GET(new Request("https://hra.example/api/health", {
-  headers: secret ? { "x-health-check-secret": secret } : {},
-}));
+const health = (secret?: string) =>
+  GET(
+    new Request("https://hra.example/api/health", {
+      headers: secret ? { "x-health-check-secret": secret } : {},
+    }),
+  );
 
 describe("운영 health의 Node 런타임 정보 최소 노출 (#294)", () => {
   beforeEach(() => {
@@ -30,8 +37,9 @@ describe("운영 health의 Node 런타임 정보 최소 노출 (#294)", () => {
     expect(mock.execute).toHaveBeenCalledTimes(1);
   });
 
-  it.each(["invalid", "synthetic-health-only-secret-", ""] )(
-    "잘못된 health secret은 내부 런타임을 볼 수 없다 (%s)", async secret => {
+  it.each(["invalid", "synthetic-health-only-secreX", "synthetic-health-only-secret-", ""])(
+    "잘못된 health secret은 내부 런타임을 볼 수 없다 (%s)",
+    async (secret) => {
       const result = await health(secret);
       expect(await result.json()).toEqual({ status: "ok" });
     },
@@ -64,9 +72,20 @@ describe("운영 health의 Node 런타임 정보 최소 노출 (#294)", () => {
     const details = await health("synthetic-health-only-secret");
     expect(details.status).toBe(503);
     const body = await details.json();
-    expect(body).toMatchObject({ status: "error", database: "unavailable",
-      nodeMajor: Number(process.versions.node.split(".")[0]) });
+    expect(body).toMatchObject({
+      status: "error",
+      database: "unavailable",
+      nodeMajor: Number(process.versions.node.split(".")[0]),
+    });
     expect(mock.execute).not.toHaveBeenCalled();
+  });
+
+  it("DB 조회 장애에서도 익명 응답은 상태만 반환한다", async () => {
+    mock.execute.mockRejectedValueOnce(new Error("synthetic-private-error"));
+    const result = await health();
+    expect(result.status).toBe(503);
+    expect(await result.json()).toEqual({ status: "error" });
+    expect(mock.logError).toHaveBeenCalledTimes(1);
   });
 
   it("DB query 실패 시 오류 원문·URI가 응답에 나오지 않는다", async () => {

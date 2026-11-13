@@ -1,11 +1,9 @@
 import { notFound } from "next/navigation";
 import { formatKstDate as formatDate } from "@/lib/date-time";
-import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import { PrintView } from "./_print-view";
 import { requireSharedResourceReader } from "@/lib/resource-access";
-import { db } from "@/lib/db";
-import { classLogs, users } from "@/lib/db/schema";
+import { getWebClassLogPrintable } from "@/features/class-logs/web/service";
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +11,8 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
-
 export default async function ClassLogPrintPage({ params }: Props) {
-  await requireSharedResourceReader();
+  const session = await requireSharedResourceReader();
 
   const { id } = await params;
 
@@ -25,18 +22,7 @@ export default async function ClassLogPrintPage({ params }: Props) {
     notFound();
   }
 
-  const [log] = await db
-    .select({
-      id: classLogs.id,
-      title: classLogs.title,
-      content: classLogs.content,
-      classDate: classLogs.classDate,
-      authorName: users.name,
-    })
-    .from(classLogs)
-    .leftJoin(users, eq(classLogs.authorId, users.id))
-    .where(eq(classLogs.id, parsedId.data))
-    .limit(1);
+  const log = await getWebClassLogPrintable(session.user.role, parsedId.data);
 
   if (!log) {
     notFound();

@@ -1,3 +1,7 @@
+/**
+ * 공개 가용성 점검과 인증된 운영자용 상세 상태 응답을 제공합니다.
+ * 익명 응답에는 가용 상태만 담고, 런타임 정보는 비밀값 인증 후 반환합니다.
+ */
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { sql } from "drizzle-orm";
