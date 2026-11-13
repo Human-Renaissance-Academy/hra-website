@@ -3,6 +3,7 @@
  * YAML 문법은 기존 의존성 js-yaml JSON_SCHEMA를 사용하며 자체 파서를 만들지 않습니다.
  */
 import yaml from "js-yaml";
+import { createHash } from "node:crypto";
 
 export const GITHUB_ACTIONS_APP_ID = 15368;
 export const VERCEL_APP_ID = 8329;
@@ -70,26 +71,97 @@ const JOB_IF = {
   "process-format.yml:pull-request": "github.event_name == 'pull_request'",
   "process-format.yml:contracts": "github.event_name != 'issues'",
 };
+// PR과 push의 모드·범위가 바뀌면 0개 커밋을 검사하고 성공할 수 있어 정확한 식을 고정합니다.
+const BASE_SHA = "${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}";
+const HEAD_SHA = "${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}";
+const HISTORY_MODE = "${{ github.event_name == 'pull_request' && '--pr-history' || '--history' }}";
 const CONDITIONAL_STEPS = {
   "OpenAPI 기존 계약 추가 전용 검사": {
-    command: "node scripts/check-openapi-compat.mjs --base-sha",
+    command: 'node scripts/check-openapi-compat.mjs --base-sha "$BASE_SHA"',
     condition: "github.event_name == 'push' || github.event_name == 'pull_request'",
+    environment: { BASE_SHA },
   },
   "OpenAPI 현재 문서·Route 검사": {
     command: "node scripts/check-openapi-compat.mjs --self",
     condition: "github.event_name == 'workflow_dispatch'",
+    environment: {},
   },
   "새 커밋 메시지 검사": {
-    commands: ["node scripts/check-commit-messages.mjs --history", 'node scripts/check-commit-messages.mjs "$HISTORY_MODE" "$BASE_SHA" "$HEAD_SHA"'],
+    command: 'node scripts/check-commit-messages.mjs "$HISTORY_MODE" "$BASE_SHA" "$HEAD_SHA"',
     condition: "github.event_name == 'push' || github.event_name == 'pull_request'",
+    environment: { HISTORY_MODE, BASE_SHA, HEAD_SHA },
   },
 };
 
-// 단계 이름, 주석, 여러 줄 문자열의 인용문이 아니라 실제 실행 줄에 있는지를 확인합니다.
-function activeLines(steps) {
-  return steps.flatMap((step) => typeof step.run === "string" && step.if === undefined
-    ? step.run.split(/\r?\n/).map((line) => line.trim()).filter((line) => line && !line.startsWith("#"))
-    : []);
+/** 환경 값을 오류에 출력하지 않고 검토한 키·값·완전성만 대조합니다. */
+function sameEnvironment(actual, expected) {
+  return (actual === undefined || isObject(actual)) &&
+    Object.keys(actual ?? {}).length === Object.keys(expected).length &&
+    Object.entries(expected).every(([key, value]) => actual?.[key] === value);
+}
+
+/** npm 별칭·NODE_OPTIONS·PATH·BASH_ENV·ENV 등을 놓치지 않도록 필요한 환경만 허용합니다.
+ * CI의 합성 DB/세션, PR 형식의 읽기 토큰, 조건부 검사의 고정 범위 외에는 현재 필요 환경이 없습니다.
+ * 플랫폼 환경이나 임의 셸의 무결성을 입증하는 sandbox는 아닙니다.
+ */
+function expectedEnvironment(key, step) {
+  if (!step && key === "ci.yml:ci") return {
+    DATABASE_URL: "postgresql://ci:ci@127.0.0.1:1/isolated",
+    AUTH_SECRET: "ci-only-secret-for-isolated-smoke-tests",
+    NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3100",
+  };
+  if (step && key === "process-format.yml:pull-request" && step.run === "node scripts/check-process-format.mjs --event") return {
+    GH_TOKEN: "${{ github.token }}", RELEASE_PLEASE_BOT_LOGIN: "${{ vars.RELEASE_PLEASE_BOT_LOGIN }}",
+  };
+  if (step && key === "process-format.yml:contracts") return CONDITIONAL_STEPS[step.name]?.environment ?? {};
+  return {};
+}
+
+/** 검토한 scanner 복합 셸의 변경 감지입니다. 보안 승인이나 실제 실행 증거가 아닙니다.
+ * 함수·trap·파이프·실패 흡수 등 본문이 바뀌면 해당 실행/음성 회귀를 검토한 뒤 지문과 회귀를 함께 갱신합니다.
+ */
+const SCANNER_RUN_SHA256 = "23bb69922f1ca0f1d9b889848fa2ac221b8131c023173158e5a2f3c31ff3be50";
+
+const NODE_TEST_COMMAND = /^node --test(?: scripts\/tests\/[A-Za-z0-9_.-]+\.test\.mjs)+$/;
+const DIRECT_CHECK_COMMANDS = Object.values(CHECK_COMMANDS).flat();
+
+/** 검토된 pipeline의 변경 감지이며 보안 불변식·실행 성공·검토 승인의 증명이 아닙니다.
+ * 별도 선행 run/uses가 npm 설정이나 GITHUB_ENV를 바꾸는 경로도 있어 필수 5 job의 전체 단계 형태를 고정합니다.
+ * 정상적인 gate/순서/env/uses 변경도 먼저 실제 실행·실패 전파 회귀를 검토하고 workflow와 이 지문을 함께 갱신합니다.
+ */
+const REVIEWED_PIPELINE_DIGESTS = {
+  "ci.yml:ci": "78db483ada67e8414b52e4eb0967e563230f3f0505816b732239821dc3854e2e",
+  "process-format.yml:pull-request": "ae70c42a9c814c1df9e9c238b87353f08b462cc50160cfa6b485820e83a263f1",
+  "process-format.yml:contracts": "9609c6b8d08644321f50e2b5c872744acf117f472a1dc4165f9a001f97dc370a",
+  "repository-security.yml:repository": "edcac22b2b55d615bed5b784ed51bfd5d079c07afebc966953750dbccfbf9e97",
+  "repository-security.yml:browser": "baed69b6efce5a1146adba27a84cea126c7c8fc336113e253567c9475d5be168"
+};
+const REVIEWED_JOB_PERMISSIONS = {
+  "process-format.yml:pull-request": { contents: "read", "pull-requests": "read" },
+  "process-format.yml:contracts": { contents: "read" },
+};
+
+/** 검토한 직접 명령만 인정하며, npm config 같은 설정 변경이나 혼합 셸은 전체 블록을 인정하지 않습니다. */
+function directCommands(step, key) {
+  if (typeof step.run !== "string") return [];
+  if (key === "repository-security.yml:repository" &&
+      createHash("sha256").update(step.run.trim()).digest("hex") === SCANNER_RUN_SHA256) {
+    return ["npm run verify:repository-secrets"];
+  }
+  const lines = step.run.split(/\r?\n/).map(line => line.trim()).filter(line => line && !line.startsWith("#"));
+  // 셸 연산자·치환·함수·따옴표 결합을 해석하지 않습니다. Node 배치 테스트만 파일 인수 집합을 허용합니다.
+  return lines.every(line => DIRECT_CHECK_COMMANDS.includes(line) || NODE_TEST_COMMAND.test(line)) ? lines : [];
+}
+
+/** Node 배치 테스트는 실제 파일 인수만 허용하며 --test-name-pattern/--list 같은 축소 옵션을 거부합니다. */
+function hasCommand(commands, required) {
+  return commands.some(line => {
+    if (line === required) return true;
+    if (!required.startsWith("node --test ") && !required.startsWith("scripts/tests/")) return false;
+    if (!NODE_TEST_COMMAND.test(line)) return false;
+    const requiredFiles = required.startsWith("node --test ") ? required.split(" ").slice(2) : [required];
+    return requiredFiles.every(file => line.split(" ").slice(2).includes(file));
+  });
 }
 
 export function parseWorkflow(text) {
@@ -118,6 +190,9 @@ export function validateWorkflowCheckBoundaries(workflows) {
   for (const file of ["ci.yml", "process-format.yml", "repository-security.yml"]) {
     const work = parsed[file];
     if (!work) continue;
+    if (work.env !== undefined || work.defaults !== undefined) {
+      errors.push(file + ": required workflow environment/defaults must retain reviewed execution settings.");
+    }
     for (const event of ["pull_request", "push"]) {
       const trigger = work.on[event];
       if (!isObject(trigger) || !Array.isArray(trigger.branches) ||
@@ -158,6 +233,16 @@ export function validateWorkflowCheckBoundaries(workflows) {
         job["continue-on-error"] !== undefined || job.uses !== undefined) {
       errors.push(key + ": job if/needs/strategy/error policy could skip the required check.");
     }
+    if (createHash("sha256").update(JSON.stringify(job.steps)).digest("hex") !== REVIEWED_PIPELINE_DIGESTS[key]) {
+      errors.push(key + ": REVIEWED_PIPELINE_DRIFT: reviewed step pipeline changed; execution review is required.");
+    }
+    const expectedPermissions = REVIEWED_JOB_PERMISSIONS[key];
+    if (expectedPermissions ? !sameEnvironment(job.permissions, expectedPermissions) : job.permissions !== undefined) {
+      errors.push(key + ": job permissions must retain the reviewed read-only mapping.");
+    }
+    if (job.defaults !== undefined || !sameEnvironment(job.env, expectedEnvironment(key))) {
+      errors.push(key + ": unreviewed job environment/defaults could disable execution.");
+    }
     if (expected.job === "pull-request" && job.concurrency?.group !==
         "process-format-pr-${{ github.event.pull_request.number }}") {
       errors.push(key + ": unexpected concurrency group.");
@@ -167,23 +252,19 @@ export function validateWorkflowCheckBoundaries(workflows) {
         errors.push(key + ": invalid or fail-open step.");
         continue;
       }
-      if (step.if !== undefined) {
-        const run = typeof step.run === "string" ? step.run.replace(/\s+/g, " ").trim() : "";
-        const allowed = CONDITIONAL_STEPS[step.name];
-        const acceptedCommands = allowed?.commands ?? (allowed ? [allowed.command] : []);
-        const commandMatched = acceptedCommands.some((command) => run.includes(command));
-        // 새 env 기반 커밋 검사는 PR 범위를 계산하는 --pr-history 계약도 유지해야 합니다.
-        // YAML의 step 수준 설정 객체이며 프로세스 환경변수를 읽지 않습니다.
-        const stepEnvironment = Object.entries(step).find(([key]) => key === "env")?.[1];
-        const validHistoryEnv = !run.includes("$HISTORY_MODE") ||
-          (String(stepEnvironment?.HISTORY_MODE).includes("--pr-history") &&
-           String(stepEnvironment?.HISTORY_MODE).includes("--history") &&
-           typeof stepEnvironment?.BASE_SHA === "string" &&
-           typeof stepEnvironment?.HEAD_SHA === "string");
-        if (key !== "process-format.yml:contracts" ||
-            !allowed || step.if !== allowed.condition || !commandMatched || !validHistoryEnv) {
-          errors.push(key + ": unauthorized conditional step or executable command: " + String(step.name ?? "unnamed"));
+      if (step.shell !== undefined || step["working-directory"] !== undefined ||
+          !sameEnvironment(step.env, expectedEnvironment(key, step))) {
+        errors.push(key + ": unreviewed step execution environment/shell/directory.");
+      }
+      // if를 삭제하고 같은 이름의 echo만 남기는 경우도 거부합니다.
+      const allowed = key === "process-format.yml:contracts" ? CONDITIONAL_STEPS[step.name] : undefined;
+      if (allowed) {
+        if (step.if !== allowed.condition || step.run !== allowed.command ||
+            !sameEnvironment(step.env, allowed.environment)) {
+          errors.push(key + ": required conditional step must retain exact command/condition/environment: " + step.name);
         }
+      } else if (step.if !== undefined) {
+        errors.push(key + ": unauthorized conditional step: " + String(step.name ?? "unnamed"));
       }
       if (typeof step.uses === "string" && step.uses.startsWith("actions/checkout@") &&
           step.with?.["persist-credentials"] !== false) {
@@ -199,14 +280,10 @@ export function validateWorkflowCheckBoundaries(workflows) {
         }
       }
     }
-    const commands = activeLines(job.steps);
+    const commands = job.steps.filter(step => isObject(step) && step.if === undefined)
+      .flatMap(step => directCommands(step, key));
     for (const required of CHECK_COMMANDS[key] || []) {
-      const found = required === "npm run test:e2e -- tests/e2e/ci-smoke.spec.ts"
-        ? commands.some((line) => line === required)
-        : required.startsWith("scripts/tests/")
-          ? commands.some((line) => line.startsWith("node --test ") && (" " + line + " ").includes(" " + required + " "))
-          : commands.some((line) => line.startsWith(required));
-      if (!found) {
+      if (!hasCommand(commands, required)) {
         errors.push(key + ": required executable command missing: " + required);
       }
     }
@@ -215,6 +292,20 @@ export function validateWorkflowCheckBoundaries(workflows) {
         s.uses.startsWith("actions/checkout@"));
       if (checkout?.with?.["fetch-depth"] !== 0) {
         errors.push(key + ": full Git history checkout is required.");
+      }
+    }
+  }
+
+  for (const [file, work] of Object.entries(parsed)) {
+    for (const [jobId, job] of Object.entries(work.jobs)) {
+      const owner = REQUIRED_MAIN_STATUS_CHECKS.find(check => check.file === file && check.job === jobId);
+      if (owner) continue;
+      const name = job?.name ?? jobId;
+      const reviewedDynamic = file === "production-smoke.yml" && jobId === "smoke" &&
+        name === "${{ inputs.fixture_alert && '알림 경로 합성 검증 (의도된 실패)' || 'Production 읽기 점검' }}";
+      if (typeof name !== "string" || (name.includes("${{") && !reviewedDynamic) ||
+          REQUIRED_MAIN_STATUS_CHECKS.some(check => check.context === name)) {
+        errors.push(file + ": unowned job name may duplicate a required check context: " + jobId);
       }
     }
   }
