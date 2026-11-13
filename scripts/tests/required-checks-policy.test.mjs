@@ -717,8 +717,90 @@ for (const [name, file, before, after, diagnostic] of scopeMutations) {
   });
 }
 
+// 실제 container나 runner를 실행하지 않고 YAML 데이터만 바꿔 검토한 여섯 job의 실행 경계를 확인합니다.
+const reviewedExecutionJobs = [
+  ...REQUIRED_MAIN_STATUS_CHECKS.filter((check) => check.file),
+  { file: "ci.yml", job: "scope" },
+];
+const executionMutations = reviewedExecutionJobs.flatMap(({ file, job }) => [
+  [file + ":" + job + ":runner", file, job, "runs-on", "self-hosted", "execution boundary"],
+  [
+    file + ":" + job + ":runner-array",
+    file,
+    job,
+    "runs-on",
+    ["ubuntu-latest"],
+    "execution boundary",
+  ],
+  [
+    file + ":" + job + ":container",
+    file,
+    job,
+    "container",
+    { image: "example.invalid/review-only:never-executed" },
+    "execution boundary",
+  ],
+  [file + ":" + job + ":services", file, job, "services", {}, "execution boundary"],
+  [
+    file + ":" + job + ":defaults",
+    file,
+    job,
+    "defaults",
+    { run: { shell: "bash" } },
+    "environment/defaults",
+  ],
+]);
+const cliMutations = [
+  ...scopeMutations.map(([name, file, before, after]) => [
+    name,
+    (files) => {
+      files[file] = files[file].replace(before, after);
+    },
+  ]),
+  ...executionMutations.map(([name, file, job, field, value]) => [
+    name,
+    (files) => {
+      const workflow = parseWorkflow(files[file]);
+      workflow.jobs[job][field] = value;
+      files[file] = JSON.stringify(workflow);
+    },
+  ]),
+  ...["ci.yml", "process-format.yml", "repository-security.yml"].map((file) => [
+    file + ":workflow-defaults",
+    (files) => {
+      const workflow = parseWorkflow(files[file]);
+      workflow.defaults = { run: { shell: "bash" } };
+      files[file] = JSON.stringify(workflow);
+    },
+  ]),
+];
+
+test("검토한 여섯 job은 ubuntu-latest이며 container/services/defaults가 없다", () => {
+  const files = baseline();
+  for (const { file, job } of reviewedExecutionJobs) {
+    const current = parseWorkflow(files[file]).jobs[job];
+    assert.equal(current["runs-on"], "ubuntu-latest");
+    for (const field of ["container", "services", "defaults"])
+      assert.equal(current[field], undefined);
+  }
+});
+for (const [name, file, job, field, value, diagnostic] of executionMutations) {
+  test(name + " 단계 지문과 독립적으로 실행 경계 이탈을 거부한다", () => {
+    const files = baseline();
+    const workflow = parseWorkflow(files[file]);
+    workflow.jobs[job][field] = value;
+    files[file] = JSON.stringify(workflow);
+    const errors = validateWorkflowCheckBoundaries(files);
+    assert.ok(errors.some((error) => error.includes(diagnostic)));
+    assert.equal(
+      errors.some((error) => error.includes("REVIEWED_PIPELINE_DRIFT")),
+      false,
+    );
+  });
+}
+
 // 실제 CLI와 동일한 상대 경로 구조에서 음성 변이를 실행해 라이브러리 검사만 통과하는 공백을 막습니다.
-test("최신 scope/EAS 음성 변이는 실제 CLI에서도 종료 코드 1로 차단한다", () => {
+test("최신 그래프와 실행 환경 음성 변이는 실제 CLI에서도 종료 코드 1로 차단한다", () => {
   const root = mkdtempSync(join(tmpdir(), "hra-checks-cli-mutations-"));
   try {
     mkdirSync(join(root, ".github/workflows"), { recursive: true });
@@ -734,9 +816,9 @@ test("최신 scope/EAS 음성 변이는 실제 CLI에서도 종료 코드 1로 �
         readFileSync(new URL("../" + path, import.meta.url)),
       );
     }
-    for (const [name, file, before, after] of scopeMutations) {
+    for (const [name, mutate] of cliMutations) {
       const files = baseline();
-      files[file] = files[file].replace(before, after);
+      mutate(files);
       for (const [path, text] of Object.entries(files))
         writeFileSync(join(root, ".github/workflows", path), text);
       const result = spawnSync(

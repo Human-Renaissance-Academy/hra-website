@@ -312,6 +312,14 @@ export function validateWorkflowCheckBoundaries(workflows) {
       errors.push(key + ": required job or name/steps missing.");
       continue;
     }
+    // 단계 지문이 같아도 runner·컨테이너가 달라지면 명령 실행 경계가 바뀌므로 별도로 검사합니다.
+    if (
+      job["runs-on"] !== "ubuntu-latest" ||
+      job.container !== undefined ||
+      job.services !== undefined
+    ) {
+      errors.push(key + ": reviewed runner/container/services execution boundary changed.");
+    }
     if (
       job.if !== JOB_IF[key] ||
       job.needs !== (key === "ci.yml:ci" ? "scope" : undefined) ||
