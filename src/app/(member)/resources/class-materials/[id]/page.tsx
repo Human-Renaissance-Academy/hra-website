@@ -11,14 +11,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { and, eq } from "drizzle-orm";
-import { z } from "zod/v4";
 import { ArrowLeft, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { db } from "@/lib/db";
-import { classMaterials } from "@/lib/db/schema";
 import { requireMember } from "@/lib/member";
-import { classMaterialReadFilter } from "@/features/class-materials/access";
+import {
+  getWebClassMaterialDetail,
+  getWebClassMaterialTitle,
+} from "@/features/class-materials/web/service";
 
 export const dynamic = "force-dynamic";
 
@@ -26,33 +25,17 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
-// 페이지와 메타데이터 모두 동일한 인가 경로를 통과합니다. 전역 캐시는 사용하지 않습니다.
-async function getVisibleMaterial(id: string) {
-  const session = await requireMember();
-  const parsedId = z.uuid().safeParse(id);
-  if (!parsedId.success) return null;
-  if (!session?.user?.id) return null;
-
-  const [material] = await db
-    .select()
-    .from(classMaterials)
-    .where(and(eq(classMaterials.id, parsedId.data), classMaterialReadFilter(session.user)))
-    .limit(1);
-  return material ?? null;
-}
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const session = await requireMember();
   const { id } = await params;
-  const material = await getVisibleMaterial(id);
-  return {
-    title: material ? `${material.title} — 강의 자료` : "강의 자료",
-  };
+  const title = await getWebClassMaterialTitle(session.user, id);
+  return { title: title ? `${title} — 강의 자료` : "강의 자료" };
 }
 
 export default async function ClassMaterialViewerPage({ params }: Props) {
+  const session = await requireMember();
   const { id } = await params;
-
-  const material = await getVisibleMaterial(id);
+  const material = await getWebClassMaterialDetail(session.user, id);
 
   if (!material) {
     notFound();
@@ -72,7 +55,10 @@ export default async function ClassMaterialViewerPage({ params }: Props) {
           <ArrowLeft className="size-4" />
           목록으로
         </Button>
-        <a href={`/api/resources/class-materials/${material.id}/download`} download={material.fileName}>
+        <a
+          href={`/api/resources/class-materials/${material.id}/download`}
+          download={material.fileName}
+        >
           <Button className="bg-[#1a1a1a] text-white hover:bg-[#333333]">
             <Download className="size-4" />
             다운로드
@@ -110,7 +96,10 @@ export default async function ClassMaterialViewerPage({ params }: Props) {
             이 파일 형식({ext.toUpperCase()})은 브라우저에서 미리볼 수 없습니다.
           </p>
           <p className="text-[#666666] text-sm">다운로드하여 확인해 주세요.</p>
-          <a href={`/api/resources/class-materials/${material.id}/download`} download={material.fileName}>
+          <a
+            href={`/api/resources/class-materials/${material.id}/download`}
+            download={material.fileName}
+          >
             <Button className="bg-[#2563EB] text-white hover:bg-blue-700">
               <Download className="size-4" />
               {material.fileName} 다운로드
