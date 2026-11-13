@@ -4,7 +4,13 @@
  */
 import "server-only";
 import * as repository from "./repository";
-import type { GalleryAlbum, GalleryEdit, GalleryImagesInput, GalleryInput, GallerySnapshot } from "./repository";
+import type {
+  GalleryAlbum,
+  GalleryEdit,
+  GalleryImagesInput,
+  GalleryInput,
+  GallerySnapshot,
+} from "./repository";
 
 export type GalleryActor = { userId: string; role: string };
 export type { GalleryAlbum, GalleryEdit, GallerySnapshot } from "./repository";
@@ -29,36 +35,74 @@ function assertAdmin(actor: GalleryActor): void {
 /** 목록 화면에 실제 사용하는 열과 사진 ID만 전달합니다. */
 export async function listAdminAlbums(actor: GalleryActor): Promise<GalleryAlbum[]> {
   assertAdmin(actor);
-  return (await repository.listAlbums()).map(row => ({
-    id: row.id, title: row.title, description: row.description, coverImageUrl: row.coverImageUrl,
-    createdAt: row.createdAt, images: row.images.map(image => ({ id: image.id })),
+  return (await repository.listAlbums()).map((row) => ({
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    coverImageUrl: row.coverImageUrl,
+    createdAt: row.createdAt,
+    images: row.images.map((image) => ({ id: image.id })),
   }));
 }
 
 /** 편집 DTO에는 폼·그리드에 필요한 표시 열만 남깁니다. */
-export async function getAdminGallery(actor: GalleryActor, id: string): Promise<GalleryEdit | null> {
+export async function getAdminGallery(
+  actor: GalleryActor,
+  id: string,
+): Promise<GalleryEdit | null> {
   assertAdmin(actor);
   const row = await repository.findEditGallery(id);
-  return row ? { id: row.id, title: row.title, description: row.description, coverImageUrl: row.coverImageUrl,
-    images: row.images.map(image => ({ id: image.id, url: image.url, alt: image.alt, order: image.order })) } : null;
+  return row
+    ? {
+        id: row.id,
+        title: row.title,
+        description: row.description,
+        coverImageUrl: row.coverImageUrl,
+        images: row.images.map((image) => ({
+          id: image.id,
+          url: image.url,
+          alt: image.alt,
+          order: image.order,
+        })),
+      }
+    : null;
 }
 
 /** 업로드 전에 앨범 존재와 기존 사진 수·대표 사진 스냅샷만 전달합니다. */
-export async function getGallerySnapshot(actor: GalleryActor, id: string): Promise<GallerySnapshot | null> {
+export async function getGallerySnapshot(
+  actor: GalleryActor,
+  id: string,
+): Promise<GallerySnapshot | null> {
   assertAdmin(actor);
   const row = await repository.findGalleryWithImages(id);
-  return row ? { id: row.id, coverImageUrl: row.coverImageUrl, images: row.images.map(image => ({ id: image.id })) } : null;
+  return row
+    ? {
+        id: row.id,
+        coverImageUrl: row.coverImageUrl,
+        images: row.images.map((image) => ({ id: image.id })),
+      }
+    : null;
 }
 
 /** 생성 입력은 명시한 두 필드만 저장소에 전달합니다. */
-export async function createAdminGallery(actor: GalleryActor, input: GalleryInput): Promise<{ id: string } | null> {
+export async function createAdminGallery(
+  actor: GalleryActor,
+  input: GalleryInput,
+): Promise<{ id: string } | null> {
   assertAdmin(actor);
-  const row = await repository.insertGallery({ title: input.title, description: input.description });
+  const row = await repository.insertGallery({
+    title: input.title,
+    description: input.description,
+  });
   return row ? { id: row.id } : null;
 }
 
 /** 원본처럼 존재 조회 뒤의 UPDATE는 변경 행 수를 별도로 검사하지 않습니다. */
-export async function updateAdminGallery(actor: GalleryActor, id: string, input: GalleryInput): Promise<void> {
+export async function updateAdminGallery(
+  actor: GalleryActor,
+  id: string,
+  input: GalleryInput,
+): Promise<void> {
   assertAdmin(actor);
   await repository.updateGallery(id, { title: input.title, description: input.description });
 }
@@ -70,7 +114,10 @@ export async function deleteAdminGallery(actor: GalleryActor, id: string): Promi
 }
 
 /** 실물·소유자 검사 이후 중복 조회→사진 INSERT→필요한 대표 사진 UPDATE 순서를 유지합니다. */
-export async function saveGalleryImages(actor: GalleryActor, input: GalleryImagesInput): Promise<ImageSaveResult> {
+export async function saveGalleryImages(
+  actor: GalleryActor,
+  input: GalleryImagesInput,
+): Promise<ImageSaveResult> {
   assertAdmin(actor);
   const existingImages = await repository.findImagesByUrls(input.urls);
   if (existingImages.length > 0) return { kind: "duplicate" };
@@ -93,7 +140,11 @@ export async function saveGalleryImages(actor: GalleryActor, input: GalleryImage
 }
 
 /** 정렬 전 소속 검사 오류는 기존처럼 UPDATE 오류 처리 바깥으로 전파합니다. */
-export async function checkGalleryImageIds(actor: GalleryActor, galleryId: string, ids: string[]): Promise<boolean> {
+export async function checkGalleryImageIds(
+  actor: GalleryActor,
+  galleryId: string,
+  ids: string[],
+): Promise<boolean> {
   assertAdmin(actor);
   return (await repository.findImageIds(galleryId, ids)).length === ids.length;
 }
@@ -106,7 +157,11 @@ export async function reorderAdminImages(actor: GalleryActor, galleryId: string,
 }
 
 /** 앨범→사진 소속→DELETE returning→조건부 대표 사진 갱신의 원본 순서를 유지합니다. */
-export async function deleteAdminImage(actor: GalleryActor, galleryId: string, imageId: string): Promise<ImageDeleteResult> {
+export async function deleteAdminImage(
+  actor: GalleryActor,
+  galleryId: string,
+  imageId: string,
+): Promise<ImageDeleteResult> {
   assertAdmin(actor);
   const gallery = await repository.findGalleryWithImages(galleryId);
   if (!gallery) return { kind: "missing-gallery" };
@@ -120,4 +175,13 @@ export async function deleteAdminImage(actor: GalleryActor, galleryId: string, i
     return { kind: "cover-error", error };
   }
   return { kind: "deleted" };
+}
+
+/** 파일·경로 검사 이후 호출하며 업로드 대상의 존재만 확인합니다. */
+export async function galleryExistsForDirectUpload(
+  actor: GalleryActor,
+  id: string,
+): Promise<boolean> {
+  assertAdmin(actor);
+  return repository.galleryExistsForDirectUpload(id);
 }

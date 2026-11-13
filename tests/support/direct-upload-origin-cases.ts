@@ -9,14 +9,23 @@ type OriginCaseOptions = {
   route: string;
   issue: (request: Request) => Promise<Response>;
   recordCount: () => number;
+  authCount: () => number;
 };
 
-export function directUploadOriginCases({ route, issue, recordCount }: OriginCaseOptions) {
+export function directUploadOriginCases({
+  route,
+  issue,
+  recordCount,
+  authCount,
+}: OriginCaseOptions) {
   const request = (url: string, origin: string | null, host: string, forwarded?: string) =>
     new NextRequest(`${url}${route}`, {
       method: "POST",
-      headers: { Host: host, ...(origin ? { Origin: origin } : {}),
-        ...(forwarded ? { "x-forwarded-host": forwarded } : {}) },
+      headers: {
+        Host: host,
+        ...(origin ? { Origin: origin } : {}),
+        ...(forwarded ? { "x-forwarded-host": forwarded } : {}),
+      },
       body: JSON.stringify({ type: "blob.generate-client-token" }),
     });
 
@@ -51,9 +60,12 @@ export function directUploadOriginCases({ route, issue, recordCount }: OriginCas
       ["다른 포트", "https://upload-origin.invalid:444", undefined],
       ["forwarded Host 위조", "https://other.invalid", "other.invalid"],
     ] as const)("%s는 원장을 기록하지 않고 거부합니다", async (_label, origin, forwarded) => {
-      const response = await issue(request("https://upload-origin.invalid", origin, "upload-origin.invalid", forwarded));
+      const response = await issue(
+        request("https://upload-origin.invalid", origin, "upload-origin.invalid", forwarded),
+      );
       expect(response.status).toBe(400);
       expect(recordCount()).toBe(0);
+      expect(authCount()).toBe(0);
     });
 
     it("Origin 누락은 기존 토큰 발급 허용 계약을 유지합니다", async () => {
