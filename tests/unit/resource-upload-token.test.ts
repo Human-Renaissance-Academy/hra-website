@@ -78,6 +78,7 @@ describe("자료실 직접 업로드 토큰", () => {
         undefined,
         request,
       ),
+    authCount: () => mocks.auth.mock.calls.length,
     recordCount: () => mocks.recordResourceUpload.mock.calls.length,
   });
 
