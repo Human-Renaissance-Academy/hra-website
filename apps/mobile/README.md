@@ -20,32 +20,32 @@ Android 우선, iOS 공통 Expo 앱입니다. 이메일 로그인·승인 대기
 
 `npm view expo@latest`는 **58.0.21**, `react-native@latest`는 **0.88.1**을 반환했습니다. [SDK 58 릴리스](https://expo.dev/changelog/sdk-58), [SDK 대응표](https://docs.expo.dev/versions/latest/), [기본 템플릿](https://github.com/expo/expo/tree/sdk-58/templates/expo-template-default), 설치한 `expo/bundledNativeModules.json`에 맞춰 직접 의존성을 정확한 버전으로 고정했습니다. 전체 전이 의존성은 자체 `package-lock.json`이 고정합니다.
 
-| 패키지 | 고정 버전 | 이유 |
-| --- | --- | --- |
-| expo | 58.0.21 | 현재 안정 SDK 58 |
-| react-native | 0.88.1 | SDK 대상 RN |
-| react / react-dom | 19.3.0 | SDK 요구값; DOM은 Router 전이 peer의 19.3.1 자동 선택 충돌 방지 |
-| expo-router | 58.0.28 | SDK 대응 파일 기반 라우팅 |
-| expo-secure-store | 58.0.2 | 후속 모바일 세션의 보안 저장소 |
-| expo-document-picker | 58.0.4 | 시스템 문서 선택 |
-| expo-file-system | 58.0.13 | 다운로드와 SDK 58 `File.preview()` |
-| expo-sharing | 58.0.21 | PDF 외부 공유 대안 |
-| expo-constants | 58.0.14 | 앱 메타데이터와 Router 요구 |
-| expo-status-bar | 58.0.4 | 상태바 |
-| expo-linking | 58.0.15 | Router 링크 요구 |
-| expo-system-ui | 58.0.7 | 밝은 UI 네이티브 설정 |
-| react-native-safe-area-context | 5.10.1 | edge-to-edge 안전 영역 |
-| react-native-screens | 4.30.1 | 네이티브 화면 스택 |
-| @tanstack/react-query | 5.105.0 | 후속 서버 상태 계층 v5 |
-| openapi-fetch | 0.17.0 | 생성 계약의 얇은 HTTP 클라이언트 |
-| openapi-typescript | 7.13.0 | OpenAPI 3.1 타입 생성 |
-| typescript | 6.0.3 | Expo doctor 및 템플릿 요구 |
-| jest / jest-expo | 30.5.2 / 58.0.13 | SDK 58 권장 Jest 런타임 조합 |
-| @testing-library/react-native | 14.1.0 | React 19 지원 렌더링; 비동기 render 사용 |
-| @types/jest / @types/react | 30.0.0 / 19.3.0 | 위 런타임 타입 |
-| eslint / eslint-config-expo | 9.39.1 / 58.0.4 | 저장소 ESLint와 SDK flat config |
-| expo-doctor | 1.21.5 | 건강 검사도 재현 가능한 버전 사용 |
-| sharp | 0.35.5 | 임시 아이콘 PNG 재생성 개발 도구(libvips·libheif·librsvg 권고 수정본, #446) |
+| 패키지                         | 고정 버전        | 이유                                                                        |
+| ------------------------------ | ---------------- | --------------------------------------------------------------------------- |
+| expo                           | 58.0.21          | 현재 안정 SDK 58                                                            |
+| react-native                   | 0.88.1           | SDK 대상 RN                                                                 |
+| react / react-dom              | 19.3.0           | SDK 요구값; DOM은 Router 전이 peer의 19.3.1 자동 선택 충돌 방지             |
+| expo-router                    | 58.0.28          | SDK 대응 파일 기반 라우팅                                                   |
+| expo-secure-store              | 58.0.2           | 후속 모바일 세션의 보안 저장소                                              |
+| expo-document-picker           | 58.0.4           | 시스템 문서 선택                                                            |
+| expo-file-system               | 58.0.13          | 다운로드와 SDK 58 `File.preview()`                                          |
+| expo-sharing                   | 58.0.21          | PDF 외부 공유 대안                                                          |
+| expo-constants                 | 58.0.14          | 앱 메타데이터와 Router 요구                                                 |
+| expo-status-bar                | 58.0.4           | 상태바                                                                      |
+| expo-linking                   | 58.0.15          | Router 링크 요구                                                            |
+| expo-system-ui                 | 58.0.7           | 밝은 UI 네이티브 설정                                                       |
+| react-native-safe-area-context | 5.10.1           | edge-to-edge 안전 영역                                                      |
+| react-native-screens           | 4.30.1           | 네이티브 화면 스택                                                          |
+| @tanstack/react-query          | 5.105.0          | 후속 서버 상태 계층 v5                                                      |
+| openapi-fetch                  | 0.17.0           | 생성 계약의 얇은 HTTP 클라이언트                                            |
+| openapi-typescript             | 7.13.0           | OpenAPI 3.1 타입 생성                                                       |
+| typescript                     | 6.0.3            | Expo doctor 및 템플릿 요구                                                  |
+| jest / jest-expo               | 30.5.2 / 58.0.13 | SDK 58 권장 Jest 런타임 조합                                                |
+| @testing-library/react-native  | 14.1.0           | React 19 지원 렌더링; 비동기 render 사용                                    |
+| @types/jest / @types/react     | 30.0.0 / 19.3.0  | 위 런타임 타입                                                              |
+| eslint / eslint-config-expo    | 9.39.1 / 58.0.4  | 저장소 ESLint와 SDK flat config                                             |
+| expo-doctor                    | 1.21.5           | 건강 검사도 재현 가능한 버전 사용                                           |
+| sharp                          | 0.35.5           | 임시 아이콘 PNG 재생성 개발 도구(libvips·libheif·librsvg 권고 수정본, #446) |
 
 OpenAPI 생성기 7.13.0의 TypeScript peer는 아직 `^5.x`입니다. 5.9.3으로 설치해 보았으나 doctor가 SDK 요구 `~6.0.3`과의 불일치를 검출했습니다. 따라서 **생성기에 한정한 npm override**로 TypeScript 6.0.3을 사용합니다. `--force`/`--legacy-peer-deps`, doctor 제외나 검사 비활성화는 사용하지 않습니다. 실제 타입 생성·최신성 비교·타입 검사를 검증합니다. 생성기의 공식 TypeScript 6 peer 지원은 후속 갱신 대상입니다.
 
@@ -118,6 +118,8 @@ APK: `android/app/build/outputs/apk/debug/app-debug.apk`, 약 235MB, application
 
 ## 출시 전 소유자 결정과 미검증 범위
 
+Android·iOS EAS 빌드 프로필, 수동 실행 보호 조건과 아직 완료되지 않은 계정·출시 승인은 [EAS 빌드 운영 절차](../../docs/developer/mobile-eas-release.md)에서 관리합니다. 설정 파일·워크플로 존재만으로 실제 출시가 완료된 것은 아닙니다.
+
 1. **`ANDROID_PACKAGE_PLACEHOLDER = com.hra.mobile` 승인**: 최초 Play 업로드 뒤 패키지 ID 변경 불가. iOS bundle ID도 출시 전에 별도 확정해야 합니다.
 2. 정식 아이콘/브랜딩과 운영 HTTPS API URL, 서명키 보관/릴리스 배포 정책이 필요합니다.
 3. 현재 수동 `android.versionCode = 1`; 매 Play 업로드마다 반드시 단조 증가시킵니다. 첫 배포 전 수동 관리 또는 EAS remote version 자동 증가 중 하나를 정해야 하며 이 작업은 EAS 계정/키를 만들지 않습니다.
@@ -130,17 +132,19 @@ APK: `android/app/build/outputs/apk/debug/app-debug.apk`, 약 235MB, application
 `src/auth/session-manager.ts`는 React와 무관하며 `AuthApi`, `TokenStore`, `now`를 주입받습니다. 상태는 `loading | signedOut | signedIn`, 액세스 토큰은 메모리 전용입니다. `runtime.ts`의 앱 수명 싱글턴을 반드시 공유합니다. 화면별 세션 관리자나 새 refresh 인터셉터를 만들지 않습니다.
 
 ```tsx
-import { useAuth } from '../src/auth/use-auth';
-import { getApiClient } from '../src/auth/runtime';
-import { apiQueryOptions } from '../src/query/client';
-import { useQuery } from '@tanstack/react-query';
+import { useAuth } from "../src/auth/use-auth";
+import { getApiClient } from "../src/auth/runtime";
+import { apiQueryOptions } from "../src/query/client";
+import { useQuery } from "@tanstack/react-query";
 
 // 보호된 화면 안에서 호출합니다. 토큰은 훅, 키, URL에 넣지 않습니다.
 const { status, user, role, isPending, error, logout, logoutAll, retry } = useAuth();
-const notices = useQuery(apiQueryOptions(['notices', user?.id], async (signal) => {
-  const { data } = await getApiClient().GET('/api/v1/notices', { signal });
-  return data;
-}));
+const notices = useQuery(
+  apiQueryOptions(["notices", user?.id], async (signal) => {
+    const { data } = await getApiClient().GET("/api/v1/notices", { signal });
+    return data;
+  }),
+);
 ```
 
 - `useAuth()` 공개값: `status, user({id,name,role}), role, isPending, login(email,password,device?), logout(), logoutAll(), error, retry()`.
@@ -195,8 +199,8 @@ import {
   Skeleton,
   SkeletonList,
   useRefresh,
-} from '../src/ui';
-import { ko } from '../src/i18n/ko';
+} from "../src/ui";
+import { ko } from "../src/i18n/ko";
 
 // 1) Screen + useRefresh + SectionHeader + Card + Chip + ListRow + Divider
 const { refreshing, onRefresh } = useRefresh(() => query.refetch());
@@ -206,25 +210,32 @@ const { refreshing, onRefresh } = useRefresh(() => query.refetch());
   <SectionHeader
     title="다가오는 일정"
     actionLabel="일정 전체 보기"
-    onActionPress={() => router.push('/(app)/(tabs)/schedule')}
+    onActionPress={() => router.push("/(app)/(tabs)/schedule")}
   />
-  <Card variant="elevated" padding="md" onPress={() => router.push('/(app)/assignments')}>
+  <Card variant="elevated" padding="md" onPress={() => router.push("/(app)/assignments")}>
     <Chip label="미제출" tone="warning" icon="time-outline" />
     <AppText variant="subheading">1주차 독서 에세이</AppText>
     <Divider spacing="sm" />
-    <AppText variant="bodySmall" tone="secondary">마감: 2026.11.07 23:59</AppText>
+    <AppText variant="bodySmall" tone="secondary">
+      마감: 2026.11.07 23:59
+    </AppText>
   </Card>
   <ListRow
     title="내 과제"
     subtitle="제출 현황 및 피드백 확인"
     meta="1건"
     leadingIcon="clipboard-outline"
-    onPress={() => router.push('/(app)/assignments')}
+    onPress={() => router.push("/(app)/assignments")}
   />
-</Screen>
+</Screen>;
 
 // 2) 로딩 / 빈 상태 / 오류 상태 / 확인 대화상자
-if (query.isPending) return <Screen><SkeletonList count={3} /></Screen>;
+if (query.isPending)
+  return (
+    <Screen>
+      <SkeletonList count={3} />
+    </Screen>
+  );
 if (query.isError) {
   return (
     <Screen centered>
@@ -233,13 +244,17 @@ if (query.isError) {
   );
 }
 if (items.length === 0) {
-  return <Screen centered><EmptyState description="등록된 공지가 없습니다." /></Screen>;
+  return (
+    <Screen centered>
+      <EmptyState description="등록된 공지가 없습니다." />
+    </Screen>
+  );
 }
 
 // 3) 위험 동작 확인 대화상자 (콜백 또는 await 지원)
 const confirmed = await confirmAction({
   title: ko.auth.logout,
-  message: '로그아웃하시겠습니까?',
+  message: "로그아웃하시겠습니까?",
   destructive: true,
 });
 if (confirmed) await logout();
@@ -269,9 +284,13 @@ const cache = createProtectedCache(fs);
 await cache.sweepProtectedCache(); // 기본 24시간, 앱 시작 때 호출
 const controller = new AbortController();
 const downloaded = await downloadProtectedFile({
-  fs, fileNameHint: guidebook.title, signal: controller.signal,
-  request: createProtectedRequest(getApiClient(), { kind: 'guidebook', id: guidebook.id }),
-  onProgress: ({ receivedBytes, totalBytes }) => { /* 화면 상태 갱신 */ },
+  fs,
+  fileNameHint: guidebook.title,
+  signal: controller.signal,
+  request: createProtectedRequest(getApiClient(), { kind: "guidebook", id: guidebook.id }),
+  onProgress: ({ receivedBytes, totalBytes }) => {
+    /* 화면 상태 갱신 */
+  },
 });
 await openProtectedFile(downloaded.uri, fs);
 // 내 제출 파일: {kind:'submission', submissionId, fileId}
@@ -286,15 +305,23 @@ Android는 VIEW intent에 content URI와 읽기 권한(flag 1)을 전달합니�
 ```ts
 const store = createSecureResumeStore(user.id); // 계정별 키, 토큰·파일 URI 저장 금지
 const deps = {
-  api: createSubmissionApi(getApiClient()), store,
-  upload: createBlobUploader({ transport: expoBlobTransport, now: Date.now, generateId: randomUUID }),
-  now: Date.now, generateId: randomUUID,
+  api: createSubmissionApi(getApiClient()),
+  store,
+  upload: createBlobUploader({
+    transport: expoBlobTransport,
+    now: Date.now,
+    generateId: randomUUID,
+  }),
+  now: Date.now,
+  generateId: randomUUID,
 };
 const run = createSubmitRunner(deps); // 화면/기능 수명 동안 하나만 유지: 중복 탭·429 차단
-const result = await run({kind:'new', assignmentId, file: {uri, name, sizeBytes, mimeType}},
-  {signal: controller.signal, onEvent: setSubmitState});
-await run({kind:'resume'}); // 저장된 식별자와 같은 submissionKey로 복구
-await run({kind:'cancel'}); // 서버 의도 삭제 성공 후 저장 삭제
+const result = await run(
+  { kind: "new", assignmentId, file: { uri, name, sizeBytes, mimeType } },
+  { signal: controller.signal, onEvent: setSubmitState },
+);
+await run({ kind: "resume" }); // 저장된 식별자와 같은 submissionKey로 복구
+await run({ kind: "cancel" }); // 서버 의도 삭제 성공 후 저장 삭제
 ```
 
 저수준 `runSubmitFlow(deps, command, controls?): Promise<SubmitResult>`도 공개합니다. result는 `kind: 'success'`(submission), `'cancelled'`, `'error'`(ApiError, retryAt, canResume)입니다. 상태 이벤트는 validating/creatingIntent/authorizing/uploading(percentage)/verifying/finalizing/cancelling/success/cancelled/error이며 토큰은 포함하지 않습니다. `retryAfterRemaining(retryAt, now)`는 UI 카운트다운용 초를 반환합니다. `ResumeStore`는 `read/write/clear`이고 레코드는 네 식별자와 `phase:'verifying'|'finalizing'`만 보관합니다.

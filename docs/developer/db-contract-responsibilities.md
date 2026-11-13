@@ -1,8 +1,8 @@
 # DB 변경 검증 정본별 책임과 중복 필드
 
-이 문서는 [#364](https://github.com/yeongseon/hra-website/issues/364)의 첫 번째 완료 조건에 대한 **현황 비교표**입니다. 기준은 `origin/main`의 정적 검토이며 운영 DB·migration 적용은 확인하지 않았습니다. 이 문서는 코드·계약 파일을 바꾸지 않고, 어떤 검사도 제거하거나 완화하자고 제안하지 않습니다.
+이 문서는 [#364](https://github.com/Human-Renaissance-Academy/hra-website/issues/364)의 첫 번째 완료 조건에 대한 **현황 비교표**입니다. 기준은 `origin/main`의 정적 검토이며 운영 DB·migration 적용은 확인하지 않았습니다. 이 문서는 코드·계약 파일을 바꾸지 않고, 어떤 검사도 제거하거나 완화하자고 제안하지 않습니다.
 
-- 운영 적용 게이트 구축은 [#280](https://github.com/yeongseon/hra-website/issues/280) 소관입니다. 아래 "향후 유도 가능" 항목은 **#280의 운영 경계가 준비된 뒤에만 검토할 수 있는 후보이며 아직 하나도 구현되지 않았습니다.**
+- 운영 적용 게이트 구축은 [#280](https://github.com/Human-Renaissance-Academy/hra-website/issues/280) 소관입니다. 아래 "향후 유도 가능" 항목은 **#280의 운영 경계가 준비된 뒤에만 검토할 수 있는 후보이며 아직 하나도 구현되지 않았습니다.**
 - 실제 versioned manifest는 `state: "unset"`, `migrations: []`입니다. 후보 파일·검사 통과는 운영 적용 가능 상태가 아닙니다.
 - 절차 자체는 [데이터베이스 변경 절차](database-change-procedure.md)를 따릅니다.
 

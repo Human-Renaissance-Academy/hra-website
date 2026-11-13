@@ -18,7 +18,7 @@ HRA_TEST_PG_BIN="$(pg_config --bindir)" npm run verify:auth-measurement -- \
 
 기준 소스는 실행기가 소유한 detached worktree에서, 현재 소스는 현재 worktree에서 별도로 빌드합니다. 양쪽은 같은 설치 의존성과 계측기를 사용하고 DB·서버·세션은 공유하지 않습니다. lockfile이 다르면 의존성 차이까지 최적화 효과로 오인하지 않도록 실패합니다. 새로운 Next/Auth.js 버전에서 관측 계약이 바뀌면 추정하지 않고 소스 계약 오류로 중단합니다.
 
-[인증 비용·권한 회수 회귀 Actions](https://github.com/yeongseon/hra-website/actions/workflows/authentication-measurement.yml)는 인증 관련 PR과 수동 실행에서 같은 비교를 수행합니다. 수동 실행에는 비교할 전체 commit SHA를 지정합니다. 최소 읽기 권한만 사용하고 정제 JSON 하나를 7일간 보관합니다. 외부 OAuth·Blob·운영 DB 비밀은 전달하지 않습니다.
+[인증 비용·권한 회수 회귀 Actions](https://github.com/Human-Renaissance-Academy/hra-website/actions/workflows/authentication-measurement.yml)는 인증 관련 PR과 수동 실행에서 같은 비교를 수행합니다. 수동 실행에는 비교할 전체 commit SHA를 지정합니다. 최소 읽기 권한만 사용하고 정제 JSON 하나를 7일간 보관합니다. 외부 OAuth·Blob·운영 DB 비밀은 전달하지 않습니다.
 
 ## 관측 대상과 해석
 

@@ -178,7 +178,7 @@ type Principal = {
 
 > **G2 출결 인가 경계(설계 중·미구현):** 위 `Principal.role`만으로 출결을 허용하지 않는다. `ADMIN`은 홈페이지 관리 권한이며, `FACULTY`는 출결 담당자가 아니다.
 > 출결은 검증된 로그인 계정과 해당 기수에 대한 유효한 기간 배정을 함께 확인해야 한다. 운영 인력은 어드바이저 1명과 조교 2명이며 교체·배정 종료 이력을 반영한다. 이를 새 전역 사용자 역할 신설로 해석하지 않는다.
-> [학사관리 로드맵](../ACADEMIC-MANAGEMENT-ROADMAP.md)과 [데이터 모델](../ACADEMIC-DATA-MODEL.md)의 경계를 유지한다. 보존·파기 정책 [#142](https://github.com/yeongseon/hra-website/issues/142), 정정·최종 승인 및 학사 운영 권한 정책 [#143](https://github.com/yeongseon/hra-website/issues/143)은 미정이다.
+> [학사관리 로드맵](../ACADEMIC-MANAGEMENT-ROADMAP.md)과 [데이터 모델](../ACADEMIC-DATA-MODEL.md)의 경계를 유지한다. 보존·파기 정책 [#142](https://github.com/Human-Renaissance-Academy/hra-website/issues/142), 정정·최종 승인 및 학사 운영 권한 정책 [#143](https://github.com/Human-Renaissance-Academy/hra-website/issues/143)은 미정이다.
 
 Web은 Auth.js cookie를 유지할 수 있다. Mobile은 short-lived access token + rotating refresh token을 사용한다. refresh token 원문은 서버 DB에 저장하지 않고 hash, 만료, 회전, revoke 상태를 관리한다.
 

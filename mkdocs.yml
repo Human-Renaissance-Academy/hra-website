@@ -1,6 +1,6 @@
 site_name: HRA 개발 가이드
 site_description: 처음 참여하는 개발자를 위한 HRA 실행, 코드 이해, 협업 및 운영 안내
-site_url: https://yeongseon.github.io/hra-website/
+site_url: https://human-renaissance-academy.github.io/hra-website/
 
 theme:
   name: material
@@ -30,8 +30,8 @@ theme:
   icon:
     repo: fontawesome/brands/github
 
-repo_url: https://github.com/yeongseon/hra-website
-repo_name: yeongseon/hra-website
+repo_url: https://github.com/Human-Renaissance-Academy/hra-website
+repo_name: Human-Renaissance-Academy/hra-website
 
 nav:
   - 개발 가이드: index.md
@@ -144,7 +144,7 @@ markdown_extensions:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/yeongseon/hra-website
+      link: https://github.com/Human-Renaissance-Academy/hra-website
     - icon: fontawesome/brands/instagram
       link: https://instagram.com/hra_official_
 
