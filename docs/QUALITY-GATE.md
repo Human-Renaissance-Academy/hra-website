@@ -19,7 +19,7 @@
 
 ## 2. 현재 기본 CI가 실행하는 검사
 
-개발·CI의 Node 버전은 `.nvmrc`의 `24`와 `engines.node`의 `24.x`를 따른다. 빌드의 실제 버전은 로그로 확인하며 현재 운영 Vercel의 런타임 일치 여부는 미확인이다.
+개발·CI의 Node 버전은 `.nvmrc`의 `24.15.0`과 `engines.node`의 `^24.15.0`를 따른다. 빌드의 실제 버전은 로그로 확인하며 현재 운영 Vercel의 런타임 일치 여부는 미확인이다.
 
 `main`에 대한 push와 pull request에서 `.github/workflows/ci.yml`의 한 job이 다음 순서로 실행한다. **기본 CI에는 G1 통합 검사와 브라우저 smoke가 모두 포함되어 있다.**
 

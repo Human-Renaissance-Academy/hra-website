@@ -38,7 +38,7 @@ HRA(Human Renaissance Academy)의 프로그램 소개, 회원 자료실, 관리�
 
 상세 절차는 시작 안내 세 문서가 담당합니다. 아래는 전체 순서입니다.
 
-1. Node.js, Git, 편집기를 준비합니다. 이 프로젝트는 지원 중인 LTS인 **Node.js 24.x**를 사용합니다. `.nvmrc`와 `package.json`의 `engines.node`가 기준입니다.
+1. Node.js, Git, 편집기를 준비합니다. 이 프로젝트는 지원 중인 LTS인 **Node.js 24.15.0 이상(24 계열)**을 사용합니다. `.nvmrc`와 `package.json`의 `engines.node`가 기준입니다.
 2. 저장소를 내려받고, 버전이 기록된 `package-lock.json`을 기준으로 의존성을 설치합니다.
 
    ```bash
@@ -48,7 +48,7 @@ HRA(Human Renaissance Academy)의 프로그램 소개, 회원 자료실, 관리�
    npm ci
    ```
 
-   nvm을 사용한다면 설치 전에 `nvm install` → `nvm use`로 `.nvmrc`의 24를 선택합니다. `node --version`은 `v24.`로 시작해야 합니다. **운영 Vercel의 실제 런타임 일치 여부는 미확인**이며, 실행 환경 확인은 [사전 준비](docs/getting-started/prerequisites.md)를 따릅니다.
+   nvm을 사용한다면 설치 전에 `nvm install` → `nvm use`로 `.nvmrc`의 24.15.0을 선택합니다. `node --version`이 `v24.15.0` 이상인 24 계열인지 확인합니다. **운영 Vercel의 실제 런타임 일치 여부는 미확인**이며, 실행 환경 확인은 [사전 준비](docs/getting-started/prerequisites.md)를 따릅니다.
 
 3. `.env.example`을 `.env`로 복사하고 **개발용** DB·인증 설정을 준비합니다. 운영 DB·Blob·OAuth 자격 증명은 개발용으로 복사하지 않습니다.
 4. [첫 실행 안내](docs/getting-started/first-run.md)에 따라 DB 준비 여부를 확인하고 개발 서버를 실행합니다.

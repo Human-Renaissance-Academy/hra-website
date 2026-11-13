@@ -12,7 +12,7 @@ git diff
 node --version
 ```
 
-[사전 준비](../getting-started/prerequisites.md)에 따라 Node 24를 사용합니다. `.nvmrc`는 `24`, `engines.node`는 `24.x`이며 nvm 사용자는 `nvm use`로 선택하고 실제 `node --version`을 확인합니다.
+[사전 준비](../getting-started/prerequisites.md)에 따라 Node 24를 사용합니다. `.nvmrc`는 `24.15.0`, `engines.node`는 `^24.15.0`이며 nvm 사용자는 `nvm use`로 선택하고 실제 `node --version`을 확인합니다.
 
 변경 파일이 요청한 범위에 맞는지 확인합니다. DB·파일 저장소를 사용하는 검사는 개발·검증용 환경을 준비하며, 운영 자격 증명을 일반 테스트에 연결하지 않습니다.
 
