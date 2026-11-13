@@ -98,5 +98,5 @@ DB 백업은 Blob 본문을 포함하지 않는다. 현재 합성 로컬 Postgre
 | 비공개 원본·URL·로그·사본 | 현재 전달 경계 정리, 운영 보존 기준 미정 | 원본·원장·로그·백업·업무 사본별 실제 설정 및 파기 확인 방법 |
 | 복구·고아 정리의 정책 일치 | 격리 합성 검증 완료, 운영 확인 미완료 | 5절의 승인된 기준과 운영 백업·Blob 복구·재삭제 검증. #157과 연결 |
 
-관련 이슈: [#142 보존·파기 정책](https://github.com/yeongseon/hra-website/issues/142), [#143 후속 학사 운영 정책](https://github.com/yeongseon/hra-website/issues/143), [#157 감사·관측·복구](https://github.com/yeongseon/hra-website/issues/157). 상위 결정은 [학사 로드맵 D8](ACADEMIC-MANAGEMENT-ROADMAP.md), 현재 G1 범위는 [학생 과제 제출 1차 범위](ASSIGNMENT-SUBMISSION-SCOPE.md)를 참조한다.
+관련 이슈: [#142 보존·파기 정책](https://github.com/Human-Renaissance-Academy/hra-website/issues/142), [#143 후속 학사 운영 정책](https://github.com/Human-Renaissance-Academy/hra-website/issues/143), [#157 감사·관측·복구](https://github.com/Human-Renaissance-Academy/hra-website/issues/157). 상위 결정은 [학사 로드맵 D8](ACADEMIC-MANAGEMENT-ROADMAP.md), 현재 G1 범위는 [학생 과제 제출 1차 범위](ASSIGNMENT-SUBMISSION-SCOPE.md)를 참조한다.
 
