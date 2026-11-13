@@ -1,0 +1,26 @@
+# 설치/빌드/테스트 생성물
+node_modules/
+.next/
+out/
+build/
+site/
+coverage/
+test-results/
+.playwright-mcp/
+screenshots/
+
+# 외부 도구 및 독립 모바일 프로젝트는 별도 정책으로 관리
+apps/mobile/
+
+# 생성물과 마이그레이션·DB 소스: Prettier가 덮어쓰지 않게 보호
+next-env.d.ts
+**/*.generated.ts
+**/*.generated.tsx
+**/*.gen.ts
+**/*.d.ts
+packages/contracts/openapi.json
+package-lock.json
+**/package-lock.json
+scripts/**/*.sql
+scripts/db/candidates/
+measurements/
