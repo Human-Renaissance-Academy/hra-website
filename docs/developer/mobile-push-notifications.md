@@ -77,5 +77,6 @@ notification_deliveries
 4. 승인한 Expo/FCM/APNs 공급자 선택, 프로젝트/계정·환경 분리(#279) 및 실기기 검증(#274/#276/#283)
 5. 과제 공개·마감 이벤트의 commit-after outbox, 재처리 worker, 비용·rate limit·불필요한 알림 방지 및 장애 추적
 6. 개인정보/보존 정책(#142), 운영 알림 수신 허용 여부 및 배포 전 운영 승인
+7. 현재 `revokeInstallation`은 설치 ID만 받으므로 토큰 회전 뒤 늦게 도착한 이전 토큰의 `invalid-token` 응답이 새 토큰까지 해제할 수 있습니다. 실제 연결 전에는 발송 당시 토큰의 version/fingerprint가 현재 저장값과 일치할 때만 조건부 revoke하도록 계약·DB 어댑터를 보완하고, 토큰 회전과 늦은 `invalid-token` 응답의 경합 회귀를 반드시 검증해야 합니다. 현재 순수 서비스·mock 테스트는 이 보호를 구현하거나 증명하지 않습니다.
 
 위 조건이 갖춰지기 전에는 `dispatchNotification`을 API에서 직접 호출하거나 실제 push provider를 실서비스에 연결하지 않습니다. 신규 queue·broker·마이크로서비스를 미리 도입하지 않습니다.
