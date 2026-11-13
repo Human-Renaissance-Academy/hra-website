@@ -15,21 +15,40 @@ describe("강의자료 읽기 권한", () => {
     const list = readFileSync("src/features/resources/overview/repository.ts", "utf8");
     const page = readFileSync("src/app/(member)/resources/page.tsx", "utf8");
     const detail = readFileSync("src/app/(member)/resources/class-materials/[id]/page.tsx", "utf8");
-    // 자료실 화면은 직접 DB를 열지 않고 검증된 현재 역할을 저장소 SQL 필터에 넘깁니다.
-    expect(page).toContain("getResourcesOverview({ userId: session.user.id, role: session.user.role })");
+    const webService = readFileSync("src/features/class-materials/web/service.ts", "utf8");
+    const webRepository = readFileSync("src/features/class-materials/web/repository.ts", "utf8");
+    // 페이지를 Service/Repository로 분리해도 목록·상세·메타데이터의 SQL 인가가 보존되어야 합니다.
+    expect(page).toContain(
+      "getResourcesOverview({ userId: session.user.id, role: session.user.role })",
+    );
     expect(page).not.toContain('from "@/lib/db"');
-    expect(list).toContain(".where(classMaterialReadFilter({ id: verified.id, role: verified.role }))");
-    expect(detail).toContain("classMaterialReadFilter(session.user)");
-    expect(detail.match(/await getVisibleMaterial\(id\)/g)).toHaveLength(2);
+    expect(list).toContain(
+      ".where(classMaterialReadFilter({ id: verified.id, role: verified.role }))",
+    );
+    expect(detail).not.toContain('from "@/lib/db"');
+    expect(detail).toContain("getWebClassMaterialTitle(session.user, id)");
+    expect(detail).toContain("getWebClassMaterialDetail(session.user, id)");
+    expect(webService).toContain("canReadSharedResource(user.role)");
+    expect(webService).toContain("z.uuid().safeParse(id)");
+    expect(webService).toContain("findWebClassMaterialTitle(user!, validId)");
+    expect(webService).toContain("findWebClassMaterialDetail(user!, validId)");
+    expect(webRepository.match(/classMaterialReadFilter\(user\)/g)).toHaveLength(2);
+    expect(webRepository).not.toContain("fileUrl: classMaterials.fileUrl");
   });
-  it.each([undefined, null, {}, { role: "ADMIN" }, { id: "", role: "ADMIN" },
-    { id: "user", role: "PENDING" }, { id: "user", role: "UNKNOWN" }, { id: "user" }])(
-    "인증되지 않았거나 허용되지 않은 사용자는 항상 거절: %j", (user) => {
-      const query = dialect.sqlToQuery(classMaterialReadFilter(user));
-      expect(query.sql).toBe("false");
-      expect(query.params).toEqual([]);
-    },
-  );
+  it.each([
+    undefined,
+    null,
+    {},
+    { role: "ADMIN" },
+    { id: "", role: "ADMIN" },
+    { id: "user", role: "PENDING" },
+    { id: "user", role: "UNKNOWN" },
+    { id: "user" },
+  ])("인증되지 않았거나 허용되지 않은 사용자는 항상 거절: %j", (user) => {
+    const query = dialect.sqlToQuery(classMaterialReadFilter(user));
+    expect(query.sql).toBe("false");
+    expect(query.params).toEqual([]);
+  });
 
   it("일반 회원은 학생용만 조회", () => {
     const query = dialect.sqlToQuery(classMaterialReadFilter({ id: "user", role: "MEMBER" }));
