@@ -70,7 +70,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      # 변경된 규칙 자체도 검증한다. 읽기 전용, 토큰/DB 비밀값/의존성 설치 없이 실행한다.
+      # 변경된 규칙 자체도 검증합니다. 읽기 전용이며 토큰/DB 비밀값 없이 기존 YAML 의존성을 설치합니다.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
@@ -78,6 +78,10 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
+      - run: npm ci
+      # Web CI가 정상 범위 생략되어도 필수 체크 정책은 기존 required 계약 job에서 검사합니다.
+      - run: node --test scripts/tests/required-checks-policy.test.mjs
+      - run: node scripts/check-required-checks-config.mjs
       - run: node --test scripts/tests/release-policy.test.mjs scripts/tests/process-format-check.test.mjs
       - run: node scripts/check-release-config.mjs
       - run: node --test scripts/tests/commit-messages.test.mjs

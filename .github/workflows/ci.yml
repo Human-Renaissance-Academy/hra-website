@@ -77,6 +77,12 @@ jobs:
       - name: 의존성 설치
         run: npm ci
 
+      - name: PR 필수 보안 검사 생성·우회 방지 계약
+        # 기존 required Web CI에 검증기를 포함하되 운영 secret·추가 네트워크는 전달하지 않습니다.
+        run: |
+          node --test scripts/tests/required-checks-policy.test.mjs
+          node scripts/check-required-checks-config.mjs
+
       - name: DB 소스 목록 계약 검사
         # Git 경로와 파일 바이트만 읽으며 SQL·DB·Blob·환경 파일을 실행하지 않습니다.
         run: |

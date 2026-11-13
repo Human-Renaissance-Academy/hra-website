@@ -87,11 +87,13 @@ npm run lint
 npm run typecheck
 npm test
 npm run build
-node --test scripts/tests/release-policy.test.mjs
+npm ci
+node --test scripts/tests/release-policy.test.mjs scripts/tests/required-checks-policy.test.mjs
 node scripts/check-release-config.mjs
+node scripts/check-required-checks-config.mjs
 ```
 
-인증·라우팅 등 브라우저 동작을 바꿨다면 [빌드·배포 가이드](build-and-deploy-safety.md)의 환경 조건을 준비하고 관련 E2E와 실제 화면도 확인합니다. 결과나 미실행 사유를 PR에 남깁니다. `npm test`의 성공 종료만 보지 말고 관련 DB 테스트가 건너뛰어졌는지도 확인합니다.
+인증·라우팅 등 브라우저 동작을 바꿨다면 [빌드·배포 가이드](build-and-deploy-safety.md)의 환경 조건을 준비하고 관련 E2E와 실제 화면도 확인합니다. 결과나 미실행 사유를 PR에 남깁니다. `npm test`의 성공 종료만 보지 말고 관련 DB 테스트가 건너뛰어졌는지도 확인합니다. PR 필수 보안·품질 체크 정본과 예약·운영 관측 분리 기준, 실제 `main` 브랜치 보호 설정 대조 절차는 [GitHub Actions 권한과 필수 체크 경계](../developer/github-actions-security.md)를 따릅니다.
 
 로컬 훅이 설정된 환경에서는 커밋 전 타입 검사, 코드 ref 푸시 전 빌드를 실행합니다. 훅을 우회하지 않습니다. 독립 리뷰는 [AGENTS.md §11](https://github.com/Human-Renaissance-Academy/hra-website/blob/main/AGENTS.md)의 **변경 위험 기준**을 모든 도구에 동일하게 적용합니다. PR에는 위험 판단 이유, 검증 결과, 필요한 독립 리뷰와 남은 위험을 적습니다.
 
