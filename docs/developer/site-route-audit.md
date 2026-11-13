@@ -18,19 +18,19 @@
 
 | 순서 | 감사 ID | 범위 | 상태·PR |
 | --- | --- | --- | --- |
-| 1 | QA001 | 공지 검색 입력 처리 | 완료 · [#252](https://github.com/yeongseon/hra-website/pull/252) 병합 |
-| 2 | QA012 | 승인 대기 화면 렌더링 | 완료 · [#253](https://github.com/yeongseon/hra-website/pull/253) 병합 |
-| 3 | QA010 | 관리자 서식 편집 화면 | 완료 · [#254](https://github.com/yeongseon/hra-website/pull/254) 병합 |
-| 4 | QA011 | 이미지 업로드 요청 본문 검증 | 완료 · [#255](https://github.com/yeongseon/hra-website/pull/255) 병합 |
-| 5 | QA002 | 순서 변경의 원자 저장 | 완료 · [#256](https://github.com/yeongseon/hra-website/pull/256) 병합 |
-| 6 | QA003 | 학적 참조 회원 삭제 안내 | 완료 · [#257](https://github.com/yeongseon/hra-website/pull/257) 병합 |
-| 7 | QA013 | 오류 기록의 정보 최소화 | 완료 · [#258](https://github.com/yeongseon/hra-website/pull/258) 병합 |
-| 8 | QA004 | 없는 언론보도·FAQ 수정 결과 | 완료 · [#259](https://github.com/yeongseon/hra-website/pull/259) 병합 |
-| 9 | QA005 | 공지 검색과 방문 기록의 입력 동기화 | 완료 · [#260](https://github.com/yeongseon/hra-website/pull/260) 병합 |
-| 10 | QA006 | 홈 달력의 태블릿 가로 넘침 | 완료 · [#261](https://github.com/yeongseon/hra-website/pull/261) 병합 |
-| 11 | QA007 | 업로드 요청의 출처 판정 일관성 | 완료 · [#262](https://github.com/yeongseon/hra-website/pull/262) 병합 |
-| 12 | QA008 | 공유 다운로드 스트림 종료 처리 | 완료 · [#263](https://github.com/yeongseon/hra-website/pull/263) 병합 |
-| 13 | QA009 | 언론보도 삭제 실패 시 화면 복원 | 완료 · [#264](https://github.com/yeongseon/hra-website/pull/264) 병합 |
+| 1 | QA001 | 공지 검색 입력 처리 | 완료 · [#252](https://github.com/Human-Renaissance-Academy/hra-website/pull/252) 병합 |
+| 2 | QA012 | 승인 대기 화면 렌더링 | 완료 · [#253](https://github.com/Human-Renaissance-Academy/hra-website/pull/253) 병합 |
+| 3 | QA010 | 관리자 서식 편집 화면 | 완료 · [#254](https://github.com/Human-Renaissance-Academy/hra-website/pull/254) 병합 |
+| 4 | QA011 | 이미지 업로드 요청 본문 검증 | 완료 · [#255](https://github.com/Human-Renaissance-Academy/hra-website/pull/255) 병합 |
+| 5 | QA002 | 순서 변경의 원자 저장 | 완료 · [#256](https://github.com/Human-Renaissance-Academy/hra-website/pull/256) 병합 |
+| 6 | QA003 | 학적 참조 회원 삭제 안내 | 완료 · [#257](https://github.com/Human-Renaissance-Academy/hra-website/pull/257) 병합 |
+| 7 | QA013 | 오류 기록의 정보 최소화 | 완료 · [#258](https://github.com/Human-Renaissance-Academy/hra-website/pull/258) 병합 |
+| 8 | QA004 | 없는 언론보도·FAQ 수정 결과 | 완료 · [#259](https://github.com/Human-Renaissance-Academy/hra-website/pull/259) 병합 |
+| 9 | QA005 | 공지 검색과 방문 기록의 입력 동기화 | 완료 · [#260](https://github.com/Human-Renaissance-Academy/hra-website/pull/260) 병합 |
+| 10 | QA006 | 홈 달력의 태블릿 가로 넘침 | 완료 · [#261](https://github.com/Human-Renaissance-Academy/hra-website/pull/261) 병합 |
+| 11 | QA007 | 업로드 요청의 출처 판정 일관성 | 완료 · [#262](https://github.com/Human-Renaissance-Academy/hra-website/pull/262) 병합 |
+| 12 | QA008 | 공유 다운로드 스트림 종료 처리 | 완료 · [#263](https://github.com/Human-Renaissance-Academy/hra-website/pull/263) 병합 |
+| 13 | QA009 | 언론보도 삭제 실패 시 화면 복원 | 완료 · [#264](https://github.com/Human-Renaissance-Academy/hra-website/pull/264) 병합 |
 
 ## 재현 환경과 명령
 
@@ -161,22 +161,22 @@ HTTP 행렬에는 익명과 다섯 합성 계정이 있다. `manager`는 별도 
 
 ## 감사 당시의 별도 정책·외부 설정과 후속 학사 작업
 
-감사 당시 확인한 13종과 별개로 **12개 열린 이슈**가 남아 있었다. 아래 표는 그 시점의 후속 범위를 보존하며 현재 열린 이슈 수나 우선순위 목록이 아니다. 최신 작업 순서는 [검토 후속 우선순위 추적 #300](https://github.com/yeongseon/hra-website/issues/300)과 각 이슈의 현재 상태를 확인한다. 기관 정책·외부 설정 또는 선행 정책에 연결된 후속 구현을 구분하며, 이 감사의 기술 수정으로 정책을 확정하거나 운영 설정을 활성화하지 않는다.
+감사 당시 확인한 13종과 별개로 **12개 열린 이슈**가 남아 있었다. 아래 표는 그 시점의 후속 범위를 보존하며 현재 열린 이슈 수나 우선순위 목록이 아니다. 최신 작업 순서는 [검토 후속 우선순위 추적 #300](https://github.com/Human-Renaissance-Academy/hra-website/issues/300)과 각 이슈의 현재 상태를 확인한다. 기관 정책·외부 설정 또는 선행 정책에 연결된 후속 구현을 구분하며, 이 감사의 기술 수정으로 정책을 확정하거나 운영 설정을 활성화하지 않는다.
 
 | 이슈 | 남은 조건·범위 |
 | --- | --- |
-| [#142](https://github.com/yeongseon/hra-website/issues/142) | 학사 개인정보·제출 파일의 보존·백업·파기 정책 확정 |
-| [#143](https://github.com/yeongseon/hra-website/issues/143) | 운영 인력·출결·교수 과제 검토·수료 정책 확정 |
-| [#157](https://github.com/yeongseon/hra-website/issues/157) | 관측 체계 기술 구현은 완료. #142의 보존·백업 정책과 일치하는지 확인 대기 |
-| [#159](https://github.com/yeongseon/hra-website/issues/159) | #143을 전제로 한 출결 모델·정정 서버 계약 |
-| [#160](https://github.com/yeongseon/hra-website/issues/160) | #143을 전제로 한 운영 인력의 출결 입력·현황·본인 열람 화면 |
-| [#161](https://github.com/yeongseon/hra-website/issues/161) | #143을 전제로 한 교수 계정 연결·담당 수업/과제 검토 권한 |
-| [#162](https://github.com/yeongseon/hra-website/issues/162) | #143을 전제로 한 과제 검토·피드백 이력·담당자 평가 화면 |
-| [#163](https://github.com/yeongseon/hra-website/issues/163) | 수료 기준·심사·확정 이력에 필요한 정책과 후속 구현 |
-| [#164](https://github.com/yeongseon/hra-website/issues/164) | 단계별 학사 전환의 추적 이슈. 선행 정책·구현 완료에 따라 갱신 |
-| [#165](https://github.com/yeongseon/hra-website/issues/165) | #143을 전제로 한 기수별 어드바이저·조교 배정과 출결 권한 |
-| [#168](https://github.com/yeongseon/hra-website/issues/168) | 릴리스 자동화의 봇·전용 토큰 설정이 미구성·비활성. 확인한 39회 실행은 모두 `SKIPPED`, 실패 0건으로 현재 권한 실패가 확인된 상태는 아님 |
-| [#178](https://github.com/yeongseon/hra-website/issues/178) | 카카오 콘솔 동의 설정과 실제 계정 이메일의 외부 확인 |
+| [#142](https://github.com/Human-Renaissance-Academy/hra-website/issues/142) | 학사 개인정보·제출 파일의 보존·백업·파기 정책 확정 |
+| [#143](https://github.com/Human-Renaissance-Academy/hra-website/issues/143) | 운영 인력·출결·교수 과제 검토·수료 정책 확정 |
+| [#157](https://github.com/Human-Renaissance-Academy/hra-website/issues/157) | 관측 체계 기술 구현은 완료. #142의 보존·백업 정책과 일치하는지 확인 대기 |
+| [#159](https://github.com/Human-Renaissance-Academy/hra-website/issues/159) | #143을 전제로 한 출결 모델·정정 서버 계약 |
+| [#160](https://github.com/Human-Renaissance-Academy/hra-website/issues/160) | #143을 전제로 한 운영 인력의 출결 입력·현황·본인 열람 화면 |
+| [#161](https://github.com/Human-Renaissance-Academy/hra-website/issues/161) | #143을 전제로 한 교수 계정 연결·담당 수업/과제 검토 권한 |
+| [#162](https://github.com/Human-Renaissance-Academy/hra-website/issues/162) | #143을 전제로 한 과제 검토·피드백 이력·담당자 평가 화면 |
+| [#163](https://github.com/Human-Renaissance-Academy/hra-website/issues/163) | 수료 기준·심사·확정 이력에 필요한 정책과 후속 구현 |
+| [#164](https://github.com/Human-Renaissance-Academy/hra-website/issues/164) | 단계별 학사 전환의 추적 이슈. 선행 정책·구현 완료에 따라 갱신 |
+| [#165](https://github.com/Human-Renaissance-Academy/hra-website/issues/165) | #143을 전제로 한 기수별 어드바이저·조교 배정과 출결 권한 |
+| [#168](https://github.com/Human-Renaissance-Academy/hra-website/issues/168) | 릴리스 자동화의 봇·전용 토큰 설정이 미구성·비활성. 확인한 39회 실행은 모두 `SKIPPED`, 실패 0건으로 현재 권한 실패가 확인된 상태는 아님 |
+| [#178](https://github.com/Human-Renaissance-Academy/hra-website/issues/178) | 카카오 콘솔 동의 설정과 실제 계정 이메일의 외부 확인 |
 
 ## 완료 확인
 

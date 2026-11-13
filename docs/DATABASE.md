@@ -123,7 +123,7 @@ SELECT COUNT(*) FROM application_submissions;
 
 `schema.ts` 수정, DB 적용, 앱 배포는 서로 다른 작업입니다. [DB 변경 절차](developer/database-change-procedure.md)에서 빈 개발 DB와 기존 DB를 구분해 진행합니다. 타입 정의만 수정하거나 앱만 배포했다고 운영 DB가 갱신되지는 않습니다.
 
-현재 범위별 스크립트가 있으며, 자동 적용 이력과 Production migration gate는 [#280](https://github.com/yeongseon/hra-website/issues/280)의 후속 작업입니다. 문서의 적용 절차와 이미 자동화된 보호 장치를 구분합니다.
+현재 범위별 스크립트가 있으며, 자동 적용 이력과 Production migration gate는 [#280](https://github.com/Human-Renaissance-Academy/hra-website/issues/280)의 후속 작업입니다. 문서의 적용 절차와 이미 자동화된 보호 장치를 구분합니다.
 
 ## 코드 근거
 

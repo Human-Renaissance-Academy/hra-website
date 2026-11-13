@@ -1,6 +1,6 @@
 # 확장 E2E 회귀 검사
 
-관련: [#332](https://github.com/yeongseon/hra-website/issues/332). 기본 PR CI와 별도로 공개 브라우저 흐름을 검사하고 학사 G1의 사용자 여정을 다시 실행합니다. 모든 E2E 파일을 전수 실행하는 명령은 아닙니다.
+관련: [#332](https://github.com/Human-Renaissance-Academy/hra-website/issues/332). 기본 PR CI와 별도로 공개 브라우저 흐름을 검사하고 학사 G1의 사용자 여정을 다시 실행합니다. 모든 E2E 파일을 전수 실행하는 명령은 아닙니다.
 
 ## 실행과 비용
 

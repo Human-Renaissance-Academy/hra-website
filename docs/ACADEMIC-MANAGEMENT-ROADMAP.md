@@ -153,17 +153,17 @@
 - 구현되지 않은 기능을 README/운영 가이드에 이미 동작하는 것처럼 기록하지 않는다.
 ## 10. GitHub 구현 이슈 추적 (2026-10-13 등록)
 
-모든 세부 항목과 현재 진행 여부는 **[학사관리 통합 추적 #164](https://github.com/yeongseon/hra-website/issues/164)**에서 관리한다. 아래는 최초 생성 시점의 작업 분할표이며, 완료 여부는 각 이슈 상태가 정본이다. 문서만으로 완료를 주장하지 않는다.
+모든 세부 항목과 현재 진행 여부는 **[학사관리 통합 추적 #164](https://github.com/Human-Renaissance-Academy/hra-website/issues/164)**에서 관리한다. 아래는 최초 생성 시점의 작업 분할표이며, 완료 여부는 각 이슈 상태가 정본이다. 문서만으로 완료를 주장하지 않는다.
 
 | 단계 | 선행 정책/설계 | 구현 이슈 |
 | --- | --- | --- |
-| 정책 | [#140](https://github.com/yeongseon/hra-website/issues/140) 학적 등록·계정 연결, [#141](https://github.com/yeongseon/hra-website/issues/141) 과제 규칙, [#142](https://github.com/yeongseon/hra-website/issues/142) 개인정보 보존 | 결정 전 운영 변경 금지 |
-| G1-A 학생 학적 | #140 | [#144](https://github.com/yeongseon/hra-website/issues/144) 스키마, [#145](https://github.com/yeongseon/hra-website/issues/145) 검증 연결/백필, [#146](https://github.com/yeongseon/hra-website/issues/146) 명부 UI |
-| G1-B 과제 모델 | #140·#141 | [#147](https://github.com/yeongseon/hra-website/issues/147) 과제·대상, [#148](https://github.com/yeongseon/hra-website/issues/148) 제출·파일·업로드 의도 |
-| G1-C 서버·보안 | #147·#148·#101 | [#149](https://github.com/yeongseon/hra-website/issues/149) 관리자 액션, [#150](https://github.com/yeongseon/hra-website/issues/150) 학생 조회, [#151](https://github.com/yeongseon/hra-website/issues/151) 업로드, [#152](https://github.com/yeongseon/hra-website/issues/152) 제출 확정, [#153](https://github.com/yeongseon/hra-website/issues/153) 파일 API |
-| G1-D 화면·QA | #149~#153 | [#154](https://github.com/yeongseon/hra-website/issues/154) 학생 UI, [#155](https://github.com/yeongseon/hra-website/issues/155) 관리자 과제 UI, [#156](https://github.com/yeongseon/hra-website/issues/156) 제출 현황, [#157](https://github.com/yeongseon/hra-website/issues/157) 감사·관측, [#158](https://github.com/yeongseon/hra-website/issues/158) 통합/E2E·CI |
-| G2 출결·운영 인력 | [#143](https://github.com/yeongseon/hra-website/issues/143) 운영·출결 정책 | [#165](https://github.com/yeongseon/hra-website/issues/165) 기수별 어드바이저·조교 배정/권한, [#159](https://github.com/yeongseon/hra-website/issues/159) 출결 모델, [#160](https://github.com/yeongseon/hra-website/issues/160) 운영 인력·학사 운영진 화면. [#161](https://github.com/yeongseon/hra-website/issues/161)은 교수의 수업/과제 검토 권한만 다룸 |
-| G3 평가·수료 | #143·#142 | [#162](https://github.com/yeongseon/hra-website/issues/162) 피드백, [#163](https://github.com/yeongseon/hra-website/issues/163) 수료 확정 |
+| 정책 | [#140](https://github.com/Human-Renaissance-Academy/hra-website/issues/140) 학적 등록·계정 연결, [#141](https://github.com/Human-Renaissance-Academy/hra-website/issues/141) 과제 규칙, [#142](https://github.com/Human-Renaissance-Academy/hra-website/issues/142) 개인정보 보존 | 결정 전 운영 변경 금지 |
+| G1-A 학생 학적 | #140 | [#144](https://github.com/Human-Renaissance-Academy/hra-website/issues/144) 스키마, [#145](https://github.com/Human-Renaissance-Academy/hra-website/issues/145) 검증 연결/백필, [#146](https://github.com/Human-Renaissance-Academy/hra-website/issues/146) 명부 UI |
+| G1-B 과제 모델 | #140·#141 | [#147](https://github.com/Human-Renaissance-Academy/hra-website/issues/147) 과제·대상, [#148](https://github.com/Human-Renaissance-Academy/hra-website/issues/148) 제출·파일·업로드 의도 |
+| G1-C 서버·보안 | #147·#148·#101 | [#149](https://github.com/Human-Renaissance-Academy/hra-website/issues/149) 관리자 액션, [#150](https://github.com/Human-Renaissance-Academy/hra-website/issues/150) 학생 조회, [#151](https://github.com/Human-Renaissance-Academy/hra-website/issues/151) 업로드, [#152](https://github.com/Human-Renaissance-Academy/hra-website/issues/152) 제출 확정, [#153](https://github.com/Human-Renaissance-Academy/hra-website/issues/153) 파일 API |
+| G1-D 화면·QA | #149~#153 | [#154](https://github.com/Human-Renaissance-Academy/hra-website/issues/154) 학생 UI, [#155](https://github.com/Human-Renaissance-Academy/hra-website/issues/155) 관리자 과제 UI, [#156](https://github.com/Human-Renaissance-Academy/hra-website/issues/156) 제출 현황, [#157](https://github.com/Human-Renaissance-Academy/hra-website/issues/157) 감사·관측, [#158](https://github.com/Human-Renaissance-Academy/hra-website/issues/158) 통합/E2E·CI |
+| G2 출결·운영 인력 | [#143](https://github.com/Human-Renaissance-Academy/hra-website/issues/143) 운영·출결 정책 | [#165](https://github.com/Human-Renaissance-Academy/hra-website/issues/165) 기수별 어드바이저·조교 배정/권한, [#159](https://github.com/Human-Renaissance-Academy/hra-website/issues/159) 출결 모델, [#160](https://github.com/Human-Renaissance-Academy/hra-website/issues/160) 운영 인력·학사 운영진 화면. [#161](https://github.com/Human-Renaissance-Academy/hra-website/issues/161)은 교수의 수업/과제 검토 권한만 다룸 |
+| G3 평가·수료 | #143·#142 | [#162](https://github.com/Human-Renaissance-Academy/hra-website/issues/162) 피드백, [#163](https://github.com/Human-Renaissance-Academy/hra-website/issues/163) 수료 확정 |
 
 - **G0는 신규 중복 이슈를 생성하지 않았다.** 기존 #88·#89·#91·#97·#101·#102·#103·#109·#125 등의 최신 구현/테스트와 이슈 완료 상태를 검증한다.
 - 신규 작업은 `question`·`enhancement + P2 + 분류`로 구분하고, 같은 기능을 개발 중이라는 이유만으로 구현 완료 처리하지 않는다.
