@@ -6,7 +6,7 @@
 
 구조의 정본은 `src/lib/db/mobile-sessions.ts`와 `schema.ts`의 두 모델 재수출이다. 기존 DB 변경 후보는 **하나의** `scripts/migrate-mobile-sessions.sql`이다. 신규 설치는 47개 표의 schema-export 후보와 한국어 COMMENT 보완 `mobile-sessions.sql` 후보를 사용한다. 독립 reference는 원문 migration을 실행하고 후보 bundle은 export와 COMMENT를 실행하여 전체 prefix 카탈로그를 비교한다. 고정 digest 갱신은 적용 승인이나 과거 적용 이력이 아니다. 운영 manifest는 `unset`, `freshReady`와 `productionReady`는 `false`로 유지한다.
 
-이 작업은 소유 일회성 로컬 PostgreSQL에서만 검증한다. 실제 DB에는 적용하지 않는다. 운영 적용은 Production migration gate인 [#280](https://github.com/yeongseon/hra-website/issues/280)의 경계와 [DB 변경 절차](database-change-procedure.md)의 대상·소유권·백업·복구·승인 확인을 따른다. 앱 배포 과정에 SQL 실행을 끼우지 않는다.
+이 작업은 소유 일회성 로컬 PostgreSQL에서만 검증한다. 실제 DB에는 적용하지 않는다. 운영 적용은 Production migration gate인 [#280](https://github.com/Human-Renaissance-Academy/hra-website/issues/280)의 경계와 [DB 변경 절차](database-change-procedure.md)의 대상·소유권·백업·복구·승인 확인을 따른다. 앱 배포 과정에 SQL 실행을 끼우지 않는다.
 
 ## 검토·별도 적용
 

@@ -2,7 +2,7 @@
 
 이 문서는 HRA 웹사이트를 **실행하고, 수정하고, 확인한 뒤 반영하는 방법**을 안내합니다. 개발을 전공하지 않았더라도 필요한 일을 순서대로 찾을 수 있도록 구성했습니다.
 
-[웹사이트](https://hra-website-theta.vercel.app) · [코드 저장소](https://github.com/yeongseon/hra-website) · [전체 문서 지도](documentation-map.md) · [작업 우선순위](https://github.com/yeongseon/hra-website/issues/300)
+[웹사이트](https://hra-website-theta.vercel.app) · [코드 저장소](https://github.com/Human-Renaissance-Academy/hra-website) · [전체 문서 지도](documentation-map.md) · [작업 우선순위](https://github.com/Human-Renaissance-Academy/hra-website/issues/300)
 
 ## 처음 참여한다면
 

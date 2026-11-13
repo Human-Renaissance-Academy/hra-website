@@ -15,7 +15,7 @@ concurrency:
 jobs:
   release-please:
     # 별도 토큰과 Actions PR 생성 권한을 확인한 뒤 저장소 변수를 켠다.
-    if: github.repository == 'yeongseon/hra-website' && github.ref == 'refs/heads/main' && vars.RELEASE_PLEASE_ENABLED == 'true'
+    if: github.repository == 'Human-Renaissance-Academy/hra-website' && github.ref == 'refs/heads/main' && vars.RELEASE_PLEASE_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

@@ -1,6 +1,6 @@
 # 운영 공개 경로 점검과 장애 확인
 
-관련: [#333](https://github.com/yeongseon/hra-website/issues/333). **배포 성공**은 앱 생성·배포 결과이고 **smoke 성공**은 공개 경로 여섯 개의 콘텐츠·보안 헤더 응답 계약 결과입니다. 로그인·관리자 쓰기·과제·OAuth·실제 업로드 성공을 대신하지 않습니다. 이 점검의 HTTP 응답만으로 서비스 중인 SHA를 증명하지도 않습니다.
+관련: [#333](https://github.com/Human-Renaissance-Academy/hra-website/issues/333). **배포 성공**은 앱 생성·배포 결과이고 **smoke 성공**은 공개 경로 여섯 개의 콘텐츠·보안 헤더 응답 계약 결과입니다. 로그인·관리자 쓰기·과제·OAuth·실제 업로드 성공을 대신하지 않습니다. 이 점검의 HTTP 응답만으로 서비스 중인 SHA를 증명하지도 않습니다.
 
 ## 대상과 실행
 
@@ -41,7 +41,7 @@ node --test scripts/tests/production-smoke*.test.mjs
 
 ## 알림 채널과 담당자
 
-최소 채널은 [운영 가용성 점검 Actions](https://github.com/yeongseon/hra-website/actions/workflows/production-smoke.yml)의 **실패 상태·작업 요약·정제 JSON artifact**입니다. 운영 확인 담당은 저장소 관리자(현재 `yeongseon`)이며 기수별 출결 담당 권한과는 관계없습니다. 스크립트의 실패 종료는 실제 job/run failure로 전파합니다. [종료 코드 계약](https://docs.github.com/en/actions/how-tos/create-and-publish-actions/set-exit-codes), [작업 요약 계약](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#adding-a-job-summary).
+최소 채널은 [운영 가용성 점검 Actions](https://github.com/Human-Renaissance-Academy/hra-website/actions/workflows/production-smoke.yml)의 **실패 상태·작업 요약·정제 JSON artifact**입니다. 운영 확인 담당은 저장소 관리자(현재 `yeongseon`)이며 기수별 출결 담당 권한과는 관계없습니다. 스크립트의 실패 종료는 실제 job/run failure로 전파합니다. [종료 코드 계약](https://docs.github.com/en/actions/how-tos/create-and-publish-actions/set-exit-codes), [작업 요약 계약](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#adding-a-job-summary).
 
 이메일·웹 알림은 개인 구독·설정에 따라 달라집니다. 저장소 소유자에게 자동 이메일이 도착한다고 보장하지 않습니다. 예약 알림 수신은 일정 작성/수정자와 재활성화 사용자에 영향을 받으므로 담당자 교체 시 cron·개인 알림 설정을 함께 점검합니다. 개인 이메일 수신 완료는 이 구현의 검증 범위가 아닙니다. [실행 알림](https://docs.github.com/en/actions/concepts/workflows-and-actions/notifications-for-workflow-runs), [개인 알림 설정](https://docs.github.com/en/subscriptions-and-notifications/how-tos/managing-github-actions-notifications).
 
