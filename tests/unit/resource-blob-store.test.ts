@@ -42,7 +42,9 @@ describe("보호 자료 업로드 저장소", () => {
       storeId: "private123",
     });
     expect(isCurrentResourceUploadUrl(`https://${projectBlobHost}/file.pdf`)).toBe(false);
-    expect(isCurrentResourceUploadUrl("https://private123.private.blob.vercel-storage.com/file.pdf")).toBe(true);
+    expect(
+      isCurrentResourceUploadUrl("https://private123.private.blob.vercel-storage.com/file.pdf"),
+    ).toBe(true);
   });
 
   it("Preview는 NODE_ENV=production이어도 기존 분리 검증용 공개 fallback이 유지된다", () => {
@@ -58,11 +60,19 @@ describe("보호 자료 업로드 저장소", () => {
     vi.stubEnv("RESOURCE_PRIVATE_BLOB_HOST", "private123.private.blob.vercel-storage.com");
     vi.stubEnv("RESOURCE_PRIVATE_READ_WRITE_TOKEN", "server-only-token");
     expect(resourceUploadStore()).toEqual({
-      access: "private", host: "private123.private.blob.vercel-storage.com",
-      token: "server-only-token", storeId: "private123",
+      access: "private",
+      host: "private123.private.blob.vercel-storage.com",
+      token: "server-only-token",
+      storeId: "private123",
     });
     expect(isCurrentResourceUploadUrl(`https://${projectBlobHost}/file.pdf`)).toBe(false);
-    expect(isCurrentResourceUploadUrl("https://private123.private.blob.vercel-storage.com/file.pdf")).toBe(true);
-    expect(isCurrentResourceUploadUrl("https://private123.private.blob.vercel-storage.com.attacker.test/file.pdf")).toBe(false);
+    expect(
+      isCurrentResourceUploadUrl("https://private123.private.blob.vercel-storage.com/file.pdf"),
+    ).toBe(true);
+    expect(
+      isCurrentResourceUploadUrl(
+        "https://private123.private.blob.vercel-storage.com.attacker.test/file.pdf",
+      ),
+    ).toBe(false);
   });
 });
