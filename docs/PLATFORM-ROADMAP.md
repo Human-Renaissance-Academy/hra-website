@@ -10,7 +10,7 @@
 
 API-first는 화면 종류가 달라도 같은 요청·응답 약속을 사용한다는 뜻이다. 모듈러 모놀리스는 기능을 나누되 서버는 하나의 배포 단위로 유지한다는 뜻이고, monorepo는 여러 앱과 공용 코드를 한 저장소에서 관리한다는 뜻이다. 세부 용어는 [용어집](getting-started/glossary.md)에 있다.
 
-현재 결함·운영 보호와 신규 확장의 우선순위는 [전체 추적 #300](https://github.com/yeongseon/hra-website/issues/300)을 따른다. 이 단계 표는 출시일이나 운영 준비 완료를 보장하지 않는다.
+현재 결함·운영 보호와 신규 확장의 우선순위는 [전체 추적 #300](https://github.com/Human-Renaissance-Academy/hra-website/issues/300)을 따른다. 이 단계 표는 출시일이나 운영 준비 완료를 보장하지 않는다.
 
 ## 결정
 

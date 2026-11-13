@@ -14,7 +14,7 @@
 
 기존의 복수 행 사전 조회, 컬럼·제약·기본행 결합 설치와 사후 단일 행 검증은 비활성입니다. 기본행 SQL은 같은 파일의 순수 문자열 `recruitmentDefaultInsertSql`로 보존해 선언 소유자와 독립 신규 설치 검증의 근거를 유지합니다. 모듈 import나 공개 CLI는 이 문장을 실행하지 않습니다. 상수·소유 로컬 PostgreSQL 회귀·신규 설치 후보의 보존을 기존 DB 결합 업그레이드의 검증이나 운영 승인으로 사용하지 않습니다.
 
-실제 적용은 [DB 변경 절차](developer/database-change-procedure.md)와 [#280](https://github.com/yeongseon/hra-website/issues/280)의 대상·백업/복구·승인이 검증된 업그레이드 경로가 마련된 뒤 진행합니다. 다음은 해당 검토에서 확인할 조건이며, 현재 CLI는 DB를 조회해 행 수를 판정하지 않습니다.
+실제 적용은 [DB 변경 절차](developer/database-change-procedure.md)와 [#280](https://github.com/Human-Renaissance-Academy/hra-website/issues/280)의 대상·백업/복구·승인이 검증된 업그레이드 경로가 마련된 뒤 진행합니다. 다음은 해당 검토에서 확인할 조건이며, 현재 CLI는 DB를 조회해 행 수를 판정하지 않습니다.
 
 | 기존 행 수 | 별도 승인된 업그레이드에서 확인할 조건 |
 | --- | --- |
