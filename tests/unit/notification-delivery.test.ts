@@ -15,7 +15,12 @@ const eventId = "33333333-3333-4333-8333-333333333333";
 const assignmentId = "44444444-4444-4444-8444-444444444444";
 const androidId = "55555555-5555-4555-8555-555555555555";
 const iosId = "66666666-6666-4666-8666-666666666666";
-const event: NotificationEvent = { id: eventId, userId, assignmentId, kind: "ASSIGNMENT_PUBLISHED" };
+const event: NotificationEvent = {
+  id: eventId,
+  userId,
+  assignmentId,
+  kind: "ASSIGNMENT_PUBLISHED",
+};
 
 const device = (platform: "ANDROID" | "IOS", id = androidId): DeviceInstallation => ({
   id,
@@ -28,7 +33,10 @@ const device = (platform: "ANDROID" | "IOS", id = androidId): DeviceInstallation
 });
 
 class MemoryDeliveryStore implements NotificationDeliveryStore {
-  readonly state = new Map<string, { status: "claimed" | "deferred" | "sent" | "terminal"; attempt: number; retryAt?: Date }>();
+  readonly state = new Map<
+    string,
+    { status: "claimed" | "deferred" | "sent" | "terminal"; attempt: number; retryAt?: Date }
+  >();
   readonly revoked: string[] = [];
   readonly claims: string[] = [];
   constructor(readNow: () => Date = () => new Date("2026-11-08T00:00:00Z")) {
@@ -39,9 +47,13 @@ class MemoryDeliveryStore implements NotificationDeliveryStore {
     this.claims.push(key);
     const existing = this.state.get(key);
     if (existing?.status === "sent") return { kind: "sent" };
-    if (existing?.status === "terminal" || (existing && existing.attempt >= limit)) return { kind: "exhausted" };
-    if (existing?.status === "claimed" ||
-      (existing?.retryAt && this.readNow().getTime() < existing.retryAt.getTime())) return { kind: "busy" };
+    if (existing?.status === "terminal" || (existing && existing.attempt >= limit))
+      return { kind: "exhausted" };
+    if (
+      existing?.status === "claimed" ||
+      (existing?.retryAt && this.readNow().getTime() < existing.retryAt.getTime())
+    )
+      return { kind: "busy" };
     const attempt = (existing?.attempt ?? 0) + 1;
     this.state.set(key, { status: "claimed", attempt });
     return { kind: "claimed", attempt };
@@ -72,9 +84,19 @@ function setup(result: ProviderSendResult = "sent", date = new Date("2026-11-08T
   const store = new MemoryDeliveryStore(() => currentDate);
   const provider: NotificationProvider = { send: vi.fn(async () => result) };
   return {
-    store, provider, setDate: (next: Date) => { currentDate = next; },
+    store,
+    provider,
+    setDate: (next: Date) => {
+      currentDate = next;
+    },
     run: (installations: DeviceInstallation[] = [device("ANDROID")], chosenEvent = event) =>
-      dispatchNotification({ event: chosenEvent, installations, store, provider, now: () => currentDate }),
+      dispatchNotification({
+        event: chosenEvent,
+        installations,
+        store,
+        provider,
+        now: () => currentDate,
+      }),
   };
 }
 
@@ -82,17 +104,28 @@ describe("Android/iOS 공용 알림 전송 계약", () => {
   it("동일 이벤트를 Android와 iOS의 서로 다른 설치로 전송한다", async () => {
     const { store, provider, run } = setup();
     const result = await run([device("ANDROID"), device("IOS", iosId)]);
-    expect(result).toEqual({ sent: 2, deferred: 0, invalidTokens: 0, terminal: 0, skipped: 0, failures: 0 });
+    expect(result).toEqual({
+      sent: 2,
+      deferred: 0,
+      invalidTokens: 0,
+      terminal: 0,
+      skipped: 0,
+      failures: 0,
+    });
     expect(provider.send).toHaveBeenCalledTimes(2);
-    expect(provider.send).toHaveBeenCalledWith(expect.objectContaining({
-      platform: "ANDROID",
-      idempotencyKey: eventId + ":" + androidId,
-      title: "HRA 과제 안내",
-    }));
-    expect(provider.send).toHaveBeenCalledWith(expect.objectContaining({
-      platform: "IOS",
-      idempotencyKey: eventId + ":" + iosId,
-    }));
+    expect(provider.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        platform: "ANDROID",
+        idempotencyKey: eventId + ":" + androidId,
+        title: "HRA 과제 안내",
+      }),
+    );
+    expect(provider.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        platform: "IOS",
+        idempotencyKey: eventId + ":" + iosId,
+      }),
+    );
     expect(store.state.size).toBe(2);
     expect(JSON.stringify(result)).not.toContain("synthetic-");
   });
@@ -119,10 +152,12 @@ describe("Android/iOS 공용 알림 전송 계약", () => {
   it("과제 공개와 마감 안내 모두 정해진 한국어 텍스트만 전달한다", async () => {
     const { provider, run } = setup();
     await run(undefined, { ...event, kind: "ASSIGNMENT_DUE_SOON" });
-    expect(provider.send).toHaveBeenCalledWith(expect.objectContaining({
-      title: "HRA 과제 알림",
-      body: "과제 제출 마감이 가까워졌습니다. 앱에서 확인해 주세요.",
-    }));
+    expect(provider.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "HRA 과제 알림",
+        body: "과제 제출 마감이 가까워졌습니다. 앱에서 확인해 주세요.",
+      }),
+    );
   });
 
   it("영구 invalid token은 설치 ID로만 해제하고 전송 완료와 혼동하지 않는다", async () => {
@@ -138,7 +173,9 @@ describe("Android/iOS 공용 알림 전송 계약", () => {
 
   it("토큰 해제 DB가 실패해도 영구 invalid 전송 기록은 terminal로 확정해 재발송을 차단", async () => {
     const { store, provider, run } = setup("invalid-token");
-    vi.spyOn(store, "revokeInstallation").mockRejectedValueOnce(new Error("synthetic-private-token-in-error"));
+    vi.spyOn(store, "revokeInstallation").mockRejectedValueOnce(
+      new Error("synthetic-private-token-in-error"),
+    );
     const result = await run();
     expect(result).toMatchObject({ failures: 1, invalidTokens: 0, sent: 0 });
     expect(store.state.get(eventId + ":" + androidId)?.status).toBe("terminal");
@@ -161,11 +198,15 @@ describe("Android/iOS 공용 알림 전송 계약", () => {
     const start = new Date("2026-11-08T00:00:00Z");
     const { provider, store, run, setDate } = setup("transient-failure", start);
     expect((await run()).deferred).toBe(1);
-    expect(store.state.get(eventId + ":" + androidId)?.retryAt?.toISOString()).toBe("2026-11-08T00:01:00.000Z");
+    expect(store.state.get(eventId + ":" + androidId)?.retryAt?.toISOString()).toBe(
+      "2026-11-08T00:01:00.000Z",
+    );
     expect((await run()).skipped).toBe(1);
     setDate(new Date("2026-11-08T00:01:00Z"));
     expect((await run()).deferred).toBe(1);
-    expect(store.state.get(eventId + ":" + androidId)?.retryAt?.toISOString()).toBe("2026-11-08T00:06:00.000Z");
+    expect(store.state.get(eventId + ":" + androidId)?.retryAt?.toISOString()).toBe(
+      "2026-11-08T00:06:00.000Z",
+    );
     setDate(new Date("2026-11-08T00:06:00Z"));
     expect((await run()).terminal).toBe(1);
     expect((await run()).skipped).toBe(1);
@@ -207,8 +248,12 @@ describe("Android/iOS 공용 알림 전송 계약", () => {
 
   it("잘못된 이벤트 UUID·지원하지 않는 이벤트 종류를 전송 전에 거부한다", async () => {
     const { provider, run } = setup();
-    await expect(run(undefined, { ...event, userId: "unsafe-id" })).rejects.toThrow("NOTIFICATION_EVENT_INVALID");
-    await expect(run(undefined, { ...event, kind: "USER_MESSAGE" as "ASSIGNMENT_PUBLISHED" })).rejects.toThrow("NOTIFICATION_EVENT_INVALID");
+    await expect(run(undefined, { ...event, userId: "unsafe-id" })).rejects.toThrow(
+      "NOTIFICATION_EVENT_INVALID",
+    );
+    await expect(
+      run(undefined, { ...event, kind: "USER_MESSAGE" as "ASSIGNMENT_PUBLISHED" }),
+    ).rejects.toThrow("NOTIFICATION_EVENT_INVALID");
     expect(provider.send).not.toHaveBeenCalled();
   });
 });

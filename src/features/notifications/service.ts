@@ -47,7 +47,11 @@ export interface NotificationDeliveryStore {
   revokeInstallation(installationId: string): Promise<void>;
 }
 
-export type ProviderSendResult = "sent" | "invalid-token" | "transient-failure" | "permanent-failure";
+export type ProviderSendResult =
+  | "sent"
+  | "invalid-token"
+  | "transient-failure"
+  | "permanent-failure";
 
 export interface NotificationProvider {
   send(request: {
@@ -81,9 +85,13 @@ function message(kind: NotificationKind): { title: string; body: string } {
 }
 
 function validateEvent(event: NotificationEvent): void {
-  if (!event || !uuid.test(event.id) || !uuid.test(event.userId) ||
+  if (
+    !event ||
+    !uuid.test(event.id) ||
+    !uuid.test(event.userId) ||
     !uuid.test(event.assignmentId) ||
-    !["ASSIGNMENT_PUBLISHED", "ASSIGNMENT_DUE_SOON"].includes(event.kind)) {
+    !["ASSIGNMENT_PUBLISHED", "ASSIGNMENT_DUE_SOON"].includes(event.kind)
+  ) {
     throw new Error("NOTIFICATION_EVENT_INVALID");
   }
 }
@@ -106,17 +114,27 @@ export async function dispatchNotification(input: {
     throw new Error("NOTIFICATION_INPUT_INVALID");
   }
   const summary: NotificationDispatchSummary = {
-    sent: 0, deferred: 0, invalidTokens: 0, terminal: 0, skipped: 0, failures: 0,
+    sent: 0,
+    deferred: 0,
+    invalidTokens: 0,
+    terminal: 0,
+    skipped: 0,
+    failures: 0,
   };
   const seenInstallations = new Set<string>();
   const notification = message(event.kind);
   for (const installation of installations) {
-    if (!installation || !uuid.test(installation.id) ||
+    if (
+      !installation ||
+      !uuid.test(installation.id) ||
       installation.userId !== event.userId ||
       !["ANDROID", "IOS"].includes(installation.platform) ||
       typeof installation.pushToken !== "string" ||
-      installation.pushToken.length < 1 || installation.pushToken.length > 2048 ||
-      installation.revokedAt !== null || seenInstallations.has(installation.id)) {
+      installation.pushToken.length < 1 ||
+      installation.pushToken.length > 2048 ||
+      installation.revokedAt !== null ||
+      seenInstallations.has(installation.id)
+    ) {
       summary.skipped++;
       continue;
     }
@@ -134,8 +152,7 @@ export async function dispatchNotification(input: {
       summary.skipped++;
       continue;
     }
-    if (!Number.isSafeInteger(claim.attempt) || claim.attempt < 1 ||
-      claim.attempt > maxAttempts) {
+    if (!Number.isSafeInteger(claim.attempt) || claim.attempt < 1 || claim.attempt > maxAttempts) {
       summary.failures++;
       // 손상된 claim 상태에서 발송하거나 재시도하지 않습니다.
       continue;

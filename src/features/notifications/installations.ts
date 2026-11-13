@@ -21,7 +21,11 @@ export type InstallationInput = {
 };
 
 export type InstallationWriteResult =
-  | "created" | "updated" | "unchanged" | "owner-mismatch" | "revoked";
+  | "created"
+  | "updated"
+  | "unchanged"
+  | "owner-mismatch"
+  | "revoked";
 
 export interface InstallationRegistry {
   /**
@@ -39,11 +43,21 @@ export interface InstallationRegistry {
     seenAt: Date;
   }): Promise<InstallationWriteResult>;
   /** ID+소유자 조건을 하나의 SQL UPDATE로 검사하고 반복 호출은 멱등하게 처리합니다. */
-  revokeForOwner(input: { ownerUserId: string; installationId: string; revokedAt: Date }): Promise<void>;
+  revokeForOwner(input: {
+    ownerUserId: string;
+    installationId: string;
+    revokedAt: Date;
+  }): Promise<void>;
 }
 
 export type InstallationActionResult =
-  | "created" | "updated" | "unchanged" | "revoked" | "forbidden" | "invalid" | "unavailable";
+  | "created"
+  | "updated"
+  | "unchanged"
+  | "revoked"
+  | "forbidden"
+  | "invalid"
+  | "unavailable";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const APP_VERSION = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:\+[A-Za-z0-9.-]{1,40})?$/;
@@ -59,18 +73,25 @@ export function canRegisterDevice(principal: InstallationPrincipal | null | unde
  * URL/공백/제어문자/비정상 크기 등은 거부하며 실제 provider 검증은 전송 adapter가 수행합니다.
  */
 function validToken(token: unknown): token is string {
-  return typeof token === "string" && token.length >= 16 && token.length <= 2048 &&
-    /^[\x21-\x7e]+$/.test(token) && !token.includes("://");
+  return (
+    typeof token === "string" &&
+    token.length >= 16 &&
+    token.length <= 2048 &&
+    /^[\x21-\x7e]+$/.test(token) &&
+    !token.includes("://")
+  );
 }
 
 function validInput(input: InstallationInput | null | undefined): input is InstallationInput {
-  return !!input &&
+  return (
+    !!input &&
     UUID.test(input.installationId) &&
     (input.platform === "ANDROID" || input.platform === "IOS") &&
     validToken(input.pushToken) &&
     typeof input.appVersion === "string" &&
     input.appVersion.length <= 60 &&
-    APP_VERSION.test(input.appVersion);
+    APP_VERSION.test(input.appVersion)
+  );
 }
 
 function validNow(now: () => Date): Date | null {
