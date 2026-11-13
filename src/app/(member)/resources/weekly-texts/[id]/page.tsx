@@ -18,7 +18,6 @@ type WeeklyTextViewerPageProps = {
   params: Promise<{ id: string }>;
 };
 
-
 export async function generateMetadata({ params }: WeeklyTextViewerPageProps): Promise<Metadata> {
   const { id } = await params;
 
@@ -65,7 +64,10 @@ export default async function WeeklyTextViewerPage({ params }: WeeklyTextViewerP
         <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-[#D9D9D9] py-6 sm:py-8">
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-2 text-xs text-[#666666] sm:text-sm">
-              <Badge variant="secondary" className="border border-[#D9D9D9] bg-gray-50 text-[#666666]">
+              <Badge
+                variant="secondary"
+                className="border border-[#D9D9D9] bg-gray-50 text-[#666666]"
+              >
                 <CalendarDays className="size-3.5" />
                 {formatDate(text.createdAt)}
               </Badge>
@@ -120,7 +122,10 @@ export default async function WeeklyTextViewerPage({ params }: WeeklyTextViewerP
               <h2 className="text-base font-semibold text-[#1a1a1a]">첨부 사진</h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {text.images.map((image) => (
-                  <div key={image.id} className="overflow-hidden rounded-2xl border border-[#D9D9D9] bg-white shadow-[var(--shadow-soft)]">
+                  <div
+                    key={image.id}
+                    className="overflow-hidden rounded-2xl border border-[#D9D9D9] bg-white shadow-[var(--shadow-soft)]"
+                  >
                     {/* 사진은 최대 100장이고 각 요청이 사용자별 자료 조회 예산(#444)을 쓰므로 화면에 가까워질 때만 불러옵니다. */}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img

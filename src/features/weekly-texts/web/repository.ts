@@ -32,7 +32,8 @@ export type WebWeeklyTextPrintable = {
 
 /** 메타데이터 요청은 승인 역할을 통과한 뒤 제목 한 열만 읽습니다. */
 export async function findWebWeeklyTextTitle(id: string): Promise<string | null> {
-  const [row] = await db.select({ title: weeklyTexts.title })
+  const [row] = await db
+    .select({ title: weeklyTexts.title })
     .from(weeklyTexts)
     .where(eq(weeklyTexts.id, id))
     .limit(1);
@@ -41,27 +42,29 @@ export async function findWebWeeklyTextTitle(id: string): Promise<string | null>
 
 /** 본문/첨부 여부/사진 ID만 반환합니다. 다운로드는 기존 별도 인증 API가 수행합니다. */
 export async function findWebWeeklyTextDetail(id: string): Promise<WebWeeklyTextDetail | null> {
-  const [text] = await db.select({
-    id: weeklyTexts.id,
-    title: weeklyTexts.title,
-    body: weeklyTexts.body,
-    hasFile: sql<boolean>`coalesce(${weeklyTexts.fileUrl} <> '', false)`,
-    fileName: weeklyTexts.fileName,
-    cohortName: cohorts.name,
-    textType: weeklyTexts.textType,
-    createdAt: weeklyTexts.createdAt,
-  })
+  const [text] = await db
+    .select({
+      id: weeklyTexts.id,
+      title: weeklyTexts.title,
+      body: weeklyTexts.body,
+      hasFile: sql<boolean>`coalesce(${weeklyTexts.fileUrl} <> '', false)`,
+      fileName: weeklyTexts.fileName,
+      cohortName: cohorts.name,
+      textType: weeklyTexts.textType,
+      createdAt: weeklyTexts.createdAt,
+    })
     .from(weeklyTexts)
     .leftJoin(cohorts, eq(weeklyTexts.cohortId, cohorts.id))
     .where(eq(weeklyTexts.id, id))
     .limit(1);
   if (!text) return null;
 
-  const images = await db.select({
-    id: weeklyTextImages.id,
-    alt: weeklyTextImages.alt,
-    order: weeklyTextImages.order,
-  })
+  const images = await db
+    .select({
+      id: weeklyTextImages.id,
+      alt: weeklyTextImages.alt,
+      order: weeklyTextImages.order,
+    })
     .from(weeklyTextImages)
     .where(eq(weeklyTextImages.weeklyTextId, id))
     .orderBy(asc(weeklyTextImages.order), asc(weeklyTextImages.createdAt));
@@ -70,15 +73,18 @@ export async function findWebWeeklyTextDetail(id: string): Promise<WebWeeklyText
 }
 
 /** 인쇄에는 이미지·파일 URL을 조회하지 않고 본문 표시 열만 읽습니다. */
-export async function findWebWeeklyTextPrintable(id: string): Promise<WebWeeklyTextPrintable | null> {
-  const [text] = await db.select({
-    id: weeklyTexts.id,
-    title: weeklyTexts.title,
-    body: weeklyTexts.body,
-    createdAt: weeklyTexts.createdAt,
-    cohortName: cohorts.name,
-    textType: weeklyTexts.textType,
-  })
+export async function findWebWeeklyTextPrintable(
+  id: string,
+): Promise<WebWeeklyTextPrintable | null> {
+  const [text] = await db
+    .select({
+      id: weeklyTexts.id,
+      title: weeklyTexts.title,
+      body: weeklyTexts.body,
+      createdAt: weeklyTexts.createdAt,
+      cohortName: cohorts.name,
+      textType: weeklyTexts.textType,
+    })
     .from(weeklyTexts)
     .leftJoin(cohorts, eq(weeklyTexts.cohortId, cohorts.id))
     .where(eq(weeklyTexts.id, id))

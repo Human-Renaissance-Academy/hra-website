@@ -24,30 +24,46 @@ describe("주차별 텍스트 Web 상세·인쇄 Application Service", () => {
     vi.resetAllMocks();
     repository.title.mockResolvedValue("기업실무 2주차");
     repository.detail.mockResolvedValue({
-      id, title: "기업실무 2주차", hasFile: true, fileName: "자료.pdf",
-      body: "# 안내", cohortName: "19기", textType: "기업실무",
-      createdAt: new Date("2026-11-08T00:00:00Z"), images: [{ id, alt: null, order: 0 }],
+      id,
+      title: "기업실무 2주차",
+      hasFile: true,
+      fileName: "자료.pdf",
+      body: "# 안내",
+      cohortName: "19기",
+      textType: "기업실무",
+      createdAt: new Date("2026-11-08T00:00:00Z"),
+      images: [{ id, alt: null, order: 0 }],
     });
     repository.printable.mockResolvedValue({
-      id, title: "기업실무 2주차", body: "# 안내",
-      createdAt: new Date("2026-11-08T00:00:00Z"), cohortName: "19기", textType: "기업실무",
+      id,
+      title: "기업실무 2주차",
+      body: "# 안내",
+      createdAt: new Date("2026-11-08T00:00:00Z"),
+      cohortName: "19기",
+      textType: "기업실무",
     });
   });
 
-  it.each(["ADMIN", "FACULTY", "MEMBER"])("승인 역할 %s는 기수와 무관한 공동 자료 열람을 유지한다", async role => {
-    expect(await getWebWeeklyTextTitle(role, id)).toBe("기업실무 2주차");
-    expect((await getWebWeeklyTextDetail(role, id))?.cohortName).toBe("19기");
-    expect((await getWebWeeklyTextPrintable(role, id))?.body).toBe("# 안내");
-  });
+  it.each(["ADMIN", "FACULTY", "MEMBER"])(
+    "승인 역할 %s는 기수와 무관한 공동 자료 열람을 유지한다",
+    async (role) => {
+      expect(await getWebWeeklyTextTitle(role, id)).toBe("기업실무 2주차");
+      expect((await getWebWeeklyTextDetail(role, id))?.cohortName).toBe("19기");
+      expect((await getWebWeeklyTextPrintable(role, id))?.body).toBe("# 안내");
+    },
+  );
 
-  it.each(["PENDING", "UNKNOWN", null, undefined])("%s는 저장소 조회 이전에 차단한다", async role => {
-    expect(await getWebWeeklyTextTitle(role, id)).toBeNull();
-    expect(await getWebWeeklyTextDetail(role, id)).toBeNull();
-    expect(await getWebWeeklyTextPrintable(role, id)).toBeNull();
-    expect(repository.title).not.toHaveBeenCalled();
-    expect(repository.detail).not.toHaveBeenCalled();
-    expect(repository.printable).not.toHaveBeenCalled();
-  });
+  it.each(["PENDING", "UNKNOWN", null, undefined])(
+    "%s는 저장소 조회 이전에 차단한다",
+    async (role) => {
+      expect(await getWebWeeklyTextTitle(role, id)).toBeNull();
+      expect(await getWebWeeklyTextDetail(role, id)).toBeNull();
+      expect(await getWebWeeklyTextPrintable(role, id)).toBeNull();
+      expect(repository.title).not.toHaveBeenCalled();
+      expect(repository.detail).not.toHaveBeenCalled();
+      expect(repository.printable).not.toHaveBeenCalled();
+    },
+  );
 
   it("상세가 없거나 인쇄할 본문이 없더라도 서비스가 데이터를 만들어 내지 않는다", async () => {
     repository.detail.mockResolvedValueOnce(null);
