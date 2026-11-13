@@ -57,7 +57,6 @@ Production·Preview·Development는 DB·공개/비공개 Blob·OAuth·세션 비
 
 | 이름 | 목적 | 적용 환경·격리 | 비밀값 | 필수 조건 | 기본·누락 동작 | 예시 |
 | --- | --- | --- | --- | --- | --- | --- |
-| `GOOGLE_SHEETS_API_KEY` | 기존 선택 Sheets helper; 현재 앱 호출 참조 없음 | Development / Preview / Production; 환경별 독립 설정; Preview에 Production 자격정보·연결 상속 금지 | 예 | 별도 검토 후 외부 시트 helper를 사용하는 경우만 | 미설정이면 helper가 빈 결과와 설정 오류 반환. 내장 지원서 관리에 불필요 | 주석 예시·실행 시에만 지정 |
 | `NEXTAUTH_SECRET` | Auth.js 기존 세션 secret 호환 별칭 | Development / Preview / Production; 환경별 독립 설정; Preview에 Production 자격정보·연결 상속 금지 | 예 | 기존 배포 설정을 canonical AUTH_SECRET으로 전환 검토할 때만 | AUTH_SECRET이 nullish일 때만 사용. 빈 AUTH_SECRET은 별칭을 막음; 지원 secret 누락 시 production 인증 오류 | 앱 예시에 넣지 않음 |
 | `NEXTAUTH_URL` | Auth.js 기존 URL 호환 별칭 | Development / Preview / Production; 환경별 독립 설정; Preview에 Production 자격정보·연결 상속 금지 | 아니요 | 기존 배포 설정을 canonical AUTH_URL로 전환 검토할 때만 | AUTH_URL이 nullish일 때만 사용. 빈 AUTH_URL은 별칭을 막음; 둘 다 미설정이면 요청 기반 URL | 앱 예시에 넣지 않음 |
 

@@ -14,7 +14,10 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { requireMember } from "@/lib/member";
-import { getWebClassMaterialDetail, getWebClassMaterialTitle } from "@/features/class-materials/web/service";
+import {
+  getWebClassMaterialDetail,
+  getWebClassMaterialTitle,
+} from "@/features/class-materials/web/service";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +55,10 @@ export default async function ClassMaterialViewerPage({ params }: Props) {
           <ArrowLeft className="size-4" />
           목록으로
         </Button>
-        <a href={`/api/resources/class-materials/${material.id}/download`} download={material.fileName}>
+        <a
+          href={`/api/resources/class-materials/${material.id}/download`}
+          download={material.fileName}
+        >
           <Button className="bg-[#1a1a1a] text-white hover:bg-[#333333]">
             <Download className="size-4" />
             다운로드
@@ -90,7 +96,10 @@ export default async function ClassMaterialViewerPage({ params }: Props) {
             이 파일 형식({ext.toUpperCase()})은 브라우저에서 미리볼 수 없습니다.
           </p>
           <p className="text-[#666666] text-sm">다운로드하여 확인해 주세요.</p>
-          <a href={`/api/resources/class-materials/${material.id}/download`} download={material.fileName}>
+          <a
+            href={`/api/resources/class-materials/${material.id}/download`}
+            download={material.fileName}
+          >
             <Button className="bg-[#2563EB] text-white hover:bg-blue-700">
               <Download className="size-4" />
               {material.fileName} 다운로드

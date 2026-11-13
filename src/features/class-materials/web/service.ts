@@ -20,14 +20,16 @@ function validatedId(user: ClassMaterialReader | null | undefined, id: string): 
 }
 
 export async function getWebClassMaterialTitle(
-  user: ClassMaterialReader | null | undefined, id: string,
+  user: ClassMaterialReader | null | undefined,
+  id: string,
 ): Promise<string | null> {
   const validId = validatedId(user, id);
   return validId ? findWebClassMaterialTitle(user!, validId) : null;
 }
 
 export async function getWebClassMaterialDetail(
-  user: ClassMaterialReader | null | undefined, id: string,
+  user: ClassMaterialReader | null | undefined,
+  id: string,
 ) {
   const validId = validatedId(user, id);
   return validId ? findWebClassMaterialDetail(user!, validId) : null;

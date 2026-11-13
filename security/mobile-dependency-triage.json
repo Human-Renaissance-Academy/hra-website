@@ -248,9 +248,6 @@
       ],
       "via": [
         {
-          "dependency": "@typescript-eslint/parser"
-        },
-        {
           "dependency": "@typescript-eslint/type-utils"
         },
         {
@@ -423,46 +420,6 @@
       ]
     },
     {
-      "name": "eslint-config-expo",
-      "severity": "moderate",
-      "range": "<=0.0.1-canary-20240418-8d74597 || >=7.0.0",
-      "nodes": [
-        {
-          "path": "node_modules/eslint-config-expo",
-          "version": "58.0.4",
-          "development": true
-        }
-      ],
-      "via": [
-        {
-          "dependency": "@typescript-eslint/eslint-plugin"
-        },
-        {
-          "dependency": "@typescript-eslint/parser"
-        },
-        {
-          "dependency": "eslint-plugin-expo"
-        }
-      ]
-    },
-    {
-      "name": "eslint-plugin-expo",
-      "severity": "moderate",
-      "range": ">=0.0.1-canary-20240327-a7302d9",
-      "nodes": [
-        {
-          "path": "node_modules/eslint-plugin-expo",
-          "version": "1.2.1",
-          "development": true
-        }
-      ],
-      "via": [
-        {
-          "dependency": "@typescript-eslint/utils"
-        }
-      ]
-    },
-    {
       "name": "expo",
       "severity": "moderate",
       "range": ">=52.0.0-canary-20240625-2333e70",
@@ -474,9 +431,6 @@
         }
       ],
       "via": [
-        {
-          "dependency": "@expo/cli"
-        },
         {
           "dependency": "@expo/fingerprint"
         }
@@ -1141,15 +1095,6 @@
       "attackCondition": "babel-plugin-istanbul 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
     },
     {
-      "key": "@typescript-eslint/eslint-plugin:@typescript-eslint/parser",
-      "contextId": "eslint-lint-tooling",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-05",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "@typescript-eslint/parser 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
-    {
       "key": "@typescript-eslint/eslint-plugin:@typescript-eslint/type-utils",
       "contextId": "eslint-lint-tooling",
       "priority": "P2",
@@ -1247,51 +1192,6 @@
       "reviewedOn": "2026-11-04",
       "reviewBy": "2026-11-25",
       "attackCondition": "GHSA-gcqx-w48m-w2h4: 신뢰하지 않는 객체를 deepmerge로 병합해 prototype을 오염시켜야 한다. @expo/config와 jest-config는 저장소가 소유한 설정 객체만 병합한다."
-    },
-    {
-      "key": "eslint-config-expo:@typescript-eslint/eslint-plugin",
-      "contextId": "eslint-lint-tooling",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-05",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "@typescript-eslint/eslint-plugin 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
-    {
-      "key": "eslint-config-expo:@typescript-eslint/parser",
-      "contextId": "eslint-lint-tooling",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-05",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "@typescript-eslint/parser 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
-    {
-      "key": "eslint-config-expo:eslint-plugin-expo",
-      "contextId": "eslint-lint-tooling",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-05",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "eslint-plugin-expo 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
-    {
-      "key": "eslint-plugin-expo:@typescript-eslint/utils",
-      "contextId": "eslint-lint-tooling",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-05",
-      "reviewBy": "2026-12-02",
-      "attackCondition": "@typescript-eslint/utils 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인하고 2026-11-05 권고 범위 정정 뒤 실제 audit로 다시 확인한 경로이며 2026-12-02까지 함께 재검토한다."
-    },
-    {
-      "key": "expo:@expo/cli",
-      "contextId": "expo-cli-config-glob",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-04",
-      "reviewBy": "2026-11-25",
-      "attackCondition": "@expo/cli 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04 모바일 lock 최초 등록 시 확인한 경로이며 2026-11-25까지 함께 재검토한다."
     },
     {
       "key": "expo:@expo/fingerprint",

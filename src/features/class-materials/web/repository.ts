@@ -22,9 +22,11 @@ export type WebClassMaterialDetail = {
 
 /** 제목도 조회 대상과 사용자 역할을 동일한 SQL WHERE에서 검사합니다. */
 export async function findWebClassMaterialTitle(
-  user: ClassMaterialReader, id: string,
+  user: ClassMaterialReader,
+  id: string,
 ): Promise<string | null> {
-  const [material] = await db.select({ title: classMaterials.title })
+  const [material] = await db
+    .select({ title: classMaterials.title })
     .from(classMaterials)
     .where(and(eq(classMaterials.id, id), classMaterialReadFilter(user)))
     .limit(1);
@@ -33,16 +35,18 @@ export async function findWebClassMaterialTitle(
 
 /** Page가 사용하는 표시 필드만 조회하고 실제 Blob URL은 포함하지 않습니다. */
 export async function findWebClassMaterialDetail(
-  user: ClassMaterialReader, id: string,
+  user: ClassMaterialReader,
+  id: string,
 ): Promise<WebClassMaterialDetail | null> {
-  const [material] = await db.select({
-    id: classMaterials.id,
-    title: classMaterials.title,
-    fileName: classMaterials.fileName,
-    audience: classMaterials.audience,
-    weekNumber: classMaterials.weekNumber,
-    lectureTitle: classMaterials.lectureTitle,
-  })
+  const [material] = await db
+    .select({
+      id: classMaterials.id,
+      title: classMaterials.title,
+      fileName: classMaterials.fileName,
+      audience: classMaterials.audience,
+      weekNumber: classMaterials.weekNumber,
+      lectureTitle: classMaterials.lectureTitle,
+    })
     .from(classMaterials)
     .where(and(eq(classMaterials.id, id), classMaterialReadFilter(user)))
     .limit(1);

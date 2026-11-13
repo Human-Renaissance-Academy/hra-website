@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const dbCalls = vi.hoisted(() => ({
-  select: vi.fn(), from: vi.fn(), where: vi.fn(), limit: vi.fn(),
+  select: vi.fn(),
+  from: vi.fn(),
+  where: vi.fn(),
+  limit: vi.fn(),
 }));
 vi.mock("@/lib/db", () => ({ db: { select: dbCalls.select } }));
 
@@ -29,12 +32,21 @@ describe("강의 자료 Web DB 투영 최소화", () => {
   });
 
   it("상세 조회에서는 실제 화면에 필요한 필드만 읽고 private Blob URL을 조회하지 않는다", async () => {
-    dbCalls.limit.mockResolvedValueOnce([{
-      id, title: "가이드", fileName: "a.pdf", audience: "STUDENT",
-      weekNumber: null, lectureTitle: null,
-    }]);
+    dbCalls.limit.mockResolvedValueOnce([
+      {
+        id,
+        title: "가이드",
+        fileName: "a.pdf",
+        audience: "STUDENT",
+        weekNumber: null,
+        lectureTitle: null,
+      },
+    ]);
     expect(await findWebClassMaterialDetail(user, id)).toMatchObject({
-      id, title: "가이드", fileName: "a.pdf", audience: "STUDENT",
+      id,
+      title: "가이드",
+      fileName: "a.pdf",
+      audience: "STUDENT",
     });
     const selection = dbCalls.select.mock.calls[0][0] as Record<string, unknown>;
     expect(Object.keys(selection).sort()).toEqual(
