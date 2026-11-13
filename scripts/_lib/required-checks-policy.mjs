@@ -47,6 +47,7 @@ export const NON_REQUIRED_WORKFLOWS = Object.freeze([
   "authentication-measurement.yml",
   "expanded-e2e.yml",
   "mobile-server-e2e.yml",
+  "mobile-eas-build.yml",
   "mobile.yml",
   "production-smoke.yml",
   "release-please.yml",
@@ -57,6 +58,12 @@ export const EXPECTED_WORKFLOW_FILES = Object.freeze(
 
 const isObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 const CHECK_COMMANDS = {
+  "ci.yml:scope": [
+    "npm run format:check",
+    "node --test scripts/tests/code-format-scope.test.mjs",
+    "node --test scripts/tests/ci-scope.test.mjs",
+    'node scripts/detect-ci-scope.mjs "$GITHUB_EVENT_NAME" "$GITHUB_OUTPUT"',
+  ],
   "ci.yml:ci": [
     "node --test scripts/tests/required-checks-policy.test.mjs",
     "node scripts/check-required-checks-config.mjs",
@@ -70,6 +77,8 @@ const CHECK_COMMANDS = {
   ],
   "process-format.yml:pull-request": ["node scripts/check-process-format.mjs --event"],
   "process-format.yml:contracts": [
+    "node --test scripts/tests/required-checks-policy.test.mjs",
+    "node scripts/check-required-checks-config.mjs",
     "node --test scripts/tests/release-policy.test.mjs",
     "node scripts/check-release-config.mjs",
     "node --test scripts/tests/commit-messages.test.mjs",
@@ -90,6 +99,8 @@ const CHECK_COMMANDS = {
   ],
 };
 const JOB_IF = {
+  "ci.yml:ci":
+    "${{ always() && (needs.scope.result != 'success' || needs.scope.outputs.web != 'false') }}",
   "process-format.yml:pull-request": "github.event_name == 'pull_request'",
   "process-format.yml:contracts": "github.event_name != 'issues'",
 };
@@ -160,15 +171,16 @@ const NODE_TEST_COMMAND = /^node --test(?: scripts\/tests\/[A-Za-z0-9_.-]+\.test
 const DIRECT_CHECK_COMMANDS = Object.values(CHECK_COMMANDS).flat();
 
 /** 검토된 pipeline의 변경 감지이며 보안 불변식·실행 성공·검토 승인의 증명이 아닙니다.
- * 별도 선행 run/uses가 npm 설정이나 GITHUB_ENV를 바꾸는 경로도 있어 필수 5 job의 전체 단계 형태를 고정합니다.
+ * 별도 선행 run/uses가 npm 설정이나 GITHUB_ENV를 바꾸는 경로도 있어 필수 5 job과 scope의 전체 단계 형태를 고정합니다.
  * 정상적인 gate/순서/env/uses 변경도 먼저 실제 실행·실패 전파 회귀를 검토하고 workflow와 이 지문을 함께 갱신합니다.
  */
 const REVIEWED_PIPELINE_DIGESTS = {
+  "ci.yml:scope": "5631be5b87ad05d36adc00a72acf62af9423cbc5e3b5bf4b4b79c74240519d37",
   "ci.yml:ci": "8b83bc1da3bc6b368d0b02a4623e85381933e6b9c3c8486cce8e34e390aabaa2",
   "process-format.yml:pull-request":
     "ae70c42a9c814c1df9e9c238b87353f08b462cc50160cfa6b485820e83a263f1",
   "process-format.yml:contracts":
-    "9609c6b8d08644321f50e2b5c872744acf117f472a1dc4165f9a001f97dc370a",
+    "c02c5b2b2da9b9b9b5dee407bc154adfbdcb4c00f4fbc442342ad41955a9ff0c",
   "repository-security.yml:repository":
     "edcac22b2b55d615bed5b784ed51bfd5d079c07afebc966953750dbccfbf9e97",
   "repository-security.yml:browser":
@@ -287,7 +299,11 @@ export function validateWorkflowCheckBoundaries(workflows) {
     }
   }
 
-  for (const expected of REQUIRED_MAIN_STATUS_CHECKS) {
+  // scope는 필수 상태 이름이 아니지만 required Web CI의 실패 시 복귀 경계를 소유합니다.
+  for (const expected of [
+    ...REQUIRED_MAIN_STATUS_CHECKS,
+    { file: "ci.yml", job: "scope", context: "변경 범위 판별" },
+  ]) {
     if (!expected.file) continue;
     const work = parsed[expected.file];
     const key = expected.file + ":" + expected.job;
@@ -298,7 +314,7 @@ export function validateWorkflowCheckBoundaries(workflows) {
     }
     if (
       job.if !== JOB_IF[key] ||
-      job.needs !== undefined ||
+      job.needs !== (key === "ci.yml:ci" ? "scope" : undefined) ||
       job.strategy !== undefined ||
       job["continue-on-error"] !== undefined ||
       job.uses !== undefined
@@ -313,6 +329,17 @@ export function validateWorkflowCheckBoundaries(workflows) {
         key +
           ": REVIEWED_PIPELINE_DRIFT: reviewed step pipeline changed; execution review is required.",
       );
+    }
+    if (key === "ci.yml:scope") {
+      const detectors = job.steps.filter((step) => step?.id === "detect");
+      if (
+        !sameEnvironment(job.outputs, { web: "${{ steps.detect.outputs.web }}" }) ||
+        detectors.length !== 1 ||
+        detectors[0].run !==
+          'node scripts/detect-ci-scope.mjs "$GITHUB_EVENT_NAME" "$GITHUB_OUTPUT"'
+      ) {
+        errors.push(key + ": scope output must come from the reviewed fail-closed detector.");
+      }
     }
     const expectedPermissions = REVIEWED_JOB_PERMISSIONS[key];
     if (
@@ -406,10 +433,13 @@ export function validateWorkflowCheckBoundaries(workflows) {
       if (owner) continue;
       const name = job?.name ?? jobId;
       const reviewedDynamic =
-        file === "production-smoke.yml" &&
-        jobId === "smoke" &&
-        name ===
-          "${{ inputs.fixture_alert && '알림 경로 합성 검증 (의도된 실패)' || 'Production 읽기 점검' }}";
+        (file === "mobile-eas-build.yml" &&
+          jobId === "build" &&
+          name === "${{ inputs.platform }} · ${{ inputs.profile }}") ||
+        (file === "production-smoke.yml" &&
+          jobId === "smoke" &&
+          name ===
+            "${{ inputs.fixture_alert && '알림 경로 합성 검증 (의도된 실패)' || 'Production 읽기 점검' }}");
       if (
         typeof name !== "string" ||
         (name.includes("${{") && !reviewedDynamic) ||
@@ -423,6 +453,19 @@ export function validateWorkflowCheckBoundaries(workflows) {
   for (const file of NON_REQUIRED_WORKFLOWS) {
     const work = parsed[file];
     if (!work) continue;
+    if (file === "mobile-eas-build.yml") {
+      const inputs = work.on.workflow_dispatch?.inputs;
+      if (
+        Object.keys(work.on).length !== 1 ||
+        !isObject(inputs) ||
+        JSON.stringify(inputs.platform?.options) !== JSON.stringify(["android", "ios"]) ||
+        JSON.stringify(inputs.profile?.options) !== JSON.stringify(["preview", "production"]) ||
+        work.jobs?.build?.if !== "github.ref == 'refs/heads/main'"
+      ) {
+        errors.push(file + ": EAS must retain reviewed manual-only inputs and main guard.");
+      }
+      continue;
+    }
     if (file === "release-please.yml" && work.on.pull_request !== undefined) {
       errors.push(file + ": release automation must not run from a PR.");
     }

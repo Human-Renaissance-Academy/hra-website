@@ -2,9 +2,18 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+  mkdirSync,
+  symlinkSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { runInNewContext } from "node:vm";
 import { collectEnvironmentReferences } from "../_lib/environment-contract.mjs";
 import {
   EXPECTED_WORKFLOW_FILES,
@@ -51,7 +60,7 @@ function protection() {
   };
 }
 
-test("승인된 9개 workflow와 모든 필수 PR 검사 경계가 유지된다", () => {
+test("승인된 10개 workflow와 모든 필수 PR 검사 경계가 유지된다", () => {
   const files = baseline();
   assert.deepEqual(Object.keys(files).sort(), [...EXPECTED_WORKFLOW_FILES]);
   assert.deepEqual(validateWorkflowCheckBoundaries(files), []);
@@ -643,3 +652,126 @@ for (const [reason, mutate] of [
     else assert.ok(errors.some((error) => error.includes("REVIEWED_PIPELINE_DRIFT")));
   });
 }
+
+// 최신 scope 그래프는 정상 생략만 허용하며, 탐지 실패/출력 누락은 항상 전체 CI로 복귀해야 합니다.
+const scopeMutations = [
+  [
+    "실패 시 복귀 삭제",
+    "ci.yml",
+    "always() && (needs.scope.result != 'success' || needs.scope.outputs.web != 'false')",
+    "needs.scope.outputs.web == 'true'",
+    "job if/needs",
+  ],
+  ["scope 의존성 삭제", "ci.yml", "    needs: scope\n", "", "job if/needs"],
+  [
+    "scope 출력 위조",
+    "ci.yml",
+    "web: ${{ steps.detect.outputs.web }}",
+    "web: 'false'",
+    "scope output",
+  ],
+  [
+    "scope detector 대체",
+    "ci.yml",
+    'node scripts/detect-ci-scope.mjs "$GITHUB_EVENT_NAME" "$GITHUB_OUTPUT"',
+    "echo web=false",
+    "scope output",
+  ],
+  [
+    "scope 포맷 조건부 생략",
+    "ci.yml",
+    "      - name: 변경 소스 포맷 검사",
+    "      - if: false\n        name: 변경 소스 포맷 검사",
+    "unauthorized conditional",
+  ],
+  [
+    "상시 계약 검증기 제거",
+    "process-format.yml",
+    "      - run: node scripts/check-required-checks-config.mjs\n",
+    "",
+    "required executable command",
+  ],
+  ["수동 EAS PR 실행", "mobile-eas-build.yml", "on:\n", "on:\n  pull_request:\n", "manual-only"],
+  [
+    "EAS 동적 이름 확대",
+    "mobile-eas-build.yml",
+    "${{ inputs.platform }} · ${{ inputs.profile }}",
+    "${{ inputs.context }}",
+    "unowned job name",
+  ],
+  [
+    "EAS 플랫폼 확대",
+    "mobile-eas-build.yml",
+    "options: [android, ios]",
+    "options: [android, ios, arbitrary]",
+    "manual-only",
+  ],
+];
+
+for (const [name, file, before, after, diagnostic] of scopeMutations) {
+  test(name + " 최신 그래프 경계를 직접 검증한다", () => {
+    const files = baseline();
+    assert.ok(files[file].includes(before));
+    files[file] = files[file].replace(before, after);
+    assert.ok(validateWorkflowCheckBoundaries(files).some((error) => error.includes(diagnostic)));
+  });
+}
+
+// 실제 CLI와 동일한 상대 경로 구조에서 음성 변이를 실행해 라이브러리 검사만 통과하는 공백을 막습니다.
+test("최신 scope/EAS 음성 변이는 실제 CLI에서도 종료 코드 1로 차단한다", () => {
+  const root = mkdtempSync(join(tmpdir(), "hra-checks-cli-mutations-"));
+  try {
+    mkdirSync(join(root, ".github/workflows"), { recursive: true });
+    mkdirSync(join(root, "scripts/_lib"), { recursive: true });
+    symlinkSync(
+      new URL("../../node_modules", import.meta.url).pathname,
+      join(root, "node_modules"),
+      "dir",
+    );
+    for (const path of ["check-required-checks-config.mjs", "_lib/required-checks-policy.mjs"]) {
+      writeFileSync(
+        join(root, "scripts", path),
+        readFileSync(new URL("../" + path, import.meta.url)),
+      );
+    }
+    for (const [name, file, before, after] of scopeMutations) {
+      const files = baseline();
+      files[file] = files[file].replace(before, after);
+      for (const [path, text] of Object.entries(files))
+        writeFileSync(join(root, ".github/workflows", path), text);
+      const result = spawnSync(
+        process.execPath,
+        [join(root, "scripts/check-required-checks-config.mjs")],
+        { encoding: "utf8" },
+      );
+      assert.equal(result.status, 1, name);
+      assert.match(result.stdout, /검사 실패/, name);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// GitHub 식의 검토된 논리식을 합성 needs 결과에 적용합니다. 실제 runner 취소 결과의 증거는 아닙니다.
+test("scope 실패·취소·생략·출력 누락은 전체 CI, 정상 문서 범위만 생략한다", () => {
+  const workflow = parseWorkflow(baseline()["ci.yml"]);
+  const expression = workflow.jobs.ci.if.slice(3, -2).trim();
+  for (const result of ["success", "failure", "cancelled", "skipped"]) {
+    for (const web of ["false", "true", undefined]) {
+      const run = runInNewContext(expression, {
+        always: () => true,
+        needs: { scope: { result, outputs: { web } } },
+      });
+      assert.equal(run, !(result === "success" && web === "false"), result + ":" + web);
+    }
+  }
+  const contracts = parseWorkflow(baseline()["process-format.yml"]).jobs.contracts;
+  assert.equal(contracts.needs, undefined);
+  assert.equal(contracts.if, "github.event_name != 'issues'");
+  assert.ok(
+    contracts.steps.some(
+      (step) =>
+        step.run === "node scripts/check-required-checks-config.mjs" && step.if === undefined,
+    ),
+  );
+});

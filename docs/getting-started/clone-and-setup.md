@@ -9,13 +9,13 @@
 ```bash
 mkdir -p ~/projects
 cd ~/projects
-git clone https://github.com/yeongseon/hra-website.git
+git clone https://github.com/Human-Renaissance-Academy/hra-website.git
 cd hra-website
 ```
 
 **클론(clone)**은 코드와 변경 이력을 함께 가져오는 작업입니다. 이미 복제한 폴더가 있다면 다시 복제하지 말고 그 폴더로 이동합니다.
 
-원본 쓰기 권한이 없는 외부 기여자는 GitHub에서 자신의 계정으로 **포크(fork)**를 만든 뒤, 위 `git clone` 주소를 자신의 포크 주소로 바꿉니다. 이 경우 `origin`은 자신의 포크를 가리키며, PR의 병합 대상은 `yeongseon/hra-website`의 작업 기준 브랜치로 선택합니다. 포크 생성과 원본 연결 방법은 [GitHub 공식 안내](https://docs.github.com/en/get-started/exploring-projects-on-github/contributing-to-a-project)를 참고합니다.
+원본 쓰기 권한이 없는 외부 기여자는 GitHub에서 자신의 계정으로 **포크(fork)**를 만든 뒤, 위 `git clone` 주소를 자신의 포크 주소로 바꿉니다. 이 경우 `origin`은 자신의 포크를 가리키며, PR의 병합 대상은 `Human-Renaissance-Academy/hra-website`의 작업 기준 브랜치로 선택합니다. 포크 생성과 원본 연결 방법은 [GitHub 공식 안내](https://docs.github.com/en/get-started/exploring-projects-on-github/contributing-to-a-project)를 참고합니다.
 
 VS Code에서 폴더를 엽니다.
 
@@ -27,7 +27,7 @@ code .
 
 ## 2. 저장소에 고정된 패키지 설치하기
 
-[사전 준비](prerequisites.md)에 따라 Node 24를 선택합니다. `.nvmrc`는 `24`, `package.json`의 `engines.node`는 `24.x`이며 패치 버전은 고정하지 않습니다. nvm을 사용한다면 `nvm install` → `nvm use`를 실행한 뒤 `node --version`이 `v24.`로 시작하는지 확인합니다. nvm 없이 설치한 경우에도 실제 버전을 확인한 뒤 진행합니다.
+[사전 준비](prerequisites.md)에 따라 Node 24를 선택합니다. `.nvmrc`는 `24.15.0`, `package.json`의 `engines.node`는 `^24.15.0`입니다. nvm을 사용한다면 `nvm install` → `nvm use`를 실행한 뒤 `node --version`이 `v24.15.0` 이상인 24 계열인지 확인합니다. nvm 없이 설치한 경우에도 실제 버전을 확인한 뒤 진행합니다.
 
 ```bash
 npm ci

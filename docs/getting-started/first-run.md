@@ -4,7 +4,7 @@
 
 ## 1. 개발 서버 시작하기
 
-터미널에서 `package.json`이 있는 `hra-website` 폴더로 이동합니다. [Node 24 실행 환경](prerequisites.md)에서 nvm을 사용한다면 `nvm use`로 `.nvmrc` 버전을 선택하고, `node --version`이 `v24.`로 시작하는지 확인한 뒤 실행합니다.
+터미널에서 `package.json`이 있는 `hra-website` 폴더로 이동합니다. [Node 24 실행 환경](prerequisites.md)에서 nvm을 사용한다면 `nvm use`로 `.nvmrc` 버전을 선택하고, `node --version`이 `v24.15.0` 이상인 24 계열인지 확인한 뒤 실행합니다.
 
 ```bash
 npm run dev
