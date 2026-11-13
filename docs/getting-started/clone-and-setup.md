@@ -27,7 +27,7 @@ code .
 
 ## 2. 저장소에 고정된 패키지 설치하기
 
-[사전 준비](prerequisites.md)에 따라 Node 24를 선택합니다. `.nvmrc`는 `24`, `package.json`의 `engines.node`는 `24.x`이며 패치 버전은 고정하지 않습니다. nvm을 사용한다면 `nvm install` → `nvm use`를 실행한 뒤 `node --version`이 `v24.`로 시작하는지 확인합니다. nvm 없이 설치한 경우에도 실제 버전을 확인한 뒤 진행합니다.
+[사전 준비](prerequisites.md)에 따라 Node 24를 선택합니다. `.nvmrc`는 `24.15.0`, `package.json`의 `engines.node`는 `^24.15.0`입니다. nvm을 사용한다면 `nvm install` → `nvm use`를 실행한 뒤 `node --version`이 `v24.15.0` 이상인 24 계열인지 확인합니다. nvm 없이 설치한 경우에도 실제 버전을 확인한 뒤 진행합니다.
 
 ```bash
 npm ci

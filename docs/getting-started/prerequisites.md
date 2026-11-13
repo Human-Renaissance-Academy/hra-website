@@ -9,12 +9,14 @@
 | 도구 | 하는 일 | 준비 방법 |
 | --- | --- | --- |
 | Git | 코드의 변경 이력을 저장하고 팀의 변경을 가져옵니다. | [Git 공식 사이트](https://git-scm.com/downloads)에서 설치합니다. |
-| Node.js | 개발 서버와 검사 명령을 실행합니다. | [Node.js 공식 사이트](https://nodejs.org/en/download)에서 **24.x의 최신 패치 버전**을 선택합니다. |
+| Node.js | 개발 서버와 검사 명령을 실행합니다. | [Node.js 공식 사이트](https://nodejs.org/en/download)에서 **24.15.0 이상인 24 계열 버전**을 선택합니다. |
 | npm | 프로젝트가 사용하는 외부 패키지를 설치합니다. | Node.js와 함께 설치됩니다. 별도 설치부터 할 필요는 없습니다. |
 | VS Code | 파일을 읽고 수정하는 편집기입니다. | [VS Code 공식 사이트](https://code.visualstudio.com/)에서 설치합니다. 다른 편집기도 사용할 수 있습니다. |
 | GitHub 계정 | 이슈를 작성하고 변경을 PR로 제출합니다. | [GitHub](https://github.com/)에서 계정을 만들고 이메일을 인증합니다. |
 
-**LTS(Long Term Support)**는 보안 수정 등을 장기간 제공하는 Node.js 버전입니다. 프로젝트는 지원 중인 **Node.js 24.x**를 사용합니다. **CI(Continuous Integration)**는 GitHub에서 자동 실행하는 검사입니다. `.nvmrc`는 `24`, `package.json`의 `engines.node`는 `24.x`이며 앱 CI와 형식 검사 CI도 Node 24를 사용합니다. 지원 상태는 [Node 공식 일정](https://github.com/nodejs/Release/blob/main/schedule.json)을 확인합니다.
+**LTS(Long Term Support)**는 보안 수정 등을 장기간 제공하는 Node.js 버전입니다. 프로젝트는 지원 중인 **Node.js 24.15.0 이상(24 계열)**을 사용합니다. **CI(Continuous Integration)**는 GitHub에서 자동 실행하는 검사입니다. `.nvmrc`는 `24.15.0`, `package.json`의 `engines.node`는 `^24.15.0`이며 앱 CI와 형식 검사 CI도 Node 24를 사용합니다. 지원 상태는 [Node 공식 일정](https://github.com/nodejs/Release/blob/main/schedule.json)을 확인합니다.
+
+jsdom 31의 Node 요구 조건 때문에 24.14 이하는 지원하지 않습니다. 로컬과 앱 CI는 `.nvmrc`의 24.15.0으로 검증합니다. Vercel은 [공식 Node 버전 정책](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions)에 따라 `^24.15.0`을 24 계열로 해석하고 minor·patch 버전을 자동 갱신하므로 정확한 patch 고정을 보장하지 않습니다.
 
 `npm run build`는 `prebuild`에서 실제 Node 버전을 출력하지만, **현재 운영 Vercel 프로젝트·배포의 런타임 일치 여부는 미확인**입니다.
 
@@ -38,7 +40,7 @@ node --version
 npm --version
 ```
 
-세 명령 모두 버전을 출력하고, Node.js가 `v24.`로 시작하면 이 안내의 도구 준비가 끝난 것입니다. `npm`의 주 버전은 Node.js 버전과 같을 필요가 없습니다.
+세 명령 모두 버전을 출력하고, Node.js가 `v24.15.0` 이상인 24 계열이면 이 안내의 도구 준비가 끝난 것입니다. `npm`의 주 버전은 Node.js 버전과 같을 필요가 없습니다.
 
 VS Code의 확장 기능은 선택 사항입니다. 한국어 메뉴가 필요하면 Korean Language Pack, Tailwind 클래스 자동 완성이 필요하면 Tailwind CSS IntelliSense, 편집 중 코드 진단이 필요하면 ESLint를 설치합니다.
 
@@ -59,7 +61,7 @@ HRA는 **데이터베이스(DB)**에 회원과 게시글을 저장하고, **Blob
 | 증상 | 먼저 확인할 것 |
 | --- | --- |
 | `command not found` 또는 `is not recognized` | 설치를 마친 뒤 터미널을 다시 엽니다. 계속되면 해당 프로그램의 설치 경로 설정을 확인합니다. |
-| Node.js가 다른 버전으로 나옴 | 이미 설치된 버전이나 버전 관리 도구가 있는지 확인하고 24.x로 전환합니다. |
+| Node.js가 다른 버전으로 나옴 | 이미 설치된 버전이나 버전 관리 도구가 있는지 확인하고 24.15.0 이상인 24 계열로 전환합니다. |
 | 폴더 쓰기 권한 오류 | 내 계정이 소유한 작업 폴더를 선택합니다. 관리자 권한으로 설치 명령을 반복하지 않습니다. |
 | GitHub에 브랜치를 올릴 수 없음 | 초대 수락 여부와 저장소 쓰기 권한, 포크 사용 여부를 확인합니다. |
 

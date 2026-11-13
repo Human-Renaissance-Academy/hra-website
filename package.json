@@ -118,7 +118,7 @@
     "eslint-config-next": "16.4.5",
     "hanspell": "^1.0.1",
     "husky": "^9.1.7",
-    "jsdom": "^29.0.2",
+    "jsdom": "^31.0.0",
     "prettier": "3.6.2",
     "rehype-stringify": "^10.0.1",
     "remark-parse": "^11.0.0",
@@ -141,6 +141,6 @@
     }
   },
   "engines": {
-    "node": "24.x"
+    "node": "^24.15.0"
   }
 }
