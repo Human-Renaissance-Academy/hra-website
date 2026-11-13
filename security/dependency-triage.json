@@ -372,7 +372,7 @@
       "priority": "P2",
       "owner": "repo-maintainers",
       "reviewedOn": "2026-11-03",
-      "reviewBy": "2026-11-12",
+      "reviewBy": "2026-12-03",
       "attackCondition": "esbuild 전이 advisory의 공격 조건을 해당 패키지 항목에서 별도로 검토한다. 2026-11-04(KST) 재확인 결과 경로가 그대로이며 2026-12-03까지 함께 재검토한다."
     },
     {
