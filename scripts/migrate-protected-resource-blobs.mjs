@@ -9,13 +9,20 @@ import { neon } from "@neondatabase/serverless";
 
 const publicHost = "4sompt13gxwuz2x8.public.blob.vercel-storage.com";
 const protectedPrefixes = [
-  "class-materials/", "guidebooks/", "weekly-texts/", "class-logs/",
-  "weekly-text-images/", "resource-uploads/class-materials/",
-  "resource-uploads/guidebooks/", "resource-uploads/weekly-texts/",
+  "class-materials/",
+  "guidebooks/",
+  "weekly-texts/",
+  "class-logs/",
+  "weekly-text-images/",
+  "resource-uploads/class-materials/",
+  "resource-uploads/guidebooks/",
+  "resource-uploads/weekly-texts/",
 ];
 const args = process.argv.slice(2);
-if (args.some((arg) => !["--apply", "--delete-public"].includes(arg)) ||
-    (args.includes("--apply") && args.includes("--delete-public"))) {
+if (
+  args.some((arg) => !["--apply", "--delete-public"].includes(arg)) ||
+  (args.includes("--apply") && args.includes("--delete-public"))
+) {
   throw new Error("--apply 또는 --delete-public 중 하나만 지정할 수 있습니다.");
 }
 const apply = args.includes("--apply");
@@ -39,8 +46,15 @@ const privateStoreId = privateHost?.split(".")[0];
 function accessOf(url) {
   try {
     const parsed = new URL(url);
-    if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.search || parsed.hash ||
-        parsed.pathname === "/") return "unknown";
+    if (
+      parsed.protocol !== "https:" ||
+      parsed.username ||
+      parsed.password ||
+      parsed.search ||
+      parsed.hash ||
+      parsed.pathname === "/"
+    )
+      return "unknown";
     if (parsed.hostname === publicHost) return "public";
     if (parsed.hostname === privateHost) return "private";
   } catch {
@@ -61,19 +75,24 @@ async function resourceRows() {
 
 async function updateReference(row, privateUrl) {
   // URL까지 WHERE에 포함해 운영 중 행이 바뀌면 덮어쓰지 않습니다.
-  if (row.kind === "class_materials") return sql`
+  if (row.kind === "class_materials")
+    return sql`
     UPDATE class_materials SET file_url = ${privateUrl}
     WHERE id = ${row.id} AND file_url = ${row.url} RETURNING id`;
-  if (row.kind === "guidebooks") return sql`
+  if (row.kind === "guidebooks")
+    return sql`
     UPDATE guidebooks SET file_url = ${privateUrl}
     WHERE id = ${row.id} AND file_url = ${row.url} RETURNING id`;
-  if (row.kind === "weekly_texts") return sql`
+  if (row.kind === "weekly_texts")
+    return sql`
     UPDATE weekly_texts SET file_url = ${privateUrl}
     WHERE id = ${row.id} AND file_url = ${row.url} RETURNING id`;
-  if (row.kind === "weekly_text_images") return sql`
+  if (row.kind === "weekly_text_images")
+    return sql`
     UPDATE weekly_text_images SET url = ${privateUrl}
     WHERE id = ${row.id} AND url = ${row.url} RETURNING id`;
-  if (row.kind === "class_log_images") return sql`
+  if (row.kind === "class_log_images")
+    return sql`
     UPDATE class_log_images SET url = ${privateUrl}
     WHERE id = ${row.id} AND url = ${row.url} RETURNING id`;
   throw new Error("알 수 없는 자료 종류입니다.");
@@ -90,33 +109,50 @@ async function copyAndSwap(row) {
   if (bytes.length !== original.size) throw new Error("공개 원본의 크기가 일치하지 않습니다.");
 
   const suffix = /\.[a-z0-9]{1,8}$/i.exec(new URL(row.url).pathname)?.[0] ?? ".bin";
-  const blob = await put(`protected-migration/${row.kind}/${row.id}-${randomUUID()}${suffix}`, bytes, {
-    access: "private", token: privateToken, contentType: original.contentType,
-  });
-  let swapped = false;
+  const blob = await put(
+    `protected-migration/${row.kind}/${row.id}-${randomUUID()}${suffix}`,
+    bytes,
+    {
+      access: "private",
+      token: privateToken,
+      contentType: original.contentType,
+    },
+  );
+  let swapAttempted = false;
   try {
-    if (new URL(blob.url).hostname !== privateHost) throw new Error("비공개 저장소 호스트가 일치하지 않습니다.");
+    if (new URL(blob.url).hostname !== privateHost)
+      throw new Error("비공개 저장소 호스트가 일치하지 않습니다.");
     const copied = await get(blob.url, {
-      access: "private", token: privateToken, storeId: privateStoreId, useCache: false,
+      access: "private",
+      token: privateToken,
+      storeId: privateStoreId,
+      useCache: false,
     });
     if (!copied || copied.statusCode !== 200) throw new Error("비공개 사본을 읽을 수 없습니다.");
     const checkBytes = Buffer.from(await new Response(copied.stream).arrayBuffer());
-    if (checkBytes.length !== bytes.length ||
-        createHash("sha256").update(checkBytes).digest("hex") !== createHash("sha256").update(bytes).digest("hex")) {
+    if (
+      checkBytes.length !== bytes.length ||
+      createHash("sha256").update(checkBytes).digest("hex") !==
+        createHash("sha256").update(bytes).digest("hex")
+    ) {
       throw new Error("비공개 사본의 바이트가 일치하지 않습니다.");
     }
 
     // 이전 전후 URL을 소유권 원장에 기록해 실패·삭제 재시도 대상을 보존합니다.
-    const [owner] = await sql`SELECT uploaded_by_id FROM markdown_image_assets WHERE url = ${row.url} LIMIT 1`;
+    const [owner] =
+      await sql`SELECT uploaded_by_id FROM markdown_image_assets WHERE url = ${row.url} LIMIT 1`;
     await sql`INSERT INTO markdown_image_assets (url, uploaded_by_id)
       VALUES (${row.url}, ${owner?.uploaded_by_id ?? null}) ON CONFLICT (url) DO NOTHING`;
     await sql`INSERT INTO markdown_image_assets (url, uploaded_by_id)
       VALUES (${blob.url}, ${owner?.uploaded_by_id ?? null}) ON CONFLICT (url) DO NOTHING`;
+    // UPDATE 응답이 실패해도 DB에서는 이미 커밋되었을 수 있으므로 시도부터 사본을 보존합니다.
+    // CAS 경합도 자동 삭제하지 않고 원장과 함께 남겨 별도로 참조를 확인할 수 있게 합니다.
+    swapAttempted = true;
     const updated = await updateReference(row, blob.url);
-    swapped = updated.length === 1;
-    if (!swapped) throw new Error("DB 참조가 동시에 변경되었습니다.");
+    if (updated.length !== 1) throw new Error("DB 참조가 동시에 변경되었습니다.");
   } finally {
-    if (!swapped) {
+    // DB 교체를 시도하기 전 검증·원장 기록 단계에서 실패한 사본만 회수합니다.
+    if (!swapAttempted) {
       await del(blob.url, { token: privateToken });
       await sql`UPDATE markdown_image_assets SET deleted_at = now()
         WHERE url = ${blob.url} AND deleted_at IS NULL`;
@@ -128,7 +164,9 @@ const rows = await resourceRows();
 const publicRows = rows.filter((row) => accessOf(row.url) === "public");
 const privateRows = rows.filter((row) => accessOf(row.url) === "private");
 const unknownRows = rows.length - publicRows.length - privateRows.length;
-console.log(`보호 자료 참조: 공개 ${publicRows.length}개, 비공개 ${privateRows.length}개, 확인 필요 ${unknownRows}개`);
+console.log(
+  `보호 자료 참조: 공개 ${publicRows.length}개, 비공개 ${privateRows.length}개, 확인 필요 ${unknownRows}개`,
+);
 if (unknownRows > 0) throw new Error("알 수 없는 자료 URL이 있어 이전을 중단합니다.");
 
 if (apply) {
@@ -139,7 +177,9 @@ if (apply) {
       completed += 1;
     } catch (error) {
       // SDK 오류에는 원본 URL이나 파일명이 담길 수 있어 이름만 출력합니다.
-      console.error(`보호 자료 이전 실패 (${row.kind}, ${error instanceof Error ? error.name : "UnknownError"})`);
+      console.error(
+        `보호 자료 이전 실패 (${row.kind}, ${error instanceof Error ? error.name : "UnknownError"})`,
+      );
       process.exitCode = 1;
       break;
     }
@@ -156,7 +196,12 @@ if (apply) {
     } catch {
       throw new Error("비공개 사본을 확인할 수 없어 공개 원본을 보존합니다.");
     }
-    if (!stored || stored.url !== row.url || !Number.isSafeInteger(stored.size) || stored.size < 1) {
+    if (
+      !stored ||
+      stored.url !== row.url ||
+      !Number.isSafeInteger(stored.size) ||
+      stored.size < 1
+    ) {
       throw new Error("비공개 사본을 확인할 수 없어 공개 원본을 보존합니다.");
     }
   }
@@ -167,19 +212,30 @@ if (apply) {
   `;
   let deleted = 0;
   for (const candidate of candidates) {
-    if (accessOf(candidate.url) !== "public" ||
-        !protectedPrefixes.some((prefix) => new URL(candidate.url).pathname.slice(1).startsWith(prefix))) continue;
+    if (
+      accessOf(candidate.url) !== "public" ||
+      !protectedPrefixes.some((prefix) =>
+        new URL(candidate.url).pathname.slice(1).startsWith(prefix),
+      )
+    )
+      continue;
     // 삭제 직전 참조 뷰를 다시 읽어 다른 콘텐츠에서 공유된 URL을 보존합니다.
-    const current = await sql`SELECT 1 FROM markdown_image_references WHERE asset_id = ${candidate.id} LIMIT 1`;
+    const current =
+      await sql`SELECT 1 FROM markdown_image_references WHERE asset_id = ${candidate.id} LIMIT 1`;
     if (current.length > 0) continue;
     try {
       const original = await head(candidate.url, { token: process.env.BLOB_READ_WRITE_TOKEN });
-      await del(candidate.url, { token: process.env.BLOB_READ_WRITE_TOKEN, ifMatch: original.etag });
+      await del(candidate.url, {
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+        ifMatch: original.etag,
+      });
       await sql`UPDATE markdown_image_assets SET deleted_at = now()
         WHERE id = ${candidate.id} AND deleted_at IS NULL`;
       deleted += 1;
     } catch (error) {
-      console.error(`공개 원본 삭제 실패 (${error instanceof Error ? error.name : "UnknownError"})`);
+      console.error(
+        `공개 원본 삭제 실패 (${error instanceof Error ? error.name : "UnknownError"})`,
+      );
       process.exitCode = 1;
       break;
     }
