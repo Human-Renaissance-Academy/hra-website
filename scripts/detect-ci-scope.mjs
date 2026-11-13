@@ -16,26 +16,36 @@ function isIndependentPath(path) {
   if (path.startsWith("docs/")) return /\.(?:md|mdx|png|jpe?g|webp|svg)$/.test(path);
   // 네이티브 앱 소스만 독립적으로 검증합니다. 모바일 워크플로 자체는 보안 경계이므로 Web CI도 유지합니다.
   if (path.startsWith("apps/mobile/")) return true;
-  return path.startsWith(".github/ISSUE_TEMPLATE/") ||
+  return (
+    path.startsWith(".github/ISSUE_TEMPLATE/") ||
     path === ".github/PULL_REQUEST_TEMPLATE.md" ||
-    path === "README.md" || path === "AGENTS.md" || path === "mkdocs.yml";
+    path === "README.md" ||
+    path === "AGENTS.md" ||
+    path === "mkdocs.yml"
+  );
 }
 
 function validPath(path) {
-  return typeof path === "string" && path.length > 0 && path.length < 4096 &&
-    !path.startsWith("/") && !path.includes("\\") && !path.includes("\0") &&
-    !path.includes("\n") && !path.includes("\r") && !path.includes("\uFFFD") &&
-    path.split("/").every(part => part && part !== "." && part !== "..");
+  return (
+    typeof path === "string" &&
+    path.length > 0 &&
+    path.length < 4096 &&
+    !path.startsWith("/") &&
+    !path.includes("\\") &&
+    !path.includes("\0") &&
+    !path.includes("\n") &&
+    !path.includes("\r") &&
+    !path.includes("\uFFFD") &&
+    path.split("/").every((part) => part && part !== "." && part !== "..")
+  );
 }
 
-/** 未知 파일이나 Git 범위 오류는 절대 생략하지 않습니다. */
+/** 알 수 없는 파일이나 Git 범위 오류는 절대 생략하지 않습니다. */
 export function classifyWebCiPaths(paths) {
   if (!Array.isArray(paths) || paths.length === 0 || paths.length > 1000)
     return { web: true, reason: "unknown-or-empty" };
-  if (paths.some(path => !validPath(path)))
-    return { web: true, reason: "unsafe-path" };
-  if (paths.some(path => !isIndependentPath(path)))
-    return { web: true, reason: "web-or-shared" };
+  if (paths.some((path) => !validPath(path))) return { web: true, reason: "unsafe-path" };
+  if (paths.some((path) => !isIndependentPath(path))) return { web: true, reason: "web-or-shared" };
   return { web: false, reason: "mobile-or-docs-only" };
 }
 
@@ -45,21 +55,22 @@ export function classifyWebCiPaths(paths) {
  */
 export function resolveCiScope({ event, parents, files }) {
   if (event !== "pull_request") return { web: true, reason: "push-or-unknown-event" };
-  if (!Array.isArray(parents) || parents.length !== 2 || parents.some(sha => !SHA.test(sha)))
+  if (!Array.isArray(parents) || parents.length !== 2 || parents.some((sha) => !SHA.test(sha)))
     return { web: true, reason: "merge-parent-unavailable" };
   return classifyWebCiPaths(files);
 }
 
 function git(args) {
   return execFileSync("git", args, {
-    encoding: "utf8", maxBuffer: 1024 * 1024,
+    encoding: "utf8",
+    maxBuffer: 1024 * 1024,
     stdio: ["ignore", "pipe", "ignore"],
   });
 }
 
 function readPrChanges() {
   const commit = git(["rev-list", "--parents", "-n", "1", "HEAD"]).trim().split(/\s+/);
-  if (commit.length !== 3 || commit.some(sha => !SHA.test(sha))) return null;
+  if (commit.length !== 3 || commit.some((sha) => !SHA.test(sha))) return null;
   const out = git(["diff", "--name-only", "--no-renames", "-z", commit[1], commit[0], "--"]);
   if (out.length > 1024 * 1024 || !out.endsWith("\0")) return null;
   return { parents: commit.slice(1), files: out.slice(0, -1).split("\0") };
@@ -74,7 +85,7 @@ function run() {
     if (changes) result = resolveCiScope({ event, parents: changes.parents, files: changes.files });
     else if (event !== "pull_request") result = resolveCiScope({ event, parents: [], files: [] });
   } catch {
-    // Any git failure leaves full Web CI enabled. Do not echo untrusted file paths.
+    // Git 실패 시 전체 웹 CI를 유지하며 신뢰할 수 없는 파일 경로를 출력하지 않습니다.
   }
   appendFileSync(outputPath, "web=" + (result.web ? "true" : "false") + "\n");
   console.log("WEB_CI_SCOPE=" + (result.web ? "full" : "independent") + " REASON=" + result.reason);
