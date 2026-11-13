@@ -11,7 +11,6 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
-
 export default async function ClassLogPrintPage({ params }: Props) {
   const session = await requireSharedResourceReader();
 

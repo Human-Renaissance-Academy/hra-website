@@ -31,32 +31,37 @@ export type WebClassLogPrintable = {
 
 /** 메타데이터는 본문·이미지·작성자 없이 제목만 읽습니다. */
 export async function findWebClassLogTitle(id: string): Promise<string | null> {
-  const [row] = await db.select({ title: classLogs.title })
-    .from(classLogs).where(eq(classLogs.id, id)).limit(1);
+  const [row] = await db
+    .select({ title: classLogs.title })
+    .from(classLogs)
+    .where(eq(classLogs.id, id))
+    .limit(1);
   return row?.title ?? null;
 }
 
 /** 기존 상세 화면과 같은 작성자 표시·조회수·수업일과 본문을 조회합니다. */
 export async function findWebClassLogDetail(id: string): Promise<WebClassLogDetail | null> {
-  const [log] = await db.select({
-    id: classLogs.id,
-    title: classLogs.title,
-    content: classLogs.content,
-    classDate: classLogs.classDate,
-    viewCount: classLogs.viewCount,
-    authorName: users.name,
-  })
+  const [log] = await db
+    .select({
+      id: classLogs.id,
+      title: classLogs.title,
+      content: classLogs.content,
+      classDate: classLogs.classDate,
+      viewCount: classLogs.viewCount,
+      authorName: users.name,
+    })
     .from(classLogs)
     .leftJoin(users, eq(classLogs.authorId, users.id))
     .where(eq(classLogs.id, id))
     .limit(1);
   if (!log) return null;
 
-  const images = await db.select({
-    id: classLogImages.id,
-    alt: classLogImages.alt,
-    order: classLogImages.order,
-  })
+  const images = await db
+    .select({
+      id: classLogImages.id,
+      alt: classLogImages.alt,
+      order: classLogImages.order,
+    })
     .from(classLogImages)
     .where(eq(classLogImages.classLogId, id))
     .orderBy(asc(classLogImages.order), asc(classLogImages.createdAt));
@@ -65,13 +70,14 @@ export async function findWebClassLogDetail(id: string): Promise<WebClassLogDeta
 
 /** 인쇄 화면은 조회수와 이미지·원본 파일 경로를 읽지 않습니다. */
 export async function findWebClassLogPrintable(id: string): Promise<WebClassLogPrintable | null> {
-  const [log] = await db.select({
-    id: classLogs.id,
-    title: classLogs.title,
-    content: classLogs.content,
-    classDate: classLogs.classDate,
-    authorName: users.name,
-  })
+  const [log] = await db
+    .select({
+      id: classLogs.id,
+      title: classLogs.title,
+      content: classLogs.content,
+      classDate: classLogs.classDate,
+      authorName: users.name,
+    })
     .from(classLogs)
     .leftJoin(users, eq(classLogs.authorId, users.id))
     .where(eq(classLogs.id, id))
@@ -81,7 +87,8 @@ export async function findWebClassLogPrintable(id: string): Promise<WebClassLogP
 
 /** 과거처럼 실제 승인 상세 열람 뒤에만 원자 증가하며 성공 본문 반환을 기다리게 하지 않습니다. */
 export async function incrementWebClassLogViewCount(id: string): Promise<void> {
-  await db.update(classLogs)
+  await db
+    .update(classLogs)
     .set({ viewCount: sql`${classLogs.viewCount} + 1` })
     .where(eq(classLogs.id, id));
 }

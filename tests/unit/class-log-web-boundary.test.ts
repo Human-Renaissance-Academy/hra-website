@@ -31,33 +31,45 @@ describe("수업일지 Web Application Service 권한·조회 분리", () => {
     vi.resetAllMocks();
     mock.title.mockResolvedValue("기업실무 수업일지");
     mock.detail.mockResolvedValue({
-      log: { id, title: "기업실무 수업일지", content: "# 본문",
-        classDate: when, viewCount: 3, authorName: "교수" },
+      log: {
+        id,
+        title: "기업실무 수업일지",
+        content: "# 본문",
+        classDate: when,
+        viewCount: 3,
+        authorName: "교수",
+      },
       images: [{ id, alt: "사진", order: 1 }],
     });
     mock.printable.mockResolvedValue({
-      id, title: "기업실무 수업일지", content: "# 본문",
-      classDate: when, authorName: "교수",
+      id,
+      title: "기업실무 수업일지",
+      content: "# 본문",
+      classDate: when,
+      authorName: "교수",
     });
     mock.increment.mockResolvedValue(undefined);
   });
 
-  it.each(["MEMBER", "FACULTY", "ADMIN"])("%s는 공동 수업일지 상세·인쇄를 읽는다", async role => {
+  it.each(["MEMBER", "FACULTY", "ADMIN"])("%s는 공동 수업일지 상세·인쇄를 읽는다", async (role) => {
     expect(await getWebClassLogTitle(role, id)).toBe("기업실무 수업일지");
     expect((await getWebClassLogDetail(role, id))?.log.content).toBe("# 본문");
     expect((await getWebClassLogPrintable(role, id))?.title).toBe("기업실무 수업일지");
   });
 
-  it.each(["PENDING", "UNKNOWN", null, undefined])("%s는 모든 DB 조회와 조회수 증가 전에 차단", async role => {
-    expect(await getWebClassLogTitle(role, id)).toBeNull();
-    expect(await getWebClassLogDetail(role, id)).toBeNull();
-    expect(await getWebClassLogPrintable(role, id)).toBeNull();
-    recordWebClassLogRead(role, id);
-    expect(mock.title).not.toHaveBeenCalled();
-    expect(mock.detail).not.toHaveBeenCalled();
-    expect(mock.printable).not.toHaveBeenCalled();
-    expect(mock.increment).not.toHaveBeenCalled();
-  });
+  it.each(["PENDING", "UNKNOWN", null, undefined])(
+    "%s는 모든 DB 조회와 조회수 증가 전에 차단",
+    async (role) => {
+      expect(await getWebClassLogTitle(role, id)).toBeNull();
+      expect(await getWebClassLogDetail(role, id)).toBeNull();
+      expect(await getWebClassLogPrintable(role, id)).toBeNull();
+      recordWebClassLogRead(role, id);
+      expect(mock.title).not.toHaveBeenCalled();
+      expect(mock.detail).not.toHaveBeenCalled();
+      expect(mock.printable).not.toHaveBeenCalled();
+      expect(mock.increment).not.toHaveBeenCalled();
+    },
+  );
 
   it("메타데이터 제목 조회는 본문·이미지 및 조회수 증가를 실행하지 않는다", async () => {
     expect(await getWebClassLogTitle("MEMBER", id)).toBe("기업실무 수업일지");
