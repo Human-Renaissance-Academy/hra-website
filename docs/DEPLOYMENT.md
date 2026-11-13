@@ -143,7 +143,9 @@ Preview가 `Ready`여도 실제 로그인 제공자·DB·Blob 연결과 운영 �
 | `/api/health` 503 | 환경 설정과 DB 연결 | 허용된 상세 점검과 서버 로그로 원인 분리 |
 | `Deployment rate limited` | 배포 플랫폼의 제한 메시지와 재시도 가능 시각 | 재배포·수정 푸시·병합 반복을 멈추고 현재 PR 및 `main` 커밋과 마지막 Preview·Production 성공 커밋을 구분해 기록; 제한 해제 뒤 대상 커밋의 배포를 확인 |
 
-상태 점검 HTTP 200은 로그인·업로드·전체 학사 기능의 성공까지 보장하지 않습니다. `HEALTH_CHECK_SECRET`과 일치하는 `x-health-check-secret` 헤더를 보내면 DB 상태와 시각을 포함한 상세 응답을 확인할 수 있습니다.
+상태 점검 HTTP 200은 로그인·업로드·전체 학사 기능의 성공까지 보장하지 않습니다. `HEALTH_CHECK_SECRET`과 일치하는 `x-health-check-secret` 헤더를 보내면 DB 상태·실행 중인 `nodeMajor`·시각을 포함한 상세 응답을 확인할 수 있습니다.
+
+**Node.js 운영 런타임 확인 (#294):** 승인된 운영자만 secret을 안전한 보관소에서 읽고, 해당 Production 배포의 `/api/health`에 헤더를 전송합니다. 응답의 숫자형 `nodeMajor`와 배포 SHA·배포 시각·`.nvmrc`/배포 설정의 목표 major(현재 24)를 대조해 **일치/불일치만** 이슈에 기록합니다. 헤더 원문·전체 health 응답·환경변수·DB 연결 주소는 PR/이슈/CI 로그에 붙이지 않습니다. 익명·잘못된 secret 응답은 기존처럼 `{ "status": "ok" }` 또는 `{ "status": "error" }`만 반환합니다. Node major 일치는 실제 Vercel 환경을 읽고 확인한 이후에만 체크하고, 코드 테스트만으로 운영 버전을 확인했다고 보고하지 않습니다.
 
 배포 후 공개 GET·시간별 가용성 점검·Actions 실패 알림의 범위와 대응은 [운영 공개 경로 점검](operations/production-smoke.md)을 따릅니다. 이 자동 점검은 health secret·운영 쓰기를 사용하지 않으며, 배포 성공과 HTTP 검사 성공을 별도로 남깁니다.
 
