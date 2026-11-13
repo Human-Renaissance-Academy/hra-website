@@ -45,7 +45,7 @@ Web, Android, iOS와 공통 업무 코드를 **한 저장소 안에서** 앱과 
 
 ## 3. 코드를 바꾸는 기본 순서
 
-1. [열린 이슈](https://github.com/yeongseon/hra-website/issues)에서 같은 작업이 있는지 확인하고 범위를 정합니다.
+1. [열린 이슈](https://github.com/Human-Renaissance-Academy/hra-website/issues)에서 같은 작업이 있는지 확인하고 범위를 정합니다.
 2. 진행 중인 변경이 없는지 확인한 뒤 최신 `main`에서 작업 브랜치를 만듭니다.
 3. 필요한 파일만 수정하고 `git diff`로 변경 내용을 읽습니다.
 4. 화면과 관련 검사를 확인합니다.
@@ -124,7 +124,7 @@ git push -u origin docs/update-guide
 | `FACULTY` | 교수진 역할. 홈페이지 자료 접근과 학사 업무 권한은 별도 정책을 따릅니다. |
 | `ADMIN` | 홈페이지 콘텐츠·회원 등을 관리하는 역할 |
 
-홈페이지 `ADMIN`이라는 이유만으로 학사 승인·출석 처리 권한을 모두 갖는 것은 아닙니다. 학사 승인자, 지도교수, 조교 등은 [학사 관리 로드맵](ACADEMIC-MANAGEMENT-ROADMAP.md)과 [AGENTS.md](https://github.com/yeongseon/hra-website/blob/main/AGENTS.md)의 경계를 확인합니다.
+홈페이지 `ADMIN`이라는 이유만으로 학사 승인·출석 처리 권한을 모두 갖는 것은 아닙니다. 학사 승인자, 지도교수, 조교 등은 [학사 관리 로드맵](ACADEMIC-MANAGEMENT-ROADMAP.md)과 [AGENTS.md](https://github.com/Human-Renaissance-Academy/hra-website/blob/main/AGENTS.md)의 경계를 확인합니다.
 
 이미 관리자가 있다면 신규 개발자가 스크립트로 임의 승격하지 않고, 운영 담당자가 회원 관리 화면에서 필요한 역할을 지정합니다. 권한이 예상과 다르면 선택한 계정과 역할, 변경 후 세션 상태를 확인합니다.
 

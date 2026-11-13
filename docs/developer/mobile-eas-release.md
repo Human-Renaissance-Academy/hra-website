@@ -13,16 +13,16 @@
 
 ## 2. 실제 계정 작업 전에 확정해야 할 정보
 
-| 항목 | 어디에 설정할지 | 확인 |
-| --- | --- | --- |
-| Expo 조직/프로젝트 권한, 정확한 프로젝트 ID | 승인받은 Expo 프로젝트, GitHub environment 변수 `EXPO_PROJECT_ID` | 미확인 |
-| Android 영구 applicationId (현재 `com.hra.mobile`은 임시 값) | 환경 변수 `HRA_ANDROID_APPLICATION_ID`; Play Console 패키지 ID와 대조 | 미확인 |
-| iOS 영구 bundle identifier와 Apple Team | `HRA_IOS_BUNDLE_IDENTIFIER`; Apple Developer 설정과 대조 | 미확인 |
-| 운영 HTTPS API 주소 | `EXPO_PUBLIC_API_BASE_URL`, Expo EAS `production` environment에 동일한 공개값 | 미확인 |
-| Preview 전용 HTTPS API 주소, 독립 테스트 DB/Blob/OAuth | GitHub `mobile-preview` environment와 Expo EAS `preview` environment | 미확인 |
-| Expo 서비스용 자동화 토큰 | GitHub 환경별 `EXPO_TOKEN` secret, 저장소 소스와 일반 Variables에는 저장 금지 | 미확인 |
-| Android 서명 키 및 Apple 배포 인증서 소유·회수 계획 | Expo/플랫폼 계정의 승인된 보안 저장소 | 미확인 |
-| GitHub `mobile-production` 보호 환경의 required reviewer | 조직 관리자 설정에서 실제 승인자 지정 | 미확인 |
+| 항목                                                         | 어디에 설정할지                                                               | 확인   |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------- | ------ |
+| Expo 조직/프로젝트 권한, 정확한 프로젝트 ID                  | 승인받은 Expo 프로젝트, GitHub environment 변수 `EXPO_PROJECT_ID`             | 미확인 |
+| Android 영구 applicationId (현재 `com.hra.mobile`은 임시 값) | 환경 변수 `HRA_ANDROID_APPLICATION_ID`; Play Console 패키지 ID와 대조         | 미확인 |
+| iOS 영구 bundle identifier와 Apple Team                      | `HRA_IOS_BUNDLE_IDENTIFIER`; Apple Developer 설정과 대조                      | 미확인 |
+| 운영 HTTPS API 주소                                          | `EXPO_PUBLIC_API_BASE_URL`, Expo EAS `production` environment에 동일한 공개값 | 미확인 |
+| Preview 전용 HTTPS API 주소, 독립 테스트 DB/Blob/OAuth       | GitHub `mobile-preview` environment와 Expo EAS `preview` environment          | 미확인 |
+| Expo 서비스용 자동화 토큰                                    | GitHub 환경별 `EXPO_TOKEN` secret, 저장소 소스와 일반 Variables에는 저장 금지 | 미확인 |
+| Android 서명 키 및 Apple 배포 인증서 소유·회수 계획          | Expo/플랫폼 계정의 승인된 보안 저장소                                         | 미확인 |
+| GitHub `mobile-production` 보호 환경의 required reviewer     | 조직 관리자 설정에서 실제 승인자 지정                                         | 미확인 |
 
 EAS 빌드가 성공했다고 운영 DB/Blob 또는 OAuth 환경 분리가 검증됐다는 뜻은 아닙니다. 민감정보/제출 자료는 **합성 계정과 파일**로만 Preview 검증합니다. Production 사용자 데이터는 테스트용으로 복사하지 않습니다.
 
@@ -44,14 +44,7 @@ node scripts/check-eas-config.mjs --config
 node --test scripts/tests/check-eas-config.test.mjs
 ```
 
-실제 승인된 **값을 안전하게 로드한 셸**에서, 자격 증명을 화면·로그·명령행에 직접 인쇄하지 않고 아래 검사 후 운영 빌드를 시작합니다.
-
-```sh
-cd apps/mobile
-node scripts/check-eas-config.mjs --release android production
-# 사전 승인 및 실제 프로젝트 권한 확인 이후에만:
-eas build --platform android --profile production --non-interactive
-```
+실제 빌드는 위 GitHub 수동 워크플로를 사용합니다. 로컬 `--release` 검사는 로컬 값의 형식만 검사하므로 Expo 원격 환경과의 일치를 증명하지 않습니다. 이 검사만 통과한 뒤 로컬에서 `eas build`를 직접 실행하지 않습니다. 별도 로컬 운영 절차가 필요한 경우에도 위 워크플로와 동일하게 승인된 기대값을 보존하고 API 주소·플랫폼 식별자를 제거한 프로세스에서 `eas env:exec <profile>` 및 `--remote` 일치 검사를 먼저 통과해야 합니다. 실제 계정·서명·출시 승인은 이 검사와 별개입니다.
 
 ## 4. 반드시 남아야 할 완료 증거
 

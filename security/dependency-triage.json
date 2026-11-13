@@ -83,9 +83,6 @@
       ],
       "via": [
         {
-          "dependency": "@typescript-eslint/parser"
-        },
-        {
           "dependency": "@typescript-eslint/type-utils"
         },
         {
@@ -220,23 +217,6 @@
           "severity": "moderate",
           "range": "<=0.24.2",
           "title": "esbuild enables any website to send any requests to the development server and read the response"
-        }
-      ]
-    },
-    {
-      "name": "eslint-config-next",
-      "severity": "moderate",
-      "range": ">=15.6.0-canary.0",
-      "nodes": [
-        {
-          "path": "node_modules/eslint-config-next",
-          "version": "16.4.5",
-          "development": true
-        }
-      ],
-      "via": [
-        {
-          "dependency": "typescript-eslint"
         }
       ]
     },
@@ -468,15 +448,6 @@
       "attackCondition": "@ts-morph/common 0.27.0이 minimatch 10.2.5(^10.0.1)를 사용하는 CLI 파일 경로 매칭 전이 경로다. 공식 https://github.com/advisories/GHSA-g3hv-75wg-m249 조건을 따르며 제품은 CSS만 읽고 해당 모듈을 호출하지 않는다. 미신뢰 경로·설정 CLI 실행을 금지하고 2026-11-26까지 패치 여부를 재검토한다. 2026-11-04(KST) registry 재확인에서 경로와 무패치 상태가 그대로임을 확인했다."
     },
     {
-      "key": "@typescript-eslint/eslint-plugin:@typescript-eslint/parser",
-      "contextId": "tooling-minimatch-glob",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-05",
-      "reviewBy": "2026-12-03",
-      "attackCondition": "@typescript-eslint/eslint-plugin 8.61.0이 @typescript-eslint/parser을 통해 minimatch 10.2.5(>=7.0.0 <11.0.1, GHSA-g3hv-75wg-m249)의 고정 저장소 린트 glob 매칭으로 이어지는 개발 도구 전이 경로다. 해당 패키지 항목의 공격 조건과 2026-12-03 기한을 함께 검토한다. 2026-11-05(UTC) 빈 캐시 registry audit 재확인에서 권고 범위가 >=7.0.0 <11.0.1로 정정된 뒤에도 이 경로의 minimatch 10.2.5가 영향 범위에 남고 10.x 백포트가 없음을 확인했다."
-    },
-    {
       "key": "@typescript-eslint/eslint-plugin:@typescript-eslint/type-utils",
       "contextId": "tooling-minimatch-glob",
       "priority": "P2",
@@ -538,15 +509,6 @@
       "reviewedOn": "2026-11-05",
       "reviewBy": "2026-12-03",
       "attackCondition": "@typescript-eslint/utils 8.61.0이 @typescript-eslint/typescript-estree을 통해 minimatch 10.2.5(>=7.0.0 <11.0.1, GHSA-g3hv-75wg-m249)의 고정 저장소 린트 glob 매칭으로 이어지는 개발 도구 전이 경로다. 해당 패키지 항목의 공격 조건과 2026-12-03 기한을 함께 검토한다. 2026-11-05(UTC) 빈 캐시 registry audit 재확인에서 권고 범위가 >=7.0.0 <11.0.1로 정정된 뒤에도 이 경로의 minimatch 10.2.5가 영향 범위에 남고 10.x 백포트가 없음을 확인했다."
-    },
-    {
-      "key": "eslint-config-next:typescript-eslint",
-      "contextId": "tooling-minimatch-glob",
-      "priority": "P2",
-      "owner": "repo-maintainers",
-      "reviewedOn": "2026-11-06",
-      "reviewBy": "2026-12-03",
-      "attackCondition": "eslint-config-next 16.4.5이 typescript-eslint을 통해 minimatch 10.2.5(>=7.0.0 <11.0.1, GHSA-g3hv-75wg-m249)의 고정 저장소 린트 glob 매칭으로 이어지는 개발 도구 전이 경로다. 해당 패키지 항목의 공격 조건과 2026-12-03 기한을 함께 검토한다. 2026-11-05(UTC) 빈 캐시 registry audit 재확인에서 권고 범위가 >=7.0.0 <11.0.1로 정정된 뒤에도 이 경로의 minimatch 10.2.5가 영향 범위에 남고 10.x 백포트가 없음을 확인했다."
     },
     {
       "key": "hanspell:minimatch",

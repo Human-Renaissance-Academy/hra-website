@@ -4,10 +4,22 @@ name: 모바일 Android
 on:
   pull_request:
     branches: [main]
-    paths: ['apps/mobile/**', 'packages/contracts/openapi.json', '.github/workflows/mobile.yml', '.github/workflows/mobile-eas-build.yml']
+    paths:
+      [
+        "apps/mobile/**",
+        "packages/contracts/openapi.json",
+        ".github/workflows/mobile.yml",
+        ".github/workflows/mobile-eas-build.yml",
+      ]
   push:
     branches: [main]
-    paths: ['apps/mobile/**', 'packages/contracts/openapi.json', '.github/workflows/mobile.yml', '.github/workflows/mobile-eas-build.yml']
+    paths:
+      [
+        "apps/mobile/**",
+        "packages/contracts/openapi.json",
+        ".github/workflows/mobile.yml",
+        ".github/workflows/mobile-eas-build.yml",
+      ]
   workflow_dispatch:
 
 permissions:
@@ -23,9 +35,9 @@ defaults:
     working-directory: apps/mobile
 
 env:
-  CI: '1'
-  EXPO_NO_DOTENV: '1'
-  EXPO_NO_TELEMETRY: '1'
+  CI: "1"
+  EXPO_NO_DOTENV: "1"
+  EXPO_NO_TELEMETRY: "1"
 
 jobs:
   checks:
@@ -54,7 +66,7 @@ jobs:
         # 온라인 최신 패치 목록과 비교하면 업스트림 배포만으로 결과가 바뀝니다.
         # lockfile로 설치한 SDK의 bundledNativeModules.json 기준으로 재현 가능하게 검사합니다.
         env:
-          EXPO_OFFLINE: '1'
+          EXPO_OFFLINE: "1"
         run: npm run doctor
       - run: npm run export:android
       # Linux에서는 iOS 네이티브 컴파일을 할 수 없으므로 공통 코드가 iOS 번들로도 만들어지는지(JS 번들링)만 확인합니다.

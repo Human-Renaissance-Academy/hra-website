@@ -35,9 +35,9 @@ jobs:
       run:
         working-directory: apps/mobile
     env:
-      CI: '1'
-      EXPO_NO_DOTENV: '1'
-      EXPO_NO_TELEMETRY: '1'
+      CI: "1"
+      EXPO_NO_DOTENV: "1"
+      EXPO_NO_TELEMETRY: "1"
       EXPO_PROJECT_ID: ${{ vars.EXPO_PROJECT_ID }}
       EXPO_PUBLIC_API_BASE_URL: ${{ vars.EXPO_PUBLIC_API_BASE_URL }}
       HRA_ANDROID_APPLICATION_ID: ${{ vars.HRA_ANDROID_APPLICATION_ID }}
@@ -65,7 +65,7 @@ jobs:
         run: node --test scripts/tests/check-eas-config.test.mjs
       - name: 설치된 Expo SDK 호환성 검사
         env:
-          EXPO_OFFLINE: '1'
+          EXPO_OFFLINE: "1"
         run: npm run doctor
       - name: 대상 플랫폼 번들 검증
         run: npm run "export:$HRA_EAS_PLATFORM"
