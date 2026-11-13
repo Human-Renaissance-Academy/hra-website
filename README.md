@@ -6,7 +6,7 @@ HRA(Human Renaissance Academy)의 프로그램 소개, 회원 자료실, 관리�
 
 - [개발 문서 시작 페이지](docs/index.md)
 - [웹사이트](https://hra-website-theta.vercel.app)
-- [문서 사이트](https://yeongseon.github.io/hra-website/)
+- [문서 사이트](https://human-renaissance-academy.github.io/hra-website/)
 - [전체 작업 우선순위](https://github.com/Human-Renaissance-Academy/hra-website/issues/300)
 
 ## 1. 지금 구현된 것과 앞으로 할 것
@@ -67,6 +67,7 @@ HRA(Human Renaissance Academy)의 프로그램 소개, 회원 자료실, 관리�
 
 | 명령 | 확인하는 것 | 통과해도 별도로 확인할 것 |
 | --- | --- | --- |
+| `npm run format:staged` | Git index에 스테이징한 TS/JS 파일의 Prettier 포맷 | 전체 레거시 파일을 일괄 재포맷하지 않음. [포맷 안내](docs/developer/code-formatting.md) |
 | `npm run lint` | 코드 규칙과 정적 오류 | 실제 화면·권한 동작 |
 | `npm run typecheck` | 값과 함수의 타입이 맞는지 | DB에 필요한 테이블·함수가 적용됐는지 |
 | `npm test` | Vitest 테스트에 정의한 동작 | 테스트에 포함되지 않은 사용 흐름 |

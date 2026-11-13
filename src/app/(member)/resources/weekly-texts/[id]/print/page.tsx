@@ -1,10 +1,8 @@
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import { PrintView } from "./_print-view";
-import { db } from "@/lib/db";
-import { cohorts, weeklyTexts } from "@/lib/db/schema";
 import { requireSharedResourceReader } from "@/lib/resource-access";
+import { getWebWeeklyTextPrintable } from "@/features/weekly-texts/web/service";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +11,7 @@ type Props = {
 };
 
 export default async function WeeklyTextPrintPage({ params }: Props) {
-  await requireSharedResourceReader();
+  const session = await requireSharedResourceReader();
 
   const { id } = await params;
 
@@ -23,19 +21,7 @@ export default async function WeeklyTextPrintPage({ params }: Props) {
     notFound();
   }
 
-  const [text] = await db
-    .select({
-      id: weeklyTexts.id,
-      title: weeklyTexts.title,
-      body: weeklyTexts.body,
-      createdAt: weeklyTexts.createdAt,
-      cohortName: cohorts.name,
-      textType: weeklyTexts.textType,
-    })
-    .from(weeklyTexts)
-    .leftJoin(cohorts, eq(weeklyTexts.cohortId, cohorts.id))
-    .where(eq(weeklyTexts.id, parsedId.data))
-    .limit(1);
+  const text = await getWebWeeklyTextPrintable(session.user.role, parsedId.data);
 
   if (!text || !text.body) {
     notFound();
