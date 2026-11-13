@@ -119,7 +119,7 @@ src/
 > - 수업 운영 인력은 **어드바이저 1명과 조교 2명**이고 **세 사람이 돌아가며 출결을 체크한다.** 기수마다 다른 사람이 맡고 기수 안에서는 고정 배정이지만, 조교는 학기 중에 바뀔 수 있고 향후 역할도 바뀔 수 있다.
 > - 이들을 관리하는 담당자는 홈페이지 관리자(`ADMIN`)와 **다른 사람**이다. **`ADMIN` 은 홈페이지만 관리한다** — `ADMIN` 역할만으로 출결·학사 운영 권한을 부여하지 않는다. 학사 운영 관리 권한의 범위는 미정(#143).
 > - 출결은 **해당 기수의 유효한 어드바이저·조교 배정**과 검증된 로그인 계정으로 인가한다. 기존 `users.role`에 해당 전역 역할은 없으며, 기수별 업무 배정과 전역 사용자 역할 신설은 별도 결정이다.
-> - 운영 인력 배정·교체·출결 정정/승인·학사 운영 관리자의 권한은 [#143](https://github.com/yeongseon/hra-website/issues/143) 정책에 따르고, 구현은 [#165](https://github.com/yeongseon/hra-website/issues/165) 및 #159/#160을 통해 진행한다.
+> - 운영 인력 배정·교체·출결 정정/승인·학사 운영 관리자의 권한은 [#143](https://github.com/Human-Renaissance-Academy/hra-website/issues/143) 정책에 따르고, 구현은 [#165](https://github.com/Human-Renaissance-Academy/hra-website/issues/165) 및 #159/#160을 통해 진행한다.
 > - 교수의 담당 수업/과제 검토 기능은 별도 #161/#162. 기존 일정/공동 자료를 개인별 출결 기록으로 재해석하지 않는다.
 > - 설계 정본: [학사관리 로드맵](docs/ACADEMIC-MANAGEMENT-ROADMAP.md), [데이터 모델](docs/ACADEMIC-DATA-MODEL.md). **현재 학사관리 출결 기능이 구현되었다는 뜻이 아니다.**
 
@@ -202,7 +202,7 @@ src/app/(admin)/admin/[feature]/
 ## 10. 배포
 
 - **프로덕션**: Vercel (`https://hra-website-theta.vercel.app`)
-- **문서**: MkDocs GitHub Pages (`https://yeongseon.github.io/hra-website/`)
+- **문서**: MkDocs GitHub Pages (`https://human-renaissance-academy.github.io/hra-website/`)
 - **DB 변경**: `npm run db:push`는 개발·운영 DB 모두에서 비활성화되어 있으며 DB에 접속하지 않는다. `npx drizzle-kit export`는 SQL 생성만 수행한다. 신규 DB 준비와 기존 DB 변경은 [데이터베이스 변경 절차](docs/developer/database-change-procedure.md)에 따라 대상·SQL·선행 조건·카탈로그를 검토한 뒤 별도 적용한다. Production migration gate는 아직 미완료다(#280).
 - **빌드 확인**: `npm run build` (변경 후 반드시 실행)
 

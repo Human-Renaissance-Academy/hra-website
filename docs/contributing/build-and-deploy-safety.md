@@ -45,7 +45,7 @@ npm run build
 
 `npm ci`는 PR의 `package-lock.json`으로 처음부터 설치할 수 있는지 확인합니다. 의존성을 바꾼 경우 깨끗한 작업 환경에서도 이 단계가 통과해야 합니다. `ERESOLVE`처럼 peer 의존성 충돌이 나오면 오류에 표시된 패키지와 요구 버전을 `package.json`·잠금 파일에서 대조합니다. 예를 들어 React를 갱신할 때는 `react`·`react-dom`과 두 `@types/react*` 패키지를 함께 검토하고, Tiptap을 갱신할 때는 사용하는 `@tiptap/*` 묶음과 `@tiptap/react`가 요구하는 React 범위를 함께 확인합니다. 수정한 잠금 파일로 다시 `npm ci`를 실행합니다. `--force`나 `--legacy-peer-deps`로 설치 오류를 숨기지 않습니다.
 
-2026-10-21에는 [React 갱신 PR #325](https://github.com/yeongseon/hra-website/pull/325)에서 `react-dom` 19.3.1과 기존 `react` 19.2.4의 peer 불일치로 Preview 설치가 실패했습니다. [Tiptap 묶음 PR #328](https://github.com/yeongseon/hra-website/pull/328)에서도 한 확장만 3.32.0으로 갱신한 조합의 `npm ci` 실패를 재현했습니다. 두 사례의 해결은 요구 범위에 맞는 관련 패키지를 함께 갱신하고 깨끗한 설치와 실제 Preview 결과를 확인하는 것이었습니다. 이 버전 숫자는 당시 원인 기록이며, 새 갱신의 허용 범위는 그때의 패키지 계약과 설치 로그에서 다시 확인합니다.
+2026-10-21에는 [React 갱신 PR #325](https://github.com/Human-Renaissance-Academy/hra-website/pull/325)에서 `react-dom` 19.3.1과 기존 `react` 19.2.4의 peer 불일치로 Preview 설치가 실패했습니다. [Tiptap 묶음 PR #328](https://github.com/Human-Renaissance-Academy/hra-website/pull/328)에서도 한 확장만 3.32.0으로 갱신한 조합의 `npm ci` 실패를 재현했습니다. 두 사례의 해결은 요구 범위에 맞는 관련 패키지를 함께 갱신하고 깨끗한 설치와 실제 Preview 결과를 확인하는 것이었습니다. 이 버전 숫자는 당시 원인 기록이며, 새 갱신의 허용 범위는 그때의 패키지 계약과 설치 로그에서 다시 확인합니다.
 
 DB의 제약이나 동시 요청을 검사하는 테스트에는 로컬 PostgreSQL 실행 파일 등 추가 준비가 필요합니다. 명령이 성공 종료했더라도 관련 테스트가 건너뛰어졌다면 DB 동작까지 검증했다고 기록하지 않습니다. 준비와 검사 범위는 [품질 게이트](../QUALITY-GATE.md)를 따릅니다.
 
@@ -174,9 +174,9 @@ Vercel이 `Deployment rate limited — retry in 24 hours`처럼 배포 횟수 �
 
 PR을 한 건 병합한 뒤에는 **새 `main` 병합 커밋의 Production 배포 성공**을 확인하고 다음 PR을 갱신·푸시합니다. PR Preview가 성공했어도 병합 커밋의 Production 배포는 별도 실행입니다. Production 상태가 대기·실패·횟수 제한이면 다음 PR의 푸시와 병합을 멈추고 현재 `main` 커밋과 마지막 Production 성공 커밋을 구분해 기록합니다. 2026-10-21에는 PR #326의 Preview·CI가 통과한 뒤 병합된 `15665df`의 Production 배포가 횟수 제한에 걸렸고, 직전 성공 배포의 커밋은 `b0d5d0d`였습니다. 이 수치는 당시 기록이며 이후 배포 상태를 대신하지 않습니다.
 
-Preview의 **빌드 성공**은 배포용 앱 생성의 증거입니다. 실제 OAuth 로그인, DB 연결·변경, Blob 업로드, 예약 작업, 운영 환경변수 일치는 별도 확인입니다. Preview 자원 격리는 아직 [#279](https://github.com/yeongseon/hra-website/issues/279)의 확인 대상이므로, 연결 대상을 확인하기 전에는 실제 개인정보나 운영 파일로 기능 검사를 하지 않습니다. 환경별 절차는 [배포 안내](../DEPLOYMENT.md)를 따릅니다.
+Preview의 **빌드 성공**은 배포용 앱 생성의 증거입니다. 실제 OAuth 로그인, DB 연결·변경, Blob 업로드, 예약 작업, 운영 환경변수 일치는 별도 확인입니다. Preview 자원 격리는 아직 [#279](https://github.com/Human-Renaissance-Academy/hra-website/issues/279)의 확인 대상이므로, 연결 대상을 확인하기 전에는 실제 개인정보나 운영 파일로 기능 검사를 하지 않습니다. 환경별 절차는 [배포 안내](../DEPLOYMENT.md)를 따릅니다.
 
-리뷰는 [AGENTS.md §11](https://github.com/yeongseon/hra-website/blob/main/AGENTS.md)의 도구와 무관한 변경 위험 기준을 따릅니다. 인증·DB·보호 파일·배포 경계와 해당 운영 절차 안내는 문서 한 파일이어도 병합 전 분야 독립 리뷰가 필요합니다. 기존 빌드·CI·배포 확인 절차는 유지합니다.
+리뷰는 [AGENTS.md §11](https://github.com/Human-Renaissance-Academy/hra-website/blob/main/AGENTS.md)의 도구와 무관한 변경 위험 기준을 따릅니다. 인증·DB·보호 파일·배포 경계와 해당 운영 절차 안내는 문서 한 파일이어도 병합 전 분야 독립 리뷰가 필요합니다. 기존 빌드·CI·배포 확인 절차는 유지합니다.
 
 CI와 리뷰를 확인한 뒤 [협업 절차](workflow.md)에 따라 병합합니다. 실제 배포는 [배포 안내](../DEPLOYMENT.md)를 따르고, 배포된 주소에서 변경 기능·권한·외부 서비스 연결을 확인합니다. DB 변경이나 운영 확인이 남아 있다면 PR의 병합만으로 이슈를 닫지 않습니다.
 

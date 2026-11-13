@@ -24,6 +24,10 @@ Blob은 파일의 실제 내용을 저장하는 곳입니다. 공개 Blob은 주
 
 ## 비공개 저장소 연결
 
+**Vercel Production 새 업로드 안전장치 (#268):** `VERCEL_ENV=production`에서 `RESOURCE_PRIVATE_BLOB_ENABLED=true`가 아니면 `resourceUploadStore()`가 고정 오류로 실패하고 보호 자료 업로드용 저장소를 반환하지 않습니다. 플래그가 true여도 별도 `RESOURCE_PRIVATE_BLOB_HOST`와 `RESOURCE_PRIVATE_READ_WRITE_TOKEN`이 올바르게 구성되지 않으면 동일하게 fail-closed합니다. 기존 공개 Blob으로 자동 fallback하지 않습니다. 브라우저 보호 자료 업로드 사전 확인 API는 이 상황에서 503을 반환합니다. 서버 업로드·업로드 토큰 발급 또한 설정 오류를 통해 중단됩니다.
+
+이 안전장치는 **신규 업로드 경로만** 보호합니다. 예전 공개 파일의 DB 참조와 원본 공개 URL이 실제로 삭제되거나 차단된 상태를 증명하지 않으며, #268의 나머지 운영 이전/삭제/권한 검증 절차를 생략하지 않습니다. Next.js에서 `NODE_ENV=production`은 Preview 빌드에도 적용될 수 있으므로 Production 분기는 `VERCEL_ENV=production`에 한정합니다. Vercel 밖의 배포는 이 자동 판별로 보호된다고 가정하지 말고 별도 배포 게이트를 구성해야 합니다.
+
 1. 대상 환경의 보호 자료용 비공개 저장소를 연결해 `RESOURCE_PRIVATE_READ_WRITE_TOKEN`을 제공한다. 공개 콘텐츠용 `BLOB_READ_WRITE_TOKEN`과 용도를 구분하고, Preview에 운영 저장소 토큰을 복사하지 않는다.
 2. 해당 저장소의 Base URL 호스트만 `RESOURCE_PRIVATE_BLOB_HOST`에 등록한다. 토큰과 URL 전체를 이슈·PR·로그에 기록하지 않는다.
 3. 새 버전의 읽기·쓰기 경로가 배포된 뒤 `RESOURCE_PRIVATE_BLOB_ENABLED=true`를 설정하고 재배포한다. 설정이 완전하지 않으면 보호 자료 업로드를 거부한다. 공개 콘텐츠 업로드는 기존 저장소를 계속 쓴다.
