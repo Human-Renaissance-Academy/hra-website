@@ -1,6 +1,6 @@
 /**
  * 보호 자료의 업로드 저장소를 선택합니다.
- * 비공개 전환 플래그가 켜진 뒤에는 설정 누락 시 공개 저장소로 되돌아가지 않습니다.
+ * Vercel Production에서는 보호 자료를 반드시 private 저장소에 새로 업로드합니다.\n * 비공개 전환 플래그가 켜진 뒤에는 설정 누락 시 공개 저장소로 되돌아가지 않습니다.
  */
 import { projectBlobHost } from "@/lib/blob-host";
 import { resourceBlobAccess } from "@/lib/resource-download";
@@ -11,6 +11,13 @@ type ResourceBlobStore =
 
 export function resourceUploadStore(): ResourceBlobStore {
   if (process.env.RESOURCE_PRIVATE_BLOB_ENABLED !== "true") {
+    // Vercel Production에서는 보호 자료의 새 공개 업로드를 허용하지 않습니다.
+    // NODE_ENV=production만으로 판별하면 Preview까지 차단하므로 VERCEL_ENV를 사용합니다.
+    // 과거 공개 파일의 읽기·점진적 이전은 별도 경로에서 수행되며 이 검사는
+    // 기존 URL을 이미 비공개로 전환했다고 보증하지 않습니다.
+    if (process.env.VERCEL_ENV === "production") {
+      throw new Error("운영 보호 자료 저장소가 비활성화되어 있습니다.");
+    }
     return { access: "public", host: projectBlobHost };
   }
 
