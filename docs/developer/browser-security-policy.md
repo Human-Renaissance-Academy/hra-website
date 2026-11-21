@@ -22,9 +22,11 @@
 | `frame-src 'self'` | 인증된 같은 출처 PDF iframe. 현재 사용하지 않는 Office 외부 출처 삭제 |
 | `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`, `frame-ancestors 'none'` | 기존 HTML 삽입·기준 URL·폼·프레임 보호 유지 |
 
-Sonner 2.0.7의 CJS/ESM이 삽입하는 CSS 14,859바이트의 검토 hash는 `sha256-CIxDM5jnsGiKqXs2v7NKCY5MzdR9gu6TtiMJrDw29AY=`입니다. 먼저 빈 style 요소를 문서에 삽입한 뒤 CSS를 추가하므로 빈 문자열의 `sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=`도 한정 허용합니다. 빈 CSS는 규칙을 부여하지 않습니다. 실제 Chromium에서 이후 임의 CSS로 변경·추가하거나 parser로 삽입하면 여전히 차단되는지 검증합니다. 정상 스타일의 위반을 무시하는 필터는 사용하지 않습니다.
+Sonner 2.0.8의 CJS/ESM이 삽입하는 CSS 14,916바이트의 검토 hash는 `sha256-StEaX+se6YS7pqjzrzMIA0KaX9zF/8zAhvQXZAe5epY=`입니다. 먼저 빈 style 요소를 문서에 삽입한 뒤 CSS를 추가하므로 빈 문자열의 `sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=`도 한정 허용합니다. 빈 CSS는 규칙을 부여하지 않습니다. 실제 Chromium에서 이후 임의 CSS로 변경·추가하거나 parser로 삽입하면 여전히 차단되는지 검증합니다. 정상 스타일의 위반을 무시하는 필터는 사용하지 않습니다.
 
 계약 테스트는 설치 파일을 실행하지 않고 TypeScript AST의 정적 문자열을 읽어 양쪽 구현과 대조합니다. 패키지의 CSS가 바뀌면 검사도 실패하므로 출처·실제 스타일을 재검토한 후 hash를 갱신합니다. hash 자체가 공급망 안전성을 보증하지는 않습니다.
+
+재검토 기록(UTC 2026-11-21, Dependabot #611): Sonner 2.0.7 → 2.0.8에서 삽입 CSS가 14,859바이트(`sha256-CIxDM5jnsGiKqXs2v7NKCY5MzdR9gu6TtiMJrDw29AY=`)에서 14,916바이트로 바뀌었습니다. 배포본은 `registry.npmjs.org`의 `sonner-2.0.8.tgz`이고 lock integrity가 레지스트리 값과 같습니다. 같은 AST 추출로 비교하면 CJS와 ESM의 CSS가 같고 규칙 수는 110개로 같으며, 바뀐 규칙은 세 개의 표시 속성뿐입니다. `[data-styled=true] [data-content]`에 `flex:1;min-width:0` 추가, 닫기 버튼의 `color`·`border` 색 변수가 `--gray12`·`--gray4`에서 `--normal-text`·`--normal-border`로 바뀜, `[data-swiped=true]`에 `-webkit-user-select:none` 추가입니다. `url()`·`@import`·`expression(` 같은 외부 자원 로드나 실행 구문은 없습니다. `__insertCSS`의 빈 style 요소 삽입 후 텍스트 추가 방식도 같아 빈 문자열 hash는 유지했습니다. 이전 hash는 제거하여 허용 목록을 넓히지 않았고 `unsafe-inline` 등 완화는 추가하지 않았습니다.
 
 실제 설치 Blob은 lockfile 기준 2.4.0입니다. SDK는 `/api/blob/?pathname=…`와 `/api/blob/mpu`를 사용하므로 뒤의 `/`가 없는 정확한 `/api/blob` 한 경로만 허용하면 업로드가 깨집니다. 브라우저 검증은 설치 SDK를 그대로 번들하여 1KiB 단일 전송과 10MiB multipart(8+2MiB)를 합성 응답으로 실행합니다. 토큰·파일·전송은 모두 합성이며 실제 공급자 연결은 하지 않습니다.
 

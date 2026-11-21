@@ -20,7 +20,7 @@ export function createContentSecurityPolicy(nonce: string, development: boolean)
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${development ? " 'unsafe-eval'" : ""}`,
     // Sonner는 빈 style을 먼저 삽입한다. 빈 CSS(규칙 0개)의 hash만 추가 허용한다.
     // 이후 텍스트 변경은 CSP가 재검사하며, 위에서 검토한 CSS hash 또는 nonce가 필요하다.
-    `style-src 'self' 'nonce-${nonce}' 'sha256-CIxDM5jnsGiKqXs2v7NKCY5MzdR9gu6TtiMJrDw29AY=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='`,
+    `style-src 'self' 'nonce-${nonce}' 'sha256-StEaX+se6YS7pqjzrzMIA0KaX9zF/8zAhvQXZAe5epY=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='`,
     // Sonner·에디터·UI 컴포넌트의 런타임 style 속성에만 한정한 예외다.
     "style-src-attr 'unsafe-inline'",
     `img-src 'self' data: blob: https://${projectBlobHost}`,

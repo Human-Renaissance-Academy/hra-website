@@ -100,15 +100,15 @@ function installedSonnerCss(extension: string) {
 it("설치된 CJS/ESM Sonner 스타일이 검토한 hash와 정확히 일치한다", () => {
   for (const extension of ["js", "mjs"]) {
     const css = installedSonnerCss(extension);
-    expect(Buffer.byteLength(css)).toBe(14859);
+    expect(Buffer.byteLength(css)).toBe(14916);
     expect(createHash("sha256").update(css).digest("base64")).toBe(
-      "CIxDM5jnsGiKqXs2v7NKCY5MzdR9gu6TtiMJrDw29AY=",
+      "StEaX+se6YS7pqjzrzMIA0KaX9zF/8zAhvQXZAe5epY=",
     );
     expect(
       createHash("sha256")
         .update(css + " ")
         .digest("base64"),
-    ).not.toBe("CIxDM5jnsGiKqXs2v7NKCY5MzdR9gu6TtiMJrDw29AY=");
+    ).not.toBe("StEaX+se6YS7pqjzrzMIA0KaX9zF/8zAhvQXZAe5epY=");
   }
 });
 
@@ -124,7 +124,7 @@ describe("요청별 CSP", () => {
     expect(policy).toContain(
       "img-src 'self' data: blob: https://4sompt13gxwuz2x8.public.blob.vercel-storage.com",
     );
-    expect(policy).toContain("'sha256-CIxDM5jnsGiKqXs2v7NKCY5MzdR9gu6TtiMJrDw29AY='");
+    expect(policy).toContain("'sha256-StEaX+se6YS7pqjzrzMIA0KaX9zF/8zAhvQXZAe5epY='");
     expect(policy).toContain("'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='");
     expect(policy).not.toMatch(/unsafe-eval|officeapps|\*|upgrade-insecure-requests/);
     expect(policy.split(";").find((value) => value.trim().startsWith("script-src "))).not.toContain(

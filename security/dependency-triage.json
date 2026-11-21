@@ -4,12 +4,12 @@
   "manifestBinding": {
     "algorithm": "sha256",
     "input": "package-json.raw-bytes-v1",
-    "digest": "9efd622400696b43faffaef6c6f79caa2d48d791e11fe97984397160f872d2c8"
+    "digest": "709881dc880404c9bd763be997efebf00d58d0b78749045af776509b6a4838e9"
   },
   "lockBinding": {
     "algorithm": "sha256",
     "input": "package-lock.raw-bytes-v1",
-    "digest": "db3ed67634b2e8b4023c86ef3fa10627cf30b6a4f9ace00196db90a44c42f3b7"
+    "digest": "08ef707ce20352489c61023f7b765303ad2c0793082192800fe4c4a1f0827c5e"
   },
   "note": "P2는 코드 사용면 평가이며 owner의 P1 위험 수용 승인이 아니다. advisory 집합과 nodes는 독립적이며 모든 조합이 실제 영향 경로라는 뜻이 아니다. 독립 리뷰에서 재검토한다.",
   "packages": [
